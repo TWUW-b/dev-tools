@@ -56,6 +56,7 @@ export type {
   TestRunResponse,
   ConsoleLogEntry,
   NetworkLogEntry,
+  Environment,
   EnvironmentInfo,
   ConsoleLogConfig,
   NetworkLogConfig,

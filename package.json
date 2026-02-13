@@ -60,7 +60,6 @@
   },
   "dependencies": {
     "jszip": "^3.10.1",
-    "react-draggable": "^4.4.6",
     "react-markdown": "^9.0.1",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0"

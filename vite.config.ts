@@ -15,7 +15,15 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      external: [
+          'react',
+          'react-dom',
+          'react/jsx-runtime',
+          'react-markdown',
+          'rehype-raw',
+          'remark-gfm',
+          'jszip',
+        ],
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'chunks/[name]-[hash].js',

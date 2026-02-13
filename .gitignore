@@ -21,6 +21,8 @@ coverage/
 
 # API config (environment-specific)
 api/config.php
+api/feedback/config.php
 
 # SQLite files
 api/data/*.sqlite
+api/feedback/data/*.sqlite

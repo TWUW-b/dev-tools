@@ -1,25 +1,37 @@
-# @genlib/debug-notes
+# @genlib/dev-tools
 
-開発・テスト環境向けのデバッグノート記録ライブラリ。
+開発・テスト環境向けの統合デベロッパーツール。
 
-テスト中に発見した不具合・違和感を最小入力で記録し、環境ごとに永続化する。
+デバッグノート記録、テストフロー管理、マニュアル表示、フィードバック収集を1つのライブラリに統合。
 
 ## 特徴
 
-- PiP（Picture-in-Picture）ウィンドウで常時入力可能
-- 機能テストのチェックリスト実行（Domain/Capability/Case階層）
+- **デバッグノート**: PiP ウィンドウで不具合・違和感を最小入力で記録
+- **テストフロー**: Domain/Capability/Case 階層のチェックリスト実行
+- **マニュアル表示**: Markdown ドキュメントの PiP / サイドバー / タブ表示
+- **フィードバック**: ユーザーからのバグ報告・要望・質問を収集
 - コンソール・ネットワークログの自動キャプチャ
-- dev / test 環境ごとにデータを分離
-- 本番環境には一切含めない設計
+- dev / test 環境ごとにデータ分離
 - PHP + SQLite のシンプルなバックエンド
 
 ## インストール
 
 ```bash
-npm install @genlib/debug-notes
+npm install @genlib/dev-tools
 ```
 
+## インポートパス
+
+| パス | 内容 |
+|------|------|
+| `@genlib/dev-tools` | 全機能（デバッグ + マニュアル + フィードバック） |
+| `@genlib/dev-tools/components` | コンポーネントのみ |
+| `@genlib/dev-tools/hooks` | フックのみ |
+| `@genlib/dev-tools/manual` | マニュアル系コンポーネントのみ |
+
 ## クイックスタート
+
+### デバッグパネル（デバッグノート + テストフロー + マニュアル）
 
 ```typescript
 import {
@@ -27,8 +39,7 @@ import {
   useDebugMode,
   setDebugApiBaseUrl,
   createLogCapture,
-  parseTestCaseMd,
-} from '@genlib/debug-notes';
+} from '@genlib/dev-tools';
 
 // API URL を設定
 setDebugApiBaseUrl('https://your-domain.com/__debug/api');
@@ -39,6 +50,12 @@ const logCapture = createLogCapture({
   network: ['/api/**'],
 });
 
+// マニュアル項目
+const manualItems = [
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md' },
+  { id: 'faq', title: 'よくある質問', path: '/docs/faq.md' },
+];
+
 function App() {
   const { isDebugMode } = useDebugMode();
 
@@ -48,7 +65,7 @@ function App() {
       {isDebugMode && (
         <DebugPanel
           logCapture={logCapture}
-          // testCases={parseTestCaseMd(mdString)}  // テストケースMD使用時
+          manualItems={manualItems}
         />
       )}
     </>
@@ -59,6 +76,64 @@ function App() {
 デバッグモードの起動:
 - URL: `?mode=debug`
 - キーボード: `z` キーを素早く3回押す（トグル）
+
+### マニュアル PiP（単体使用）
+
+```typescript
+import { ManualPiP, useManualPiP } from '@genlib/dev-tools/manual';
+
+function App() {
+  const { isOpen, currentPath, openPiP, closePiP, setPath } = useManualPiP();
+
+  return (
+    <>
+      <button onClick={() => openPiP('/docs/guide.md')}>ヘルプ</button>
+      <ManualPiP
+        isOpen={isOpen}
+        docPath={currentPath}
+        onClose={closePiP}
+        onNavigate={setPath}
+      />
+    </>
+  );
+}
+```
+
+### フィードバック
+
+```typescript
+import { FeedbackForm } from '@genlib/dev-tools/manual';
+
+// FeedbackForm は ManualPiP / ManualTabPage 内で自動表示される
+// feedbackApiBaseUrl を指定すると有効化
+<ManualPiP
+  feedbackApiBaseUrl="https://your-domain.com/__feedback/api"
+  feedbackUserType="developer"
+  feedbackAppVersion="1.0.0"
+/>
+```
+
+## API バックエンド
+
+2つの PHP バックエンドを提供:
+
+| API | ディレクトリ | 用途 |
+|-----|-------------|------|
+| デバッグ API | `api/` | ノート記録・テストフロー |
+| フィードバック API | `api/feedback/` | フィードバック収集・管理 |
+
+### セットアップ
+
+```bash
+# デバッグ API
+cp api/config.example.php api/config.php
+
+# フィードバック API
+cp api/feedback/config.example.php api/feedback/config.php
+
+# Docker で両方起動
+npm run docker:up
+```
 
 ## ドキュメント
 
@@ -72,18 +147,27 @@ function App() {
 ## 構成
 
 ```
-debug-notes/
-├── src/           # フロントエンド（npm 配布）
-├── api/           # バックエンド（手動デプロイ）
-├── sample/        # 開発用サンプルアプリ
-└── docs/          # ドキュメント
+dev-tools/
+├── src/
+│   ├── components/        # UI コンポーネント
+│   │   ├── manual/        # マニュアル・フィードバック系
+│   │   └── admin/         # 管理画面系
+│   ├── hooks/             # React フック
+│   ├── utils/             # ユーティリティ
+│   ├── styles/            # スタイル定義
+│   └── types/             # 型定義
+├── api/                   # デバッグ API（PHP + SQLite）
+├── api/feedback/          # フィードバック API（PHP + SQLite）
+├── sample/                # 開発用サンプルアプリ
+└── docs/                  # ドキュメント
 ```
 
 ## 開発
 
 ```bash
-# API設定
+# API 設定
 cp api/config.example.php api/config.php
+cp api/feedback/config.example.php api/feedback/config.php
 
 # Docker で API 起動（PHP 8.4）
 npm run docker:up
@@ -100,28 +184,11 @@ npm run test
 # 型チェック
 npm run typecheck
 
+# ビルド
+npm run build
+
 # Docker 停止
 npm run docker:down
-```
-
-### Docker コマンド
-
-| コマンド | 説明 |
-|----------|------|
-| `npm run docker:up` | API コンテナ起動 |
-| `npm run docker:down` | API コンテナ停止 |
-| `npm run docker:logs` | API ログ表示 |
-| `npm run docker:build` | イメージ再ビルド |
-
-## バージョニング
-
-SemVer（`MAJOR.MINOR.PATCH`）に従う。
-
-```
-v1.0.0
-│ │ └─ PATCH: バグ修正（後方互換）
-│ └── MINOR: 機能追加（後方互換）
-└─── MAJOR: 破壊的変更（型変更、API削除など）
 ```
 
 ## ライセンス
