@@ -9,6 +9,8 @@
 1. [フロントエンド設定](#1-フロントエンド設定)
 2. [バックエンド（API）デプロイ](#2-バックエンドapiデプロイ)
 3. [動作確認](#3-動作確認)
+4. [GitHub Actions での利用](#github-actions-での利用)
+5. [インフラ別デプロイガイド](#インフラ別デプロイガイド)
 
 ---
 
@@ -199,96 +201,7 @@ import { DebugAdmin } from '@twuw-b/dev-tools';
 />
 ```
 
-### ログキャプチャ設定
-
-```typescript
-// 最小設定
-const logCapture = createLogCapture({
-  console: true,        // error 30件 + warn/log 30件（合計60件）
-  network: ['/api/**'], // パターンマッチでURL指定
-});
-
-// 詳細設定
-const logCapture = createLogCapture({
-  console: {
-    // levels は廃止（error, warn, log 固定）
-    maxErrorEntries: 30,   // error専用バッファ上限（デフォルト: 30）
-    maxLogEntries: 30,     // warn+log バッファ上限（デフォルト: 30）
-    filter: (msg) => !msg.includes('[HMR]'),
-  },
-  network: {
-    include: ['/api/**'],
-    exclude: ['/api/health'],
-    errorOnly: false,
-    captureHeaders: true,  // Authorization等は自動マスク
-    maxEntries: 30,
-  },
-});
-```
-
-### テストケースMD
-
-テストケースを Markdown で定義し、PiPのテストタブで使用できます。
-
-**形式**: `domain:` frontmatter + `#` Capability + `##` グルーピング（任意） + `-` Case
-
-```markdown
----
-domain: admin
----
-
-# A1 事務所登録
-
-## 正常系
-- 必須項目のみで登録できる
-- 全項目入力して登録できる
-
-## バリデーション
-- 必須項目未入力でエラーが表示される
-- 文字数上限超過でエラーが表示される
-
-# A2 事務所編集
-
-## 正常系
-- 既存データを編集して保存できる
-```
-
-#### パースルール
-
-| MD要素 | 解釈 |
-|--------|------|
-| frontmatter `domain:` | Domain 名 |
-| `# 見出し` | Capability 名 |
-| `## 見出し` | 視覚的グルーピング（**データとして保持しない**） |
-| `- テキスト` | Case（テストケース） |
-
-`##` 見出しはMDファイルの可読性のためだけに存在し、パース時にはCaseのみ抽出される。
-
-```typescript
-import { parseTestCaseMd } from '@twuw-b/dev-tools';
-
-const testCases = parseTestCaseMd(mdString);
-// ParsedTestCase[] = [
-//   { domain: 'admin', capability: 'A1 事務所登録', title: '必須項目のみで登録できる' },
-//   { domain: 'admin', capability: 'A1 事務所登録', title: '全項目入力して登録できる' },
-//   { domain: 'admin', capability: 'A1 事務所登録', title: '必須項目未入力でエラーが表示される' },
-// ]
-
-<DebugPanel testCases={testCases} logCapture={logCapture} />
-```
-
-### 本番ビルドからの除外
-
-本番環境では import しないようにする。
-
-```typescript
-// main.tsx
-if (import.meta.env.MODE !== 'production') {
-  import('@twuw-b/dev-tools').then(({ setDebugApiBaseUrl }) => {
-    setDebugApiBaseUrl(import.meta.env.VITE_DEBUG_API_URL);
-  });
-}
-```
+> ログキャプチャの詳細設定、テストケースMD、本番ビルドからの除外については [usage.md](usage.md) を参照。
 
 ---
 
@@ -310,11 +223,14 @@ if (import.meta.env.MODE !== 'production') {
 cp config.example.php config.php
 ```
 
-`config.php` を編集：
+Debug Notes API と Feedback API では config.php の構造が異なる。
+
+#### Debug Notes API 用（`__debug/api/config.php`）
 
 ```php
 <?php
 return [
+    // 環境別に DB パスを指定（env クエリパラメータで切替）
     'db' => [
         'dev'  => __DIR__ . '/data/debug-dev.sqlite',
         'test' => __DIR__ . '/data/debug-test.sqlite',
@@ -328,6 +244,24 @@ return [
     'upload_dir' => __DIR__ . '/data/attachments',
 ];
 ```
+
+#### Feedback API 用（`__manual/api/config.php`）
+
+```php
+<?php
+return [
+    // 単一 DB パス（環境切替なし）
+    'db' => __DIR__ . '/data/feedback.sqlite',
+    'allowed_origins' => [
+        'https://your-domain.com',
+        'http://localhost:5173',
+    ],
+    'admin_key' => 'your-admin-key',
+];
+```
+
+> **違い**: Debug Notes は `db` が環境別の連想配列、Feedback は単一パスの文字列。
+> Feedback API の `admin_key` は管理画面（`X-Admin-Key` ヘッダー）で使用される。
 
 ### 2.3 データディレクトリの作成
 
@@ -443,6 +377,47 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
 | `VITE_DEBUG_API_URL` | Debug Notes API の URL | `https://example.com/__debug/api` |
 | `VITE_FEEDBACK_API_URL` | Feedback API の URL | `https://example.com/__manual/api` |
 | `VITE_FEEDBACK_ADMIN_KEY` | Feedback 管理者キー | `dev-feedback-admin-2026` |
+
+---
+
+## GitHub Actions での利用
+
+CI/CD で `npm ci` を実行する場合、GitHub Packages の認証が必要。
+
+### .npmrc（プロジェクトルート）
+
+```
+@twuw-b:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+> `${NODE_AUTH_TOKEN}` は npm が環境変数から自動展開する。ハードコードしない。
+
+### GitHub Actions ワークフロー
+
+```yaml
+- name: Setup Node.js
+  uses: actions/setup-node@v4
+  with:
+    node-version: '20'
+    cache: 'npm'
+    cache-dependency-path: frontend/package-lock.json
+
+- name: Install dependencies
+  env:
+    NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+  run: |
+    cd frontend
+    npm ci
+```
+
+### Secret の作成
+
+`GH_PACKAGES_TOKEN` に `read:packages` 権限を持つ Personal Access Token を設定する。
+
+1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
+2. Permissions: `read:packages`
+3. リポジトリの Settings → Secrets and variables → Actions → New repository secret
 
 ---
 
