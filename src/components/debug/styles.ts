@@ -750,6 +750,87 @@ export function getPipStyles(): string {
       margin: 16px 0;
     }
 
+    /* ドロップゾーン */
+    .debug-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px;
+      border: 2px dashed ${COLORS.gray300};
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: ${COLORS.white};
+    }
+
+    .debug-dropzone:hover {
+      border-color: ${COLORS.primary};
+      background: ${COLORS.gray100};
+    }
+
+    .debug-dropzone.dragging {
+      border-color: ${COLORS.primary};
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .debug-dropzone.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* サムネイル一覧 */
+    .debug-thumbnails {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .debug-thumbnail {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid ${COLORS.gray200};
+    }
+
+    .debug-thumbnail-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .debug-thumbnail-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      color: ${COLORS.white};
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .debug-thumbnail-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2px 4px;
+      background: rgba(0,0,0,0.5);
+      color: ${COLORS.white};
+      font-size: 9px;
+      text-align: center;
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }

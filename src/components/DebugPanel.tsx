@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDebugNotes } from '../hooks/useDebugNotes';
-import { setDebugApiBaseUrl } from '../utils/api';
+import { setDebugApiBaseUrl, api } from '../utils/api';
 import { maskSensitive } from '../utils/maskSensitive';
 import type { DebugPanelProps, Severity, NoteInput, NetworkLogEntry } from '../types';
 import { ManageTab } from './debug/ManageTab';
 import { TestTab } from './debug/TestTab';
 import type { TestTabHandle } from './debug/TestTab';
 import { ManualTabContent } from './debug/ManualTabContent';
+import { ImageDropZone } from './debug/ImageDropZone';
 import { getPipStyles, triggerButtonStyle, fallbackStyles } from './debug/styles';
 
 // Document Picture-in-Picture API 型定義
@@ -65,6 +66,7 @@ export function DebugPanel({
   const [attachGetResponse, setAttachGetResponse] = useState(false);
   const [attachDuration, setAttachDuration] = useState(false);
   const [attachHeaders, setAttachHeaders] = useState(false);
+  const [attachFiles, setAttachFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // --- リフレッシュ ---
@@ -148,6 +150,7 @@ export function DebugPanel({
     setContent('');
     setUserLog('');
     setSeverity('');
+    setAttachFiles([]);
     setShowAttachOptions(false);
     setAttachGetResponse(false);
     setAttachDuration(false);
@@ -207,6 +210,19 @@ export function DebugPanel({
     const note = await createNote(input);
 
     if (note) {
+      // 画像添付がある場合はアップロード
+      if (attachFiles.length > 0) {
+        try {
+          for (const file of attachFiles) {
+            await api.uploadAttachment(env, note.id, file);
+          }
+        } catch (err) {
+          console.warn('Failed to upload some attachments:', err);
+          setMessage({ type: 'success', text: '保存しました（一部画像のアップロードに失敗）' });
+          setSaving(false);
+          return;
+        }
+      }
       setMessage({ type: 'success', text: '保存しました' });
       onSave?.(note);
       setTimeout(() => {
@@ -217,7 +233,7 @@ export function DebugPanel({
     }
 
     setSaving(false);
-  }, [content, userLog, severity, attachGetResponse, attachDuration, attachHeaders, createNote, onSave, resetForm, logCapture]);
+  }, [content, userLog, severity, attachFiles, attachGetResponse, attachDuration, attachHeaders, createNote, onSave, resetForm, logCapture, env]);
 
   // --- リフレッシュ ---
   const handleRefresh = useCallback(async () => {
@@ -347,6 +363,14 @@ export function DebugPanel({
               />
               <span className="debug-hint">機密情報は自動でマスクされます</span>
             </div>
+
+            <ImageDropZone
+              files={attachFiles}
+              onAdd={(newFiles) => setAttachFiles(prev => [...prev, ...newFiles])}
+              onRemove={(index) => setAttachFiles(prev => prev.filter((_, i) => i !== index))}
+              disabled={saving}
+              pipDocument={pipWindowRef.current?.document ?? null}
+            />
 
             <div className="debug-toggle">
               <button

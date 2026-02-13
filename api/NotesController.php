@@ -14,6 +14,8 @@ class NotesController
     private const MAX_USER_LOG_LENGTH = 20000;
     private const MAX_LOG_JSON_LENGTH = 500000; // 500KB
     private const MAX_NOTES_COUNT = 500;
+    private const MAX_COMMENT_LENGTH = 2000;
+    private const MAX_AUTHOR_LENGTH = 100;
 
     public function __construct(Database $db)
     {
@@ -25,7 +27,7 @@ class NotesController
      */
     public function index(array $params): array
     {
-        $sql = 'SELECT id, route, screen_name, title, content, user_log, steps, severity, status, deleted_at, created_at, source, test_case_id FROM notes WHERE 1=1';
+        $sql = 'SELECT id, route, screen_name, title, content, user_log, steps, severity, status, deleted_at, created_at, source, test_case_id, (SELECT COUNT(*) FROM note_attachments WHERE note_id = notes.id) as attachment_count, (SELECT content FROM note_activities WHERE note_id = notes.id AND content IS NOT NULL AND content != \'\' ORDER BY id DESC LIMIT 1) as latest_comment FROM notes WHERE 1=1';
         $bindings = [];
 
         // 削除済み除外
@@ -98,6 +100,20 @@ class NotesController
             [$id]
         );
         $note['test_case_ids'] = array_map(fn($m) => (int)$m['case_id'], $mappings);
+
+        // 添付ファイル一覧
+        $attachments = $this->db->query(
+            'SELECT id, filename, original_name, mime_type, size, created_at FROM note_attachments WHERE note_id = ?',
+            [$id]
+        );
+        $note['attachments'] = $attachments;
+
+        // アクティビティ一覧
+        $activities = $this->db->query(
+            'SELECT * FROM note_activities WHERE note_id = ? ORDER BY created_at ASC',
+            [$id]
+        );
+        $note['activities'] = $activities;
 
         return [
             'success' => true,
@@ -216,6 +232,22 @@ class NotesController
             return ['success' => false, 'error' => 'Invalid status'];
         }
 
+        $comment = isset($input['comment']) ? trim((string)$input['comment']) : '';
+        $author = isset($input['author']) ? trim((string)$input['author']) : '';
+
+        // fixed 変更時はコメント必須
+        if ($status === 'fixed' && $comment === '') {
+            return ['success' => false, 'error' => 'Comment is required when setting status to fixed'];
+        }
+
+        // バリデーション
+        if ($comment !== '' && mb_strlen($comment) > self::MAX_COMMENT_LENGTH) {
+            return ['success' => false, 'error' => 'Comment exceeds maximum length'];
+        }
+        if ($author !== '' && mb_strlen($author) > self::MAX_AUTHOR_LENGTH) {
+            return ['success' => false, 'error' => 'Author exceeds maximum length'];
+        }
+
         $note = $this->db->fetchOne(
             'SELECT status FROM notes WHERE id = ? AND deleted_at IS NULL',
             [$id]
@@ -224,13 +256,20 @@ class NotesController
             return ['success' => false, 'error' => 'Note not found'];
         }
 
-        if ($note['status'] === $status) {
+        $oldStatus = $note['status'];
+        if ($oldStatus === $status) {
             return ['success' => true]; // 同一ステータス、no-op
         }
 
         $this->db->execute(
             'UPDATE notes SET status = ? WHERE id = ? AND deleted_at IS NULL',
             [$status, $id]
+        );
+
+        // アクティビティ記録
+        $this->db->execute(
+            'INSERT INTO note_activities (note_id, action, content, old_status, new_status, author) VALUES (?, ?, ?, ?, ?, ?)',
+            [$id, 'status_change', $comment !== '' ? $comment : null, $oldStatus, $status, $author !== '' ? $author : null]
         );
 
         return ['success' => true];
@@ -273,6 +312,133 @@ class NotesController
         }
 
         return ['success' => true];
+    }
+
+    /**
+     * アクティビティ一覧取得
+     */
+    public function getActivities(int $id): array
+    {
+        $note = $this->db->fetchOne(
+            'SELECT id FROM notes WHERE id = ? AND deleted_at IS NULL',
+            [$id]
+        );
+        if (!$note) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        $activities = $this->db->query(
+            'SELECT * FROM note_activities WHERE note_id = ? ORDER BY created_at ASC',
+            [$id]
+        );
+
+        return ['success' => true, 'activities' => $activities];
+    }
+
+    /**
+     * コメント追加
+     */
+    public function addActivity(int $id, array $input): array
+    {
+        $content = isset($input['content']) ? trim((string)$input['content']) : '';
+        if ($content === '') {
+            return ['success' => false, 'error' => 'Content is required'];
+        }
+        if (mb_strlen($content) > self::MAX_COMMENT_LENGTH) {
+            return ['success' => false, 'error' => 'Content exceeds maximum length'];
+        }
+
+        $author = isset($input['author']) ? trim((string)$input['author']) : '';
+        if ($author !== '' && mb_strlen($author) > self::MAX_AUTHOR_LENGTH) {
+            return ['success' => false, 'error' => 'Author exceeds maximum length'];
+        }
+
+        $note = $this->db->fetchOne(
+            'SELECT id FROM notes WHERE id = ? AND deleted_at IS NULL',
+            [$id]
+        );
+        if (!$note) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        $this->db->execute(
+            'INSERT INTO note_activities (note_id, action, content, author) VALUES (?, ?, ?, ?)',
+            [$id, 'comment', $content, $author !== '' ? $author : null]
+        );
+
+        $activity = $this->db->fetchOne(
+            'SELECT * FROM note_activities WHERE id = ?',
+            [$this->db->lastInsertId()]
+        );
+
+        return ['success' => true, 'activity' => $activity];
+    }
+
+    /**
+     * JSON エクスポート
+     */
+    public function exportJson(string $env): void
+    {
+        $notes = $this->db->query(
+            'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY created_at DESC'
+        );
+
+        // ノートのJSON文字列カラムをデコード
+        $notes = array_map(fn($n) => $this->hydrateNote($n), $notes);
+
+        // test_case_ids を一括取得
+        $noteIds = array_column($notes, 'id');
+        if (!empty($noteIds)) {
+            $placeholders = implode(',', array_fill(0, count($noteIds), '?'));
+            $mappings = $this->db->query(
+                "SELECT note_id, case_id FROM note_test_cases WHERE note_id IN ($placeholders)",
+                $noteIds
+            );
+            $caseIdMap = [];
+            foreach ($mappings as $m) {
+                $caseIdMap[$m['note_id']][] = (int)$m['case_id'];
+            }
+            foreach ($notes as &$note) {
+                $note['test_case_ids'] = $caseIdMap[$note['id']] ?? [];
+            }
+        }
+
+        $testCases = $this->db->query('SELECT * FROM test_cases ORDER BY domain, capability, title');
+        $testRuns = $this->db->query(
+            'SELECT * FROM test_runs WHERE env = ? ORDER BY created_at DESC',
+            [$env]
+        );
+
+        $data = [
+            'exportedAt' => date('c'),
+            'env' => $env,
+            'version' => '1.0.0',
+            'notes' => $notes,
+            'testCases' => $testCases,
+            'testRuns' => $testRuns,
+        ];
+
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Disposition: attachment; filename="debug-notes-' . $env . '-' . date('Ymd') . '.json"');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * SQLite エクスポート
+     */
+    public function exportSqlite(string $dbPath): void
+    {
+        if (!file_exists($dbPath)) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Database file not found']);
+            return;
+        }
+
+        $env = basename($dbPath, '.sqlite');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="debug-notes-' . $env . '-' . date('Ymd') . '.sqlite"');
+        header('Content-Length: ' . filesize($dbPath));
+        readfile($dbPath);
     }
 
     /**

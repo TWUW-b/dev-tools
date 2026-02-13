@@ -115,7 +115,7 @@ import { DebugPanel } from '@twuw-b/dev-tools';
 | タブ | 機能 |
 |------|------|
 | **記録** | バグ報告フォーム（内容・補足メモ・重要度・添付オプション） |
-| **管理** | ノート一覧 + セレクトボックス（open/resolved/rejected/fixed）+ source badge |
+| **管理** | ノート一覧 + セレクトボックス（open/fixed/resolved/rejected）+ source badge |
 | **テスト** | チェックボックス式テスト実行（Domain/Capability/Case階層、Capability単位で送信） |
 
 #### 動作
@@ -123,13 +123,30 @@ import { DebugPanel } from '@twuw-b/dev-tools';
 1. 右下の「バグ記録」ボタンをクリック
 2. PiP ウィンドウが開く（非対応ブラウザではオーバーレイ表示）
 3. **記録タブ**: フォームに入力して「保存」。コンソール/ネットワークログと環境情報が自動添付される。添付オプションでGETレスポンス・通信時間・ヘッダーを追加可能
-4. **管理タブ**: セレクトボックスでステータスを自由に変更（open / resolved / rejected / fixed）
+4. **管理タブ**: セレクトボックスでステータスを自由に変更（open / fixed / resolved / rejected）
 5. **テストタブ**: チェックボックスでPASS、バグ報告フォームでFAIL → Capability単位で送信
 6. 現在の URL（route）と画面タイトル（screen_name）が自動取得される
 
+### ステータスフロー
+
+```
+open → fixed → resolved
+         ↘      ↗
+        rejected（据え置き）
+```
+
+| ステータス | 意味 | アイコン | 色 |
+|------------|------|----------|-----|
+| `open` | 未対応 | error | primary |
+| `fixed` | 修正済み（確認待ち） | build | warning |
+| `resolved` | 確認完了・クローズ | check_circle | success |
+| `rejected` | 対応不要・却下 | undo | error |
+
+> 厳格な遷移ルールはなし。任意のステータス間で自由に変更可能。
+
 ### DebugAdmin
 
-バグ記録の管理画面。一覧表示・ステータス変更・削除が可能。
+バグ記録の管理画面。一覧表示・ステータス変更・削除・エクスポートが可能。
 
 ```typescript
 import { DebugAdmin } from '@twuw-b/dev-tools';
@@ -143,9 +160,10 @@ import { DebugAdmin } from '@twuw-b/dev-tools';
 #### 機能
 
 - **一覧表示**: 記録されたノートをリスト表示
-- **フィルタ**: ステータス（Open/Resolved/Rejected/Fixed）、ソース（manual/test）でフィルタリング
+- **フィルタ**: ステータス（Open/Fixed/Resolved/Rejected）、ソース（manual/test）でフィルタリング
 - **検索**: タイトル・内容で検索
-- **ステータス変更**: 全ステータス間で自由に遷移可能（open / resolved / rejected / fixed）
+- **ステータス変更**: 全ステータス間で自由に遷移可能（open / fixed / resolved / rejected）
+- **エクスポート**: JSON / SQLite 形式でデータダウンロード
 - **テストフロー連携**: source=test のノートには Capability/Case 名を表示、retest フラグ、openIssues リンク
 - **重要度変更**: critical / high / medium / low / 未設定 の変更
 - **削除**: 論理削除（復元不可）
@@ -957,7 +975,7 @@ interface TestRunResponse {
 // 重要度
 type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-// ステータス
+// ステータス（open → fixed → resolved の順。遷移制約なし）
 type Status = 'open' | 'resolved' | 'rejected' | 'fixed';
 
 // 環境
@@ -1098,6 +1116,8 @@ interface NetworkLogEntry {
 | PATCH | `/notes/{id}/status?env=dev` | ステータス更新（全ステータス間で遷移可能） |
 | PATCH | `/notes/{id}/severity?env=dev` | 重要度更新 |
 | DELETE | `/notes/{id}?env=dev` | ノート削除（論理削除） |
+| GET | `/export/json?env=dev` | 全ノートを JSON でエクスポート（ファイルダウンロード） |
+| GET | `/export/sqlite?env=dev` | SQLite ファイルをダウンロード |
 | POST | `/test-cases/import` | テストケースインポート（MDパース結果） |
 | DELETE | `/test-cases` | テストケース一括削除（関連データも削除） |
 | GET | `/test-cases/tree?env=dev` | テストツリー取得（集計付き、1リクエスト） |
@@ -1108,9 +1128,29 @@ interface NetworkLogEntry {
 | パラメータ | 説明 |
 |------------|------|
 | `env` | 環境（dev / test）必須 |
-| `status` | フィルタ（open / resolved / rejected / fixed） |
+| `status` | フィルタ（open / fixed / resolved / rejected） |
 | `q` | 検索クエリ |
 | `includeDeleted` | 削除済みを含める（1 / 0） |
+
+#### エクスポート API
+
+| エンドポイント | Content-Type | ファイル名 |
+|----------------|--------------|------------|
+| `GET /export/json?env=dev` | `application/json` | `debug-notes-{env}-{date}.json` |
+| `GET /export/sqlite?env=dev` | `application/octet-stream` | `debug-notes-{env}-{date}.sqlite` |
+
+JSON エクスポートの構造:
+
+```typescript
+interface ExportData {
+  exportedAt: string;          // ISO 8601
+  env: 'dev' | 'test';
+  version: string;             // パッケージバージョン
+  notes: Note[];               // 全ノート（ログ含む）
+  testCases: ParsedTestCase[]; // テストケース
+  testRuns: TestRunRecord[];   // テスト実行履歴
+}
+```
 
 ### フィードバック REST API
 

@@ -24,4 +24,7 @@ return [
 
     // API キー（Phase1 では未使用）
     'api_key' => null,
+
+    // Feedback 管理者APIキー（必須。bin2hex(random_bytes(32)) で生成）
+    'feedback_admin_key' => 'CHANGE_ME_BEFORE_DEPLOY',
 ];

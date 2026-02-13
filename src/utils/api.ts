@@ -1,4 +1,4 @@
-import type { Note, NoteInput, NotesResponse, Environment, Status, Severity, ParsedTestCase, DomainTree, TestRunInput, TestRunResponse } from '../types';
+import type { Note, NoteInput, NoteAttachment, NoteActivity, NotesResponse, Environment, Status, Severity, ParsedTestCase, DomainTree, TestRunInput, TestRunResponse } from '../types';
 
 /** API Base URL（グローバル設定） */
 let apiBaseUrl = '/__debug/api';
@@ -122,11 +122,11 @@ export const api = {
   /**
    * ノートのステータスを更新
    */
-  async updateStatus(env: Environment, id: number, status: Status): Promise<void> {
+  async updateStatus(env: Environment, id: number, status: Status, options?: { comment?: string; author?: string }): Promise<void> {
     const response = await fetch(`${apiBaseUrl}/notes/${id}/status?env=${env}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...options }),
     });
 
     const data = await parseResponse<NotesResponse>(response);
@@ -227,5 +227,95 @@ export const api = {
       results: data.results,
       capability: data.capability,
     };
+  },
+
+  /**
+   * 画像アップロード
+   */
+  async uploadAttachment(env: Environment, noteId: number, file: File): Promise<NoteAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await parseResponse<{ success: boolean; attachment: NoteAttachment; error?: string }>(response);
+
+    if (!data.success || !data.attachment) {
+      throw new Error(data.error || 'Failed to upload attachment');
+    }
+
+    return data.attachment;
+  },
+
+  /**
+   * 添付一覧取得
+   */
+  async getAttachments(env: Environment, noteId: number): Promise<NoteAttachment[]> {
+    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`);
+    const data = await parseResponse<{ success: boolean; attachments: NoteAttachment[]; error?: string }>(response);
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch attachments');
+    }
+
+    return data.attachments;
+  },
+
+  /**
+   * 添付削除
+   */
+  async deleteAttachment(env: Environment, noteId: number, attachmentId: number): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments/${attachmentId}?env=${env}`, {
+      method: 'DELETE',
+    });
+
+    const data = await parseResponse<{ success: boolean; error?: string }>(response);
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete attachment');
+    }
+  },
+
+  /**
+   * アクティビティ一覧取得
+   */
+  async getActivities(env: Environment, noteId: number): Promise<NoteActivity[]> {
+    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`);
+    const data = await parseResponse<{ success: boolean; activities: NoteActivity[]; error?: string }>(response);
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch activities');
+    }
+
+    return data.activities;
+  },
+
+  /**
+   * コメント追加
+   */
+  async addActivity(env: Environment, noteId: number, input: { content: string; author?: string }): Promise<NoteActivity> {
+    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    const data = await parseResponse<{ success: boolean; activity: NoteActivity; error?: string }>(response);
+
+    if (!data.success || !data.activity) {
+      throw new Error(data.error || 'Failed to add activity');
+    }
+
+    return data.activity;
+  },
+
+  /**
+   * 添付ファイルURL取得（同期）
+   */
+  getAttachmentUrl(filename: string): string {
+    return `${apiBaseUrl}/attachments/${filename}`;
   },
 };

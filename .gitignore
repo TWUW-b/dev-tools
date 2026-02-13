@@ -28,6 +28,9 @@ api/feedback/config.php
 api/data/*.sqlite
 api/feedback/data/*.sqlite
 
+# Upload data
+api/data/attachments/
+
 # Playwright
 test-results/
 playwright-report/

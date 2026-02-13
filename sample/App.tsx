@@ -7,7 +7,6 @@ import {
   ManualTabPage,
   ManualSidebar,
   MarkdownRenderer,
-  FeedbackAdmin,
   // Hooks
   useDebugMode,
   useManualPiP,
@@ -75,17 +74,16 @@ const manualItems: ManualItem[] = [
   { id: 'api', title: 'API リファレンス', path: '/docs/api.md', category: 'リファレンス', order: 3 },
 ];
 
-const FEEDBACK_API = 'http://localhost:8081/feedback';
-const FEEDBACK_ADMIN_KEY = 'dev-admin-key';
+const FEEDBACK_API = 'http://localhost:8081';
+const FEEDBACK_ADMIN_KEY = 'dev-admin-key-change-in-production';
 
-type View = 'app' | 'admin' | 'manual-tab' | 'manual-sidebar' | 'feedback-admin' | 'utils';
+type View = 'app' | 'admin' | 'manual-tab' | 'manual-sidebar' | 'utils';
 
 const NAV_ITEMS: { key: View; label: string }[] = [
   { key: 'app', label: 'App' },
   { key: 'admin', label: 'Admin' },
   { key: 'manual-tab', label: 'Manual (Tab)' },
   { key: 'manual-sidebar', label: 'Manual (Sidebar)' },
-  { key: 'feedback-admin', label: 'Feedback' },
   { key: 'utils', label: 'Utils' },
 ];
 
@@ -133,7 +131,13 @@ export function App() {
 
       {/* メインコンテンツ */}
       {view === 'app' && <AppView />}
-      {view === 'admin' && <DebugAdmin env="dev" />}
+      {view === 'admin' && (
+        <DebugAdmin
+          env="dev"
+          feedbackApiBaseUrl={FEEDBACK_API}
+          feedbackAdminKey={FEEDBACK_ADMIN_KEY}
+        />
+      )}
       {view === 'manual-tab' && (
         <ManualTabPage
           sidebarPath="/docs/index.md"
@@ -146,11 +150,6 @@ export function App() {
         />
       )}
       {view === 'manual-sidebar' && <ManualSidebarView pip={pip} />}
-      {view === 'feedback-admin' && (
-        <div style={{ padding: '24px' }}>
-          <FeedbackAdmin apiBaseUrl={FEEDBACK_API} adminKey={FEEDBACK_ADMIN_KEY} />
-        </div>
-      )}
       {view === 'utils' && <UtilsView />}
 
       {/* PiP（全ビュー共通） */}
@@ -211,11 +210,10 @@ function AppView() {
           </thead>
           <tbody>
             {[
-              ['App', 'DebugPanel', 'バグ報告・テスト実行・マニュアル表示'],
-              ['Admin', 'DebugAdmin', 'ノート管理・ステータス変更・テスト概要'],
+              ['App', 'DebugPanel', 'バグ報告・画像添付・テスト実行・マニュアル表示'],
+              ['Admin', 'DebugAdmin', 'ノート管理・画像表示・ステータス変更・テスト概要・フィードバック管理'],
               ['Manual (Tab)', 'ManualTabPage', 'タブ表示・サイドバー・フィードバック'],
-              ['Manual (Sidebar)', 'ManualSidebar + ManualPage', 'サイドバー選択・ページ表示・PiP'],
-              ['Feedback', 'FeedbackAdmin', 'フィードバック一覧・ステータス管理'],
+              ['Manual (Sidebar)', 'ManualSidebar + MarkdownRenderer', 'サイドバー選択・ページ表示・PiP'],
               ['Utils', '—', 'maskSensitive・parseTestCaseMd・logCapture'],
             ].map(([view, comp, desc]) => (
               <tr key={view} style={{ borderBottom: '1px solid #f3f4f6' }}>

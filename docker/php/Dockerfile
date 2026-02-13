@@ -11,6 +11,10 @@ RUN docker-php-ext-install pdo pdo_sqlite
 # 作業ディレクトリ
 WORKDIR /var/www/api
 
+# 添付ファイル用ディレクトリ作成
+RUN mkdir -p /var/www/api/data/attachments && \
+    chown -R www-data:www-data /var/www/api/data
+
 # ポート公開
 EXPOSE 8080
 

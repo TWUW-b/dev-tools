@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { api } from '../../utils/api';
 import { DEBUG_COLORS as COLORS } from '../../styles/colors';
+import { ImageDropZone } from './ImageDropZone';
 import type {
   Severity,
   DomainTree,
@@ -31,7 +32,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [expandedCapabilities, setExpandedCapabilities] = useState<Set<string>>(new Set());
   const [caseChecks, setCaseChecks] = useState<Record<number, boolean>>({});
-  const [bugForms, setBugForms] = useState<Record<string, { caseIds: number[]; content: string; severity: Severity | '' }>>({});
+  const [bugForms, setBugForms] = useState<Record<string, { caseIds: number[]; content: string; severity: Severity | ''; files: File[] }>>({});
   const [submittingCap, setSubmittingCap] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -144,6 +145,24 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
 
       const response = await api.submitTestRuns(env, runs, failNote);
 
+      // バグ報告のノートに画像をアップロード
+      if (bugForm?.files && bugForm.files.length > 0 && response.results) {
+        const noteIds = response.results
+          .filter(r => r.noteId != null)
+          .map(r => r.noteId!);
+        // 最初のノートIDに添付（全fail ケースが1ノートを共有する設計）
+        const targetNoteId = noteIds[0];
+        if (targetNoteId) {
+          for (const file of bugForm.files) {
+            try {
+              await api.uploadAttachment(env, targetNoteId, file);
+            } catch (err) {
+              console.warn('Failed to upload attachment:', err);
+            }
+          }
+        }
+      }
+
       if (response.capability) {
         setTestTree(prev => prev.map(d => {
           if (d.domain !== domain) return d;
@@ -239,6 +258,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
           testTree.map(domain => (
             <div key={domain.domain} className="debug-tree-domain">
               <button
+                data-testid={`domain-toggle-${domain.domain}`}
                 className="debug-tree-toggle"
                 onClick={() => toggleDomain(domain.domain)}
               >
@@ -256,6 +276,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                 return (
                   <div key={capKey} className="debug-tree-capability">
                     <button
+                      data-testid={`cap-toggle-${capKey}`}
                       className="debug-tree-toggle debug-tree-cap-toggle"
                       onClick={() => toggleCapability(capKey)}
                     >
@@ -277,7 +298,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                     {isExpanded && (
                       <div className="debug-tree-cases">
                         {cap.cases.map(c => (
-                          <label key={c.caseId} className="debug-tree-case">
+                          <label key={c.caseId} data-testid={`case-${c.caseId}`} className="debug-tree-case">
                             <input
                               type="checkbox"
                               checked={!!caseChecks[c.caseId]}
@@ -313,7 +334,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                                       checked={isChecked}
                                       onChange={(e) => {
                                         setBugForms(prev => {
-                                          const current = prev[capKey] || { caseIds: [], content: '', severity: '' as Severity | '' };
+                                          const current = prev[capKey] || { caseIds: [], content: '', severity: '' as Severity | '', files: [] };
                                           const ids = e.target.checked
                                             ? [...current.caseIds, c.caseId]
                                             : current.caseIds.filter(id => id !== c.caseId);
@@ -339,6 +360,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                                     caseIds: prev[capKey]?.caseIds || [],
                                     content: e.target.value,
                                     severity: prev[capKey]?.severity || '',
+                                    files: prev[capKey]?.files || [],
                                   },
                                 }));
                               }}
@@ -358,6 +380,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                                     caseIds: prev[capKey]?.caseIds || [],
                                     content: prev[capKey]?.content || '',
                                     severity: e.target.value as Severity | '',
+                                    files: prev[capKey]?.files || [],
                                   },
                                 }));
                               }}
@@ -369,6 +392,34 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                               <option value="critical">critical</option>
                             </select>
                           </div>
+                          <ImageDropZone
+                            files={bugForm?.files || []}
+                            onAdd={(newFiles) => {
+                              setBugForms(prev => ({
+                                ...prev,
+                                [capKey]: {
+                                  ...prev[capKey],
+                                  caseIds: prev[capKey]?.caseIds || [],
+                                  content: prev[capKey]?.content || '',
+                                  severity: prev[capKey]?.severity || '',
+                                  files: [...(prev[capKey]?.files || []), ...newFiles],
+                                },
+                              }));
+                            }}
+                            onRemove={(index) => {
+                              setBugForms(prev => ({
+                                ...prev,
+                                [capKey]: {
+                                  ...prev[capKey],
+                                  caseIds: prev[capKey]?.caseIds || [],
+                                  content: prev[capKey]?.content || '',
+                                  severity: prev[capKey]?.severity || '',
+                                  files: (prev[capKey]?.files || []).filter((_, i) => i !== index),
+                                },
+                              }));
+                            }}
+                            disabled={submittingCap !== null}
+                          />
                         </div>
 
                         {/* 送信ボタン */}
@@ -378,6 +429,7 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
                           const submitCount = passCount + failCount;
                           return (
                             <button
+                              data-testid={`cap-submit-${capKey}`}
                               className="debug-btn debug-btn-primary debug-cap-submit"
                               onClick={() => handleSubmitCapability(domain.domain, cap.capability, cap.cases)}
                               disabled={submittingCap !== null || submitCount === 0}

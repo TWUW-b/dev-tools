@@ -1,4 +1,4 @@
-import type { Feedback, FeedbackStatus } from '../types';
+import type { Feedback, FeedbackStatus, NoteAttachment } from '../types';
 
 function validateApiBaseUrl(url: string): string {
   const parsed = new URL(url);
@@ -100,4 +100,67 @@ export async function deleteFeedback(
   if (!json.success) {
     throw new Error(json.error || 'Failed to delete feedback');
   }
+}
+
+export async function uploadFeedbackAttachment(
+  params: { apiBaseUrl: string; feedbackId: number; file: File }
+): Promise<NoteAttachment> {
+  const base = validateApiBaseUrl(params.apiBaseUrl);
+  const formData = new FormData();
+  formData.append('file', params.file);
+
+  const res = await fetch(`${base}/feedbacks/${params.feedbackId}/attachments`, {
+    method: 'POST',
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success || !json.attachment) {
+    throw new Error(json.error || 'Failed to upload attachment');
+  }
+  return json.attachment;
+}
+
+export async function deleteFeedbackAttachment(
+  params: AdminRequestParams & { feedbackId: number; attachmentId: number }
+): Promise<void> {
+  const base = validateApiBaseUrl(params.apiBaseUrl);
+  const res = await fetch(`${base}/feedbacks/${params.feedbackId}/attachments/${params.attachmentId}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Key': params.adminKey },
+    signal: params.signal,
+  });
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error || 'Failed to delete attachment');
+  }
+}
+
+export async function exportFeedbacks(params: {
+  apiBaseUrl: string;
+  adminKey: string;
+  format: 'json' | 'csv' | 'sqlite';
+}): Promise<void> {
+  const base = validateApiBaseUrl(params.apiBaseUrl);
+  const url = `${base}/feedbacks/export/${params.format}`;
+
+  const res = await fetch(url, {
+    headers: { 'X-Admin-Key': params.adminKey },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Export failed: ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  const filename = res.headers.get('Content-Disposition')
+    ?.match(/filename="?([^"]+)"?/)?.[1]
+    ?? `feedbacks-export.${params.format}`;
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }

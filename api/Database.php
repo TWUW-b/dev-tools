@@ -186,6 +186,128 @@ class Database
                 throw $e;
             }
         }
+
+        // v7: feedback 機能統合（api/feedback/ からの移行）
+        if ((int)$version < 7) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS feedbacks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        kind TEXT NOT NULL,
+                        target TEXT,
+                        custom_tag TEXT,
+                        message TEXT NOT NULL,
+                        page_url TEXT,
+                        user_type TEXT,
+                        environment TEXT,
+                        app_version TEXT,
+                        console_log TEXT,
+                        network_log TEXT,
+                        status TEXT NOT NULL DEFAULT \'open\',
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status)');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_feedbacks_kind ON feedbacks(kind)');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_feedbacks_created_at ON feedbacks(created_at)');
+
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS rate_limits (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        expires_at INTEGER NOT NULL
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rate_limits_ip ON rate_limits(ip, created_at)');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rate_limits_expires ON rate_limits(expires_at)');
+
+                $this->pdo->exec("UPDATE meta SET value = '7' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '7';
+        }
+
+        // v8: 画像添付機能（note_attachments テーブル）
+        if ((int)$version < 8) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS note_attachments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        note_id INTEGER NOT NULL REFERENCES notes(id),
+                        filename TEXT NOT NULL,
+                        original_name TEXT NOT NULL,
+                        mime_type TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_attachments_note_id ON note_attachments(note_id)');
+
+                $this->pdo->exec("UPDATE meta SET value = '8' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
+
+        // v9: フィードバック画像添付機能（feedback_attachments テーブル）
+        if ((int)$version < 9) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS feedback_attachments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        feedback_id INTEGER NOT NULL REFERENCES feedbacks(id),
+                        filename TEXT NOT NULL,
+                        original_name TEXT NOT NULL,
+                        mime_type TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_fb_attachments_feedback_id ON feedback_attachments(feedback_id)');
+
+                $this->pdo->exec("UPDATE meta SET value = '9' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
+
+        // v10: ノートアクティビティ（コメント・ステータス変更ログ）
+        if ((int)$version < 10) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS note_activities (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        note_id INTEGER NOT NULL REFERENCES notes(id),
+                        action TEXT NOT NULL,
+                        content TEXT,
+                        old_status TEXT,
+                        new_status TEXT,
+                        author TEXT,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_activities_note_id ON note_activities(note_id)');
+
+                $this->pdo->exec("UPDATE meta SET value = '10' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
     }
 
     /**

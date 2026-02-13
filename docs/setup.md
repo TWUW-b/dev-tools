@@ -1,15 +1,14 @@
 # セットアップガイド
 
-本ドキュメントは `@genlib/debug-notes` を利用するプロジェクト向けのセットアップ手順です。
+本ドキュメントは `@twuw-b/dev-tools` を利用するプロジェクト向けのセットアップ手順です。
+インフラ固有のデプロイ手順は `docs/operation/` を参照。
 
 ## 目次
 
 0. [ローカル開発環境（Docker）](#0-ローカル開発環境docker)
 1. [フロントエンド設定](#1-フロントエンド設定)
 2. [バックエンド（API）デプロイ](#2-バックエンドapiデプロイ)
-3. [Xserver 固有の設定](#3-xserver-固有の設定)
-4. [動作確認](#4-動作確認)
-5. [GitHub Actions デプロイ](#5-github-actions-デプロイ)
+3. [動作確認](#3-動作確認)
 
 ---
 
@@ -32,8 +31,8 @@
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-org/debug-notes.git
-cd debug-notes
+git clone https://github.com/twuw-b/dev-tools.git
+cd dev-tools
 
 # 依存関係インストール
 npm install
@@ -48,7 +47,7 @@ npm run docker:up
 npm run sample
 
 # ブラウザでアクセス
-open http://localhost:3000?mode=debug
+open http://localhost:3000#debug
 ```
 
 ### Docker コマンド
@@ -75,25 +74,32 @@ localhost:8081  → API（PHP 8.4 / Docker）
 
 ### インストール
 
-#### npm レジストリから（公開後）
+#### GitHub Packages から
 
 ```bash
-npm install @genlib/debug-notes
+# .npmrc をプロジェクトルートに作成
+echo "@twuw-b:registry=https://npm.pkg.github.com" > .npmrc
+
+# インストール
+npm install @twuw-b/dev-tools
 ```
+
+> GitHub Packages からインストールするには、GitHub の Personal Access Token（`read:packages` 権限）が必要。
+> `~/.npmrc` に `//npm.pkg.github.com/:_authToken=ghp_xxxx` を設定する。
 
 #### ローカルパスから（開発時）
 
 ```bash
 # 相対パス指定
-npm install ../path/to/debug-notes
+npm install ../path/to/dev-tools
 
 # 絶対パス指定
-npm install /Users/gen/dev/library/debug-notes
+npm install /Users/gen/dev/library/dev-tools
 
 # または package.json に直接記載
 {
   "dependencies": {
-    "@genlib/debug-notes": "file:../path/to/debug-notes"
+    "@twuw-b/dev-tools": "file:../path/to/dev-tools"
   }
 }
 ```
@@ -131,9 +137,13 @@ export default defineConfig({
 ```env
 # .env.development
 VITE_DEBUG_API_URL=https://your-domain.com/__debug/api
+VITE_FEEDBACK_API_URL=https://your-domain.com/__manual/api
+VITE_FEEDBACK_ADMIN_KEY=your-admin-key
 
 # .env.test
 VITE_DEBUG_API_URL=https://test.your-domain.com/__debug/api
+VITE_FEEDBACK_API_URL=https://test.your-domain.com/__manual/api
+VITE_FEEDBACK_ADMIN_KEY=your-admin-key
 ```
 
 ### アプリへの組み込み
@@ -146,7 +156,7 @@ import {
   DebugPanel,
   useDebugMode,
   parseTestCaseMd,
-} from '@genlib/debug-notes';
+} from '@twuw-b/dev-tools';
 
 // API URL を設定
 const debugApiUrl = import.meta.env.VITE_DEBUG_API_URL;
@@ -176,6 +186,19 @@ function App() {
 }
 ```
 
+### 管理画面（DebugAdmin）
+
+```typescript
+import { DebugAdmin } from '@twuw-b/dev-tools';
+
+<DebugAdmin
+  apiBaseUrl={import.meta.env.VITE_DEBUG_API_URL}
+  env="dev"
+  feedbackApiBaseUrl={import.meta.env.VITE_FEEDBACK_API_URL}
+  feedbackAdminKey={import.meta.env.VITE_FEEDBACK_ADMIN_KEY}
+/>
+```
+
 ### ログキャプチャ設定
 
 ```typescript
@@ -197,9 +220,6 @@ const logCapture = createLogCapture({
     include: ['/api/**'],
     exclude: ['/api/health'],
     errorOnly: false,
-    // captureRequestBody, captureResponseBody は無視される（常に全取得）
-    // POST/PUT/DELETE/PATCH のボディは自動添付
-    // GET レスポンスは DebugPanel の添付オプションでフィルタ
     captureHeaders: true,  // Authorization等は自動マスク
     maxEntries: 30,
   },
@@ -245,7 +265,7 @@ domain: admin
 `##` 見出しはMDファイルの可読性のためだけに存在し、パース時にはCaseのみ抽出される。
 
 ```typescript
-import { parseTestCaseMd } from '@genlib/debug-notes';
+import { parseTestCaseMd } from '@twuw-b/dev-tools';
 
 const testCases = parseTestCaseMd(mdString);
 // ParsedTestCase[] = [
@@ -264,7 +284,7 @@ const testCases = parseTestCaseMd(mdString);
 ```typescript
 // main.tsx
 if (import.meta.env.MODE !== 'production') {
-  import('@genlib/debug-notes').then(({ setDebugApiBaseUrl }) => {
+  import('@twuw-b/dev-tools').then(({ setDebugApiBaseUrl }) => {
     setDebugApiBaseUrl(import.meta.env.VITE_DEBUG_API_URL);
   });
 }
@@ -274,19 +294,19 @@ if (import.meta.env.MODE !== 'production') {
 
 ## 2. バックエンド（API）デプロイ
 
-### 2.1 ファイルのコピー
+### 2.1 API ファイルの管理
 
-`api/` ディレクトリをサーバーにコピー。
+利用側プロジェクトでは `api/` ディレクトリのファイルをコピーして使う。
 
-```bash
-# 例: Xserver の場合
-scp -r api/ user@svXXXX.xserver.jp:/home/username/your-project/debug-api/
-```
+| 方法 | メリット | デメリット |
+|------|----------|------------|
+| **コピー（推奨）** | シンプル、依存なし | 更新時に手動コピー |
+| Submodule | 単一ソース | 複雑、更新手順が増える |
+| npm install | バージョン管理 | API は npm 配布しない |
 
 ### 2.2 設定ファイルの作成
 
 ```bash
-cd /home/username/your-project/debug-api/
 cp config.example.php config.php
 ```
 
@@ -301,10 +321,11 @@ return [
     ],
     'allowed_origins' => [
         'https://your-domain.com',
-        'https://dev.your-domain.com',
-        'http://localhost:5173',  // ローカル開発用
+        'http://localhost:5173',
     ],
     'api_key' => null,
+    'feedback_admin_key' => 'your-admin-key',
+    'upload_dir' => __DIR__ . '/data/attachments',
 ];
 ```
 
@@ -315,7 +336,7 @@ mkdir -p data
 chmod 755 data
 ```
 
-`data/.htaccess` を作成（Apache 2.4 対応）:
+`data/.htaccess` を作成（Apache）:
 
 ```apache
 # Apache 2.4+
@@ -333,82 +354,50 @@ Require all denied
 
 参考用のスキーマ定義は `schema.sql` にあります。
 
----
+### 2.5 API ファイル更新手順
 
-## 3. Xserver 固有の設定
+ライブラリ更新時に API ファイルを再コピーする。
 
-### 3.1 ディレクトリ構成
+```bash
+LIB=/path/to/dev-tools/api
 
-Xserver では `public_html` 内にAPIを配置し、`.htaccess` でルーティングする。
+# Debug Notes API（全ファイル）
+cp $LIB/index.php $LIB/Database.php $LIB/NotesController.php \
+   $LIB/TestController.php $LIB/FeedbackController.php \
+   $LIB/AttachmentController.php $LIB/.htaccess \
+   ./debug-notes-api/
 
+# Feedback API（必要なファイルのみ）
+cp $LIB/index.php $LIB/Database.php \
+   $LIB/FeedbackController.php $LIB/AttachmentController.php \
+   $LIB/.htaccess \
+   ./frontend/public/__manual/api/
 ```
-/home/username/
-├── public_html/              # 公開ディレクトリ
-│   ├── .htaccess             # ★ ルーティング設定を追加
-│   ├── index.html            # フロントエンド
-│   └── assets/
-│
-└── your-project/
-    └── debug-api/            # API（public_html 外に配置も可）
-        ├── index.php
-        ├── config.php
-        └── data/
-```
-
-### 3.2 .htaccess の設定（重要）
-
-`public_html/.htaccess` に以下を追加し、`/__debug/api` へのリクエストを API に転送する。
-
-```apache
-# /__debug/api へのリクエストを debug-api/ に転送
-RewriteEngine On
-RewriteCond %{REQUEST_URI} ^/__debug/api
-RewriteRule ^__debug/api/(.*)$ /home/username/your-project/debug-api/index.php [QSA,L]
-```
-
-#### 代替案: public_html 内に配置する場合
-
-```
-/home/username/
-└── public_html/
-    ├── .htaccess
-    ├── index.html
-    └── __debug/
-        └── api/              # ここに配置
-            ├── .htaccess
-            ├── index.php
-            └── data/
-```
-
-この場合、`public_html/.htaccess` の追加設定は不要。
-`__debug/api/.htaccess` が URL リライトを処理する。
-
-### 3.3 セキュリティ注意事項
-
-1. **data/.htaccess**: `Deny from all` で SQLite への直接アクセスを拒否
-2. **config.php**: Git にコミットしない（`.gitignore` に追加）
-3. **CORS**: `allowed_origins` に許可するドメインのみ記載
 
 ---
 
-## 4. 動作確認
+## 3. 動作確認
 
 ### API テスト
 
 ```bash
-# 一覧取得
+# Debug Notes: 一覧取得
 curl "https://your-domain.com/__debug/api/notes?env=dev"
 
-# 新規作成
+# Debug Notes: 新規作成
 curl -X POST "https://your-domain.com/__debug/api/notes?env=dev" \
   -H "Content-Type: application/json" \
   -d '{"title":"テスト","content":"動作確認"}'
+
+# Feedback: 一覧取得（管理者）
+curl "https://your-domain.com/__manual/api/feedbacks" \
+  -H "X-Admin-Key: your-admin-key"
 ```
 
 ### フロントエンドテスト
 
 1. 開発サーバーを起動: `npm run dev`
-2. `http://localhost:5173?mode=debug` にアクセス
+2. `http://localhost:5173#debug` にアクセス
 3. デバッグパネルが表示されることを確認
 4. ノートを作成して保存できることを確認
 
@@ -436,11 +425,6 @@ curl -X POST "https://your-domain.com/__debug/api/notes?env=dev" \
 
 `data/.htaccess` が正しく設置されているか確認。
 
-```bash
-cat data/.htaccess
-# 出力: Deny from all
-```
-
 ### useState エラー（React 重複インスタンス）
 
 ```
@@ -452,91 +436,18 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
 
 ---
 
-## 5. GitHub Actions デプロイ
-
-CI/CD パイプラインでデプロイする場合の設定例。
-
-### API ファイルの管理方法
-
-| 方法 | メリット | デメリット |
-|------|----------|------------|
-| **コピー（推奨）** | シンプル、依存なし | 更新時に手動コピー |
-| Submodule | 単一ソース | 複雑、更新手順が増える |
-| npm install | バージョン管理 | API は npm 配布しない |
-
-### コピー方式の構成
-
-```
-your-project/
-├── frontend/
-├── backend/
-└── debug-notes-api/        # API files をコピー
-    ├── index.php
-    ├── Database.php
-    ├── NotesController.php
-    ├── .htaccess
-    └── data/
-        └── .htaccess
-```
-
-### deploy.yml 例
-
-```yaml
-    # Debug Notes API（dev環境のみ）
-    - name: Deploy Debug Notes API
-      if: inputs.environment == 'dev'
-      run: |
-        # APIファイルをデプロイ
-        rsync -avz \
-          -e "ssh -p ${{ secrets.SSH_PORT }}" \
-          --exclude='.DS_Store' \
-          --exclude='data/*.sqlite' \
-          debug-notes-api/ \
-          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/__debug/api/
-
-        # config.php を自動生成
-        ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'REMOTEOF'
-        mkdir -p ~/public_html/__debug/api/data
-        chmod 755 ~/public_html/__debug/api/data
-        cat > ~/public_html/__debug/api/config.php << 'PHPEOF'
-        <?php
-        return [
-            'db' => [
-                'dev'  => __DIR__ . '/data/debug-dev.sqlite',
-                'test' => __DIR__ . '/data/debug-test.sqlite',
-            ],
-            'allowed_origins' => [
-                'https://dev.example.com',
-                'http://localhost:5173',
-            ],
-            'api_key' => null,
-        ];
-        PHPEOF
-        REMOTEOF
-```
-
-### API ファイル更新手順
-
-debug-notes ライブラリを更新した場合:
-
-```bash
-# debug-notes から API ファイルをコピー
-cp /path/to/debug-notes/api/index.php ./debug-notes-api/
-cp /path/to/debug-notes/api/Database.php ./debug-notes-api/
-cp /path/to/debug-notes/api/NotesController.php ./debug-notes-api/
-cp /path/to/debug-notes/api/.htaccess ./debug-notes-api/
-cp /path/to/debug-notes/api/data/.htaccess ./debug-notes-api/data/
-```
-
-### 本番環境での除外
-
-- `if: inputs.environment == 'dev'` 条件でデプロイを制限
-- `.env.prod` には `VITE_DEBUG_API_URL` を設定しない
-
----
-
 ## 環境変数一覧
 
 | 変数名 | 説明 | 例 |
 |--------|------|-----|
-| `VITE_DEBUG_API_URL` | デバッグ API の URL | `https://example.com/__debug/api` |
+| `VITE_DEBUG_API_URL` | Debug Notes API の URL | `https://example.com/__debug/api` |
+| `VITE_FEEDBACK_API_URL` | Feedback API の URL | `https://example.com/__manual/api` |
+| `VITE_FEEDBACK_ADMIN_KEY` | Feedback 管理者キー | `dev-feedback-admin-2026` |
+
+---
+
+## インフラ別デプロイガイド
+
+| インフラ | ドキュメント |
+|---------|-------------|
+| Xserver | [docs/operation/xserver/deploy.md](operation/xserver/deploy.md) |

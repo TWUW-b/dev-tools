@@ -56,9 +56,9 @@ export function useDebugNotes(env: Environment = 'dev'): UseDebugNotesReturn {
 
   // ステータスを更新
   const updateStatus = useCallback(
-    async (id: number, status: Status): Promise<boolean> => {
+    async (id: number, status: Status, options?: { comment?: string; author?: string }): Promise<boolean> => {
       try {
-        await api.updateStatus(env, id, status);
+        await api.updateStatus(env, id, status, options);
         setNotes((prev) =>
           prev.map((note) => (note.id === id ? { ...note, status } : note))
         );

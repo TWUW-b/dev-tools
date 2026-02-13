@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useFeedbackAdmin } from '../../hooks/useFeedbackAdmin';
-import { getFeedbackDetail } from '../../utils/feedbackApi';
+import { getFeedbackDetail, deleteFeedbackAttachment } from '../../utils/feedbackApi';
 import { loadMaterialSymbols, isAutoLoadDisabled } from '../../styles/material-symbols';
-import type { FeedbackAdminProps, Feedback, FeedbackKind, FeedbackTarget, FeedbackStatus } from '../../types';
+import type { FeedbackAdminProps, Feedback, FeedbackKind, FeedbackTarget, FeedbackStatus, NoteAttachment } from '../../types';
 
 const KIND_LABELS: Record<string, { label: string; color: string }> = {
   bug: { label: '不具合', color: '#DC2626' },
@@ -32,6 +32,7 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<Feedback | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const requestCounterRef = useRef(0);
 
   // Material Symbols フォントを読み込む（自動読み込みが無効化されていない場合）
@@ -73,6 +74,31 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
       setDetail(null);
     }
   }, [remove, expandedId]);
+
+  const handleDeleteAttachment = useCallback(async (feedbackId: number, attachmentId: number) => {
+    if (!confirm('この画像を削除しますか？')) return;
+    try {
+      await deleteFeedbackAttachment({ apiBaseUrl, adminKey, feedbackId, attachmentId });
+      setDetail(prev => {
+        if (!prev || prev.id !== feedbackId) return prev;
+        return {
+          ...prev,
+          attachments: prev.attachments?.filter(a => a.id !== attachmentId),
+        };
+      });
+    } catch (err) {
+      console.error('Failed to delete attachment:', err);
+    }
+  }, [apiBaseUrl, adminKey]);
+
+  const getAttachmentUrl = useCallback((filename: string) => {
+    try {
+      const parsed = new URL(apiBaseUrl);
+      return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}/attachments/${filename}`;
+    } catch {
+      return `${apiBaseUrl}/attachments/${filename}`;
+    }
+  }, [apiBaseUrl]);
 
   return (
     <div style={styles.container}>
@@ -143,14 +169,15 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
             <th style={styles.th}>対象</th>
             <th style={{ ...styles.th, width: '40%' }}>メッセージ</th>
             <th style={styles.th}>状態</th>
+            <th style={{ ...styles.th, width: '30px' }}></th>
           </tr>
         </thead>
         <tbody>
           {loading && (
-            <tr><td colSpan={5} style={styles.loadingCell}>読み込み中...</td></tr>
+            <tr><td colSpan={6} style={styles.loadingCell}>読み込み中...</td></tr>
           )}
           {!loading && feedbacks.length === 0 && (
-            <tr><td colSpan={5} style={styles.loadingCell}>データなし</td></tr>
+            <tr><td colSpan={6} style={styles.loadingCell}>データなし</td></tr>
           )}
           {feedbacks.map(fb => {
             const kindInfo = KIND_LABELS[fb.kind] ?? { label: fb.kind, color: '#6B7280' };
@@ -177,6 +204,11 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
                 </td>
                 <td style={styles.td}>
                   <span style={{ color: statusInfo.color, fontWeight: 600, fontSize: '12px' }}>{statusInfo.label}</span>
+                </td>
+                <td style={styles.td}>
+                  {(fb.attachmentCount ?? 0) > 0 && (
+                    <span style={{ ...styles.iconSmall, fontSize: '14px', color: '#6B7280' }} title={`${fb.attachmentCount}枚`}>image</span>
+                  )}
                 </td>
               </tr>
             );
@@ -221,6 +253,40 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
                   <summary>ネットワークログ ({detail.networkLogs.length}件)</summary>
                   <pre style={styles.logPre}>{JSON.stringify(detail.networkLogs, null, 2)}</pre>
                 </details>
+              )}
+
+              {detail.attachments && detail.attachments.length > 0 && (
+                <div style={styles.attachmentSection}>
+                  <strong>添付画像 ({detail.attachments.length}件):</strong>
+                  <div style={styles.attachmentGrid}>
+                    {detail.attachments.map((att: NoteAttachment) => (
+                      <div key={att.id} style={styles.attachmentThumb}>
+                        <img
+                          src={getAttachmentUrl(att.filename)}
+                          alt={att.original_name}
+                          style={styles.attachmentImg}
+                          onClick={() => setEnlargedImage(getAttachmentUrl(att.filename))}
+                        />
+                        <button
+                          onClick={() => handleDeleteAttachment(detail.id, att.id)}
+                          style={styles.attachmentRemoveBtn}
+                          aria-label="画像を削除"
+                        >
+                          <span style={{ ...styles.iconSmall, fontSize: '14px' }}>close</span>
+                        </button>
+                        <div style={styles.attachmentInfo}>
+                          {att.original_name.length > 12 ? att.original_name.slice(0, 12) + '...' : att.original_name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {enlargedImage && (
+                <div style={styles.overlay} onClick={() => setEnlargedImage(null)}>
+                  <img src={enlargedImage} alt="拡大画像" style={styles.enlargedImg} />
+                </div>
               )}
 
               <div style={styles.detailActions}>
@@ -421,5 +487,75 @@ const styles: Record<string, React.CSSProperties> = {
   pageInfo: {
     fontSize: '13px',
     color: '#6B7280',
+  },
+  attachmentSection: {
+    marginBottom: '12px',
+    fontSize: '13px',
+  },
+  attachmentGrid: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+    marginTop: '8px',
+  },
+  attachmentThumb: {
+    position: 'relative' as const,
+    width: '80px',
+    height: '80px',
+    borderRadius: '6px',
+    overflow: 'hidden',
+    border: '1px solid #E5E7EB',
+    cursor: 'pointer',
+  },
+  attachmentImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover' as const,
+  },
+  attachmentRemoveBtn: {
+    position: 'absolute' as const,
+    top: '2px',
+    right: '2px',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    background: 'rgba(0,0,0,0.6)',
+    color: '#fff',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  },
+  attachmentInfo: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: '2px 4px',
+    background: 'rgba(0,0,0,0.5)',
+    color: '#fff',
+    fontSize: '9px',
+    textAlign: 'center' as const,
+  },
+  overlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10000,
+    cursor: 'pointer',
+  },
+  enlargedImg: {
+    maxWidth: '90vw',
+    maxHeight: '90vh',
+    borderRadius: '8px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
   },
 };

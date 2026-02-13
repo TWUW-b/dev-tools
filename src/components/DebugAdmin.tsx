@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useDebugNotes } from '../hooks/useDebugNotes';
-import { setDebugApiBaseUrl, api } from '../utils/api';
-import type { DebugAdminProps, Note, Status, Severity, EnvironmentInfo, ConsoleLogEntry, NetworkLogEntry } from '../types';
+import { setDebugApiBaseUrl, getDebugApiBaseUrl, api } from '../utils/api';
+import type { DebugAdminProps, Note, NoteActivity, NoteAttachment, Status, Severity, EnvironmentInfo, ConsoleLogEntry, NetworkLogEntry } from '../types';
 import { Icon, Spinner } from './shared';
 import { TestStatusTab } from './admin/TestStatusTab';
+import { FeedbackTab } from './admin/FeedbackTab';
 
 // ライトモード カラー定義
 const LIGHT_COLORS = {
@@ -66,7 +67,7 @@ const AUTO_REFRESH_INTERVAL = 30000;
 /**
  * デバッグノート管理画面
  */
-export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
+export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedbackAdminKey }: DebugAdminProps) {
   const [statusFilter, setStatusFilter] = useState<Status | ''>('');
   const [sourceFilter, setSourceFilter] = useState<'manual' | 'test' | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,9 +80,15 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
   });
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'notes' | 'test-status'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback'>('notes');
+  const hasFeedbackTab = !!(feedbackApiBaseUrl && feedbackAdminKey);
   const [testCaseIdFilter, setTestCaseIdFilter] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ id: number; status: Status } | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [newCommentText, setNewCommentText] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
 
   const colors = isDarkMode ? DARK_COLORS : LIGHT_COLORS;
 
@@ -134,6 +141,13 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
     return () => clearInterval(interval);
   }, [autoRefresh, refresh]);
 
+  // エクスポート
+  const handleExport = useCallback((format: 'json' | 'sqlite') => {
+    const base = apiBaseUrl || getDebugApiBaseUrl();
+    const url = `${base}/export/${format}?env=${env}`;
+    window.open(url, '_blank');
+  }, [apiBaseUrl, env]);
+
   // テストケースからノート一覧への遷移
   const handleNavigateToNote = useCallback((caseId: number) => {
     setTestCaseIdFilter(caseId);
@@ -161,18 +175,52 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
     return true;
   }), [notes, statusFilter, sourceFilter, testCaseIdFilter, searchQuery]);
 
-  // ステータス更新
-  const handleStatusChange = useCallback(async (id: number, status: Status) => {
+  // ステータス更新（コメント付き）
+  const handleStatusChange = useCallback((id: number, status: Status) => {
+    if (status === 'fixed' || status === 'resolved' || status === 'rejected') {
+      setPendingStatusChange({ id, status });
+      setCommentText('');
+    } else {
+      // open はそのまま変更
+      (async () => {
+        setLoadingAction(`status-${id}`);
+        try {
+          await updateStatus(id, status);
+          if (selectedNote?.id === id) {
+            setSelectedNote((prev) => prev ? { ...prev, status } : null);
+          }
+        } finally {
+          setLoadingAction(null);
+        }
+      })();
+    }
+  }, [updateStatus, selectedNote?.id]);
+
+  // コメント付きステータス確定
+  const handleConfirmStatusChange = useCallback(async () => {
+    if (!pendingStatusChange) return;
+    const { id, status } = pendingStatusChange;
+    if (status === 'fixed' && commentText.trim() === '') return;
     setLoadingAction(`status-${id}`);
     try {
-      await updateStatus(id, status);
+      const options = commentText.trim() ? { comment: commentText.trim() } : undefined;
+      await updateStatus(id, status, options);
       if (selectedNote?.id === id) {
         setSelectedNote((prev) => prev ? { ...prev, status } : null);
+      }
+      setPendingStatusChange(null);
+      setCommentText('');
+      // 詳細を再取得してアクティビティを更新
+      if (selectedNote?.id === id) {
+        try {
+          const detail = await api.getNote(env, id);
+          setSelectedNote(detail);
+        } catch { /* ignore */ }
       }
     } finally {
       setLoadingAction(null);
     }
-  }, [updateStatus, selectedNote?.id]);
+  }, [pendingStatusChange, commentText, updateStatus, selectedNote?.id, env]);
 
   // 重要度更新
   const handleSeverityChange = useCallback(async (id: number, severity: Severity | null) => {
@@ -212,6 +260,45 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
       }
     }
   }, [deleteNote, selectedNote?.id]);
+
+  // 添付削除
+  const handleDeleteAttachment = useCallback(async (noteId: number, attachmentId: number) => {
+    if (!confirm('この画像を削除しますか？')) return;
+    try {
+      await api.deleteAttachment(env, noteId, attachmentId);
+      // selectedNote を更新
+      setSelectedNote(prev => {
+        if (!prev || prev.id !== noteId) return prev;
+        return {
+          ...prev,
+          attachments: prev.attachments?.filter(a => a.id !== attachmentId),
+        };
+      });
+    } catch (err) {
+      console.error('Failed to delete attachment:', err);
+    }
+  }, [env]);
+
+  // コメント追加
+  const handleAddComment = useCallback(async () => {
+    if (!selectedNote || newCommentText.trim() === '') return;
+    setCommentSubmitting(true);
+    try {
+      const activity = await api.addActivity(env, selectedNote.id, { content: newCommentText.trim() });
+      setSelectedNote(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          activities: [...(prev.activities || []), activity],
+        };
+      });
+      setNewCommentText('');
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [selectedNote, newCommentText, env]);
 
   // 再現手順をパース
   const parseSteps = (steps: string | null): string[] => {
@@ -302,6 +389,48 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
             />
           </label>
           <button
+            onClick={() => handleExport('json')}
+            style={{
+              padding: '8px 14px',
+              background: colors.bgSecondary,
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontWeight: 500,
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+            }}
+            title="JSON エクスポート"
+          >
+            <Icon name="download" size={16} />
+            JSON
+          </button>
+          <button
+            onClick={() => handleExport('sqlite')}
+            style={{
+              padding: '8px 14px',
+              background: colors.bgSecondary,
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontWeight: 500,
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+            }}
+            title="SQLite エクスポート"
+          >
+            <Icon name="download" size={16} />
+            SQLite
+          </button>
+          <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             style={{
               width: '40px',
@@ -360,26 +489,30 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
         borderBottom: `1px solid ${colors.border}`,
         background: colors.bg,
       }}>
-        {(['notes', 'test-status'] as const).map((tab) => (
+        {([
+          { key: 'notes' as const, label: 'ノート一覧' },
+          { key: 'test-status' as const, label: 'テスト状況' },
+          ...(hasFeedbackTab ? [{ key: 'feedback' as const, label: 'フィードバック' }] : []),
+        ]).map(({ key, label }) => (
           <button
-            key={tab}
+            key={key}
             onClick={() => {
-              setActiveTab(tab);
-              if (tab === 'test-status') setTestCaseIdFilter(null);
+              setActiveTab(key);
+              if (key === 'test-status') setTestCaseIdFilter(null);
             }}
             style={{
               padding: '12px 20px',
               border: 'none',
-              borderBottom: activeTab === tab ? `2px solid ${colors.primary}` : '2px solid transparent',
+              borderBottom: activeTab === key ? `2px solid ${colors.primary}` : '2px solid transparent',
               background: 'transparent',
-              color: activeTab === tab ? colors.primary : colors.textSecondary,
-              fontWeight: activeTab === tab ? 600 : 400,
+              color: activeTab === key ? colors.primary : colors.textSecondary,
+              fontWeight: activeTab === key ? 600 : 400,
               fontSize: '14px',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
           >
-            {tab === 'notes' ? 'ノート一覧' : 'テスト状況'}
+            {label}
           </button>
         ))}
       </nav>
@@ -390,6 +523,14 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
           colors={colors}
           isDarkMode={isDarkMode}
           onNavigateToNote={handleNavigateToNote}
+          refreshKey={refreshKey}
+        />
+      ) : activeTab === 'feedback' && hasFeedbackTab ? (
+        <FeedbackTab
+          apiBaseUrl={feedbackApiBaseUrl!}
+          adminKey={feedbackAdminKey!}
+          colors={colors}
+          isDarkMode={isDarkMode}
           refreshKey={refreshKey}
         />
       ) : (
@@ -410,6 +551,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
             borderBottom: `1px solid ${colors.border}`,
           }}>
             <select
+              data-testid="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as Status | '')}
               style={{
@@ -426,9 +568,9 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
             >
               <option value="">すべて</option>
               <option value="open">Open</option>
+              <option value="fixed">Fixed</option>
               <option value="resolved">Resolved</option>
               <option value="rejected">Rejected</option>
-              <option value="fixed">Fixed</option>
             </select>
             <select
               value={sourceFilter}
@@ -604,6 +746,22 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                       fontWeight: 600,
                     }}>🧪 test</span>
                   )}
+                  {(note.attachment_count ?? 0) > 0 && (
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '4px 8px',
+                      borderRadius: '20px',
+                      background: `${colors.primary}15`,
+                      color: colors.primary,
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                    }}>
+                      <Icon name="image" size={12} />
+                      {note.attachment_count}
+                    </span>
+                  )}
                 </div>
                 <div style={{
                   fontWeight: 600,
@@ -635,6 +793,25 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                   <span style={{ margin: '0 2px' }}>·</span>
                   <span>{formatDate(note.created_at)}</span>
                 </div>
+                {note.latest_comment && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '6px 10px',
+                    background: colors.bgTertiary,
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: colors.textSecondary,
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '6px',
+                  }}>
+                    <Icon name="chat_bubble_outline" size={14} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {note.latest_comment.length > 60 ? note.latest_comment.slice(0, 60) + '...' : note.latest_comment}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -658,16 +835,16 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
               {notes.filter(n => n.status === 'open').length} Open
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Icon name="autorenew" size={16} color={colors.warning} />
+              <Icon name="build" size={16} color={colors.warning} />
+              {notes.filter(n => n.status === 'fixed').length} Fixed
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Icon name="check_circle" size={16} color={colors.success} />
               {notes.filter(n => n.status === 'resolved').length} Resolved
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Icon name="undo" size={16} color={colors.error} />
               {notes.filter(n => n.status === 'rejected').length} Rejected
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Icon name="check_circle" size={16} color={colors.success} />
-              {notes.filter(n => n.status === 'fixed').length} Fixed
             </span>
           </div>
         </aside>
@@ -725,6 +902,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <select
+                    data-testid="severity-select"
                     value={selectedNote.severity || ''}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -751,6 +929,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                   </select>
                   {loadingAction === `severity-${selectedNote.id}` && <Spinner size={16} color={colors.primary} />}
                   <select
+                    data-testid="status-select"
                     value={selectedNote.status}
                     onChange={(e) => handleStatusChange(selectedNote.id, e.target.value as Status)}
                     disabled={loadingAction !== null}
@@ -767,9 +946,9 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                     }}
                   >
                     <option value="open">Open</option>
+                    <option value="fixed">Fixed</option>
                     <option value="resolved">Resolved</option>
                     <option value="rejected">Rejected</option>
-                    <option value="fixed">Fixed</option>
                   </select>
                   {loadingAction === `status-${selectedNote.id}` && <Spinner size={16} color={colors.primary} />}
                   <button
@@ -835,6 +1014,70 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                   color: colors.text,
                 }}>{selectedNote.content}</div>
               </Section>
+
+              {/* 添付画像 */}
+              {selectedNote.attachments && selectedNote.attachments.length > 0 && (
+                <Section icon="image" title={`添付画像 (${selectedNote.attachments.length}件)`} colors={colors}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                    gap: '12px',
+                  }}>
+                    {selectedNote.attachments.map((att: NoteAttachment) => (
+                      <div key={att.id} style={{
+                        position: 'relative',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        border: `1px solid ${colors.border}`,
+                        cursor: 'pointer',
+                        aspectRatio: '4/3',
+                      }}>
+                        <img
+                          src={api.getAttachmentUrl(att.filename)}
+                          alt={att.original_name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                          onClick={() => setLightboxImage(api.getAttachmentUrl(att.filename))}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          padding: '6px 8px',
+                          background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <span style={{ color: '#fff', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {att.original_name}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteAttachment(selectedNote.id, att.id); }}
+                            style={{
+                              background: 'rgba(239,68,68,0.8)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              fontSize: '11px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Icon name="delete" size={14} color="#fff" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
 
               {/* 再現手順 */}
               {selectedNote.steps && (
@@ -923,6 +1166,119 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
                 </Section>
               )}
 
+              {/* アクティビティ */}
+              <Section icon="history" title={`アクティビティ (${(selectedNote.activities || []).length}件)`} colors={colors}>
+                {(selectedNote.activities || []).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(selectedNote.activities as NoteActivity[]).map((act) => (
+                      <div key={act.id} style={{
+                        display: 'flex',
+                        gap: '10px',
+                        alignItems: 'flex-start',
+                        padding: '10px 14px',
+                        background: colors.bgSecondary,
+                        borderRadius: '10px',
+                        borderLeft: `3px solid ${act.action === 'status_change' ? colors.primary : colors.textMuted}`,
+                      }}>
+                        <div style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          marginTop: '4px',
+                          flexShrink: 0,
+                          background: act.action === 'status_change' ? colors.primary : colors.textMuted,
+                        }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {act.action === 'status_change' ? (
+                            <div style={{ fontSize: '13px', color: colors.text, marginBottom: act.content ? '4px' : 0 }}>
+                              <span style={{
+                                ...getStatusBadge(act.old_status as Status, colors),
+                                fontSize: '10px',
+                                padding: '2px 6px',
+                              }}>{act.old_status}</span>
+                              <span style={{ margin: '0 6px', color: colors.textMuted }}> → </span>
+                              <span style={{
+                                ...getStatusBadge(act.new_status as Status, colors),
+                                fontSize: '10px',
+                                padding: '2px 6px',
+                              }}>{act.new_status}</span>
+                            </div>
+                          ) : null}
+                          {act.content && (
+                            <div style={{
+                              fontSize: '13px',
+                              color: colors.text,
+                              lineHeight: 1.5,
+                              whiteSpace: 'pre-wrap',
+                            }}>{act.content}</div>
+                          )}
+                          <div style={{
+                            fontSize: '11px',
+                            color: colors.textMuted,
+                            marginTop: '4px',
+                            display: 'flex',
+                            gap: '8px',
+                          }}>
+                            {act.author && <span>{act.author}</span>}
+                            <span>{formatDate(act.created_at)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '13px', color: colors.textMuted }}>アクティビティはありません</div>
+                )}
+                {/* コメント入力 */}
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  marginTop: '12px',
+                  alignItems: 'flex-end',
+                }}>
+                  <textarea
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder="コメントを追加..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: '10px',
+                      background: colors.bg,
+                      color: colors.text,
+                      fontSize: '13px',
+                      resize: 'vertical',
+                      minHeight: '40px',
+                      maxHeight: '120px',
+                      fontFamily: 'inherit',
+                    }}
+                    rows={1}
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    disabled={commentSubmitting || newCommentText.trim() === ''}
+                    style={{
+                      padding: '10px 16px',
+                      background: commentSubmitting || newCommentText.trim() === '' ? colors.bgTertiary : colors.primary,
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: commentSubmitting || newCommentText.trim() === '' ? colors.textMuted : '#FFF',
+                      cursor: commentSubmitting || newCommentText.trim() === '' ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {commentSubmitting ? <Spinner size={14} color={colors.textMuted} /> : <Icon name="send" size={16} />}
+                    送信
+                  </button>
+                </div>
+              </Section>
+
               {/* ネットワークログ */}
               {selectedNote.network_log && (selectedNote.network_log as NetworkLogEntry[]).length > 0 && (
                 <Section icon="wifi" title={`ネットワークログ (${(selectedNote.network_log as NetworkLogEntry[]).length}件)`} colors={colors}>
@@ -985,6 +1341,166 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev' }: DebugAdminProps) {
           )}
         </main>
       </div>
+      )}
+
+      {/* ステータス変更コメントモーダル */}
+      {pendingStatusChange && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9998,
+          }}
+          onClick={() => setPendingStatusChange(null)}
+        >
+          <div
+            style={{
+              background: colors.bg,
+              borderRadius: '16px',
+              padding: '28px',
+              width: '480px',
+              maxWidth: '90vw',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{
+              margin: '0 0 16px 0',
+              fontSize: '16px',
+              fontWeight: 700,
+              color: colors.text,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <Icon name="edit_note" size={20} />
+              ステータスを「{pendingStatusChange.status}」に変更
+            </h3>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder={pendingStatusChange.status === 'fixed' ? 'コメント（必須）: 何を修正したか記入してください' : 'コメント（任意）'}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                border: `1px solid ${commentText.trim() === '' && pendingStatusChange.status === 'fixed' ? colors.error : colors.border}`,
+                borderRadius: '10px',
+                background: colors.bgSecondary,
+                color: colors.text,
+                fontSize: '14px',
+                resize: 'vertical',
+                minHeight: '80px',
+                maxHeight: '200px',
+                fontFamily: 'inherit',
+                lineHeight: 1.5,
+                boxSizing: 'border-box',
+              }}
+              autoFocus
+              rows={3}
+            />
+            {pendingStatusChange.status === 'fixed' && commentText.trim() === '' && (
+              <div style={{ fontSize: '12px', color: colors.error, marginTop: '6px' }}>
+                fixed に変更するにはコメントが必須です
+              </div>
+            )}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '10px',
+              marginTop: '16px',
+            }}>
+              <button
+                onClick={() => setPendingStatusChange(null)}
+                style={{
+                  padding: '10px 20px',
+                  background: colors.bgSecondary,
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: colors.text,
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleConfirmStatusChange}
+                disabled={loadingAction !== null || (pendingStatusChange.status === 'fixed' && commentText.trim() === '')}
+                style={{
+                  padding: '10px 20px',
+                  background: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? colors.bgTertiary : colors.primary,
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? colors.textMuted : '#FFF',
+                  cursor: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {loadingAction ? <Spinner size={14} color="#FFF" /> : <Icon name="check" size={16} />}
+                変更
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox モーダル */}
+      {lightboxImage && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            cursor: 'pointer',
+          }}
+          onClick={() => setLightboxImage(null)}
+        >
+          <img
+            src={lightboxImage}
+            alt="拡大表示"
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              objectFit: 'contain',
+              borderRadius: '8px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setLightboxImage(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="close" size={24} color="#fff" />
+          </button>
+        </div>
       )}
 
       <style>{`
@@ -1089,9 +1605,9 @@ function formatDateTime(dateStr: string): string {
 function getStatusIcon(status: Status): string {
   switch (status) {
     case 'open': return 'error';
-    case 'resolved': return 'autorenew';
+    case 'fixed': return 'build';
+    case 'resolved': return 'check_circle';
     case 'rejected': return 'undo';
-    case 'fixed': return 'check_circle';
   }
 }
 
@@ -1130,17 +1646,17 @@ function getStatusBadge(status: Status, colors: typeof LIGHT_COLORS): React.CSSP
       bg = colors.primaryLight;
       fg = colors.primary;
       break;
-    case 'resolved':
+    case 'fixed':
       bg = colors.warningBg;
       fg = colors.warning;
+      break;
+    case 'resolved':
+      bg = colors.successBg;
+      fg = colors.success;
       break;
     case 'rejected':
       bg = colors.errorBg;
       fg = colors.error;
-      break;
-    case 'fixed':
-      bg = colors.successBg;
-      fg = colors.success;
       break;
   }
 

@@ -1,12 +1,36 @@
 /** 重要度 */
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-/** ステータス */
+/** ステータス（open → fixed → resolved の順。遷移制約なし） */
 export type Status = 'open' | 'resolved' | 'rejected' | 'fixed';
 
 /** 環境 */
 export type Environment = 'dev' | 'test';
 
+
+/** ノートアクティビティ */
+export interface NoteActivity {
+  id: number;
+  note_id: number;
+  action: 'status_change' | 'comment';
+  content: string | null;
+  old_status: Status | null;
+  new_status: Status | null;
+  author: string | null;
+  created_at: string;
+}
+
+/** ノート添付ファイル */
+export interface NoteAttachment {
+  id: number;
+  note_id: number;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  url: string;
+  created_at: string;
+}
 
 /** ノート */
 export interface Note {
@@ -28,6 +52,10 @@ export interface Note {
   /** @deprecated test_case_ids を使用 */
   test_case_id?: number | null;
   test_case_ids?: number[];
+  attachment_count?: number;
+  attachments?: NoteAttachment[];
+  activities?: NoteActivity[];
+  latest_comment?: string | null;
 }
 
 /** ノート作成入力 */
@@ -200,6 +228,10 @@ export interface DebugPanelProps {
 export interface DebugAdminProps {
   apiBaseUrl?: string;
   env?: Environment;
+  /** フィードバックAPIのベースURL。feedbackAdminKey と共に指定時にフィードバックタブが表示 */
+  feedbackApiBaseUrl?: string;
+  /** フィードバック管理用の管理者キー */
+  feedbackAdminKey?: string;
 }
 
 /** useDebugNotes 戻り値 */
@@ -208,7 +240,7 @@ export interface UseDebugNotesReturn {
   loading: boolean;
   error: Error | null;
   createNote: (input: NoteInput) => Promise<Note | null>;
-  updateStatus: (id: number, status: Status) => Promise<boolean>;
+  updateStatus: (id: number, status: Status, options?: { comment?: string; author?: string }) => Promise<boolean>;
   updateSeverity: (id: number, severity: Severity | null) => Promise<boolean>;
   deleteNote: (id: number) => Promise<boolean>;
   refresh: () => void;
@@ -452,6 +484,8 @@ export interface Feedback {
   status: FeedbackStatus;
   createdAt: string;
   updatedAt: string;
+  attachmentCount?: number;
+  attachments?: NoteAttachment[];
 }
 
 /** フィードバック送信入力 */

@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useFeedback } from '../../hooks/useFeedback';
 import { createFeedbackLogCapture } from '../../utils/feedbackLogCapture';
+import { uploadFeedbackAttachment } from '../../utils/feedbackApi';
+import { ImageDropZone } from '../debug/ImageDropZone';
 import { loadMaterialSymbols, isAutoLoadDisabled } from '../../styles/material-symbols';
 import type { FeedbackKind, Feedback, FeedbackLogCapture } from '../../types';
 
@@ -20,6 +22,37 @@ const KIND_OPTIONS: { value: FeedbackKind; label: string; color: string }[] = [
   { value: 'share', label: '共有', color: '#6B7280' },
   { value: 'other', label: 'その他', color: '#9333EA' },
 ];
+
+/** ImageDropZone が使用する CSS クラスのスタイル定義 */
+const IMAGE_DROP_ZONE_CSS = `
+  .debug-field { margin-bottom: 0; }
+  .debug-field > label { display: block; font-size: 12px; color: #6B7280; margin-bottom: 6px; }
+  .debug-dropzone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 12px; border: 2px dashed #D1D5DB; border-radius: 8px;
+    cursor: pointer; transition: all 0.15s; background: #fff;
+  }
+  .debug-dropzone:hover { border-color: #3B82F6; background: #F9FAFB; }
+  .debug-dropzone.dragging { border-color: #3B82F6; background: rgba(59,130,246,0.05); }
+  .debug-dropzone.disabled { opacity: 0.5; cursor: not-allowed; }
+  .debug-icon { font-family: 'Material Symbols Outlined'; }
+  .debug-thumbnails { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .debug-thumbnail {
+    position: relative; width: 56px; height: 56px; border-radius: 6px;
+    overflow: hidden; border: 1px solid #E5E7EB;
+  }
+  .debug-thumbnail-img { width: 100%; height: 100%; object-fit: cover; }
+  .debug-thumbnail-remove {
+    position: absolute; top: 2px; right: 2px; width: 18px; height: 18px;
+    border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff;
+    border: none; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; padding: 0;
+  }
+  .debug-thumbnail-info {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 2px 4px;
+    background: rgba(0,0,0,0.5); color: #fff; font-size: 9px; text-align: center;
+  }
+`;
 
 export function FeedbackForm({
   apiBaseUrl,
@@ -65,6 +98,7 @@ export function FeedbackForm({
   const [showDetail, setShowDetail] = useState(false);
   const [steps, setSteps] = useState('');
   const [expected, setExpected] = useState('');
+  const [attachFiles, setAttachFiles] = useState<File[]>([]);
   const [toast, setToast] = useState(false);
   const [formError, setFormError] = useState<Error | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -105,11 +139,27 @@ export function FeedbackForm({
     }, logs);
 
     if (data) {
+      // 画像添付を順次アップロード
+      if (attachFiles.length > 0) {
+        for (const file of attachFiles) {
+          try {
+            await uploadFeedbackAttachment({
+              apiBaseUrl,
+              feedbackId: data.id,
+              file,
+            });
+          } catch (err) {
+            console.error('Failed to upload attachment:', err);
+          }
+        }
+      }
+
       setKind(null);
       setMessage('');
       setSteps('');
       setExpected('');
       setShowDetail(false);
+      setAttachFiles([]);
       setFormError(null);
       // 送信後にバッファをリセット
       logCaptureRef.current?.clear();
@@ -122,7 +172,7 @@ export function FeedbackForm({
       onSubmitError?.(error ?? new Error('Unknown error'));
     }
     submittingRef.current = false;
-  }, [kind, message, steps, expected, submitFeedback, onSubmitSuccess, onSubmitError]);
+  }, [kind, message, steps, expected, attachFiles, apiBaseUrl, submitFeedback, onSubmitSuccess, onSubmitError]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -134,10 +184,18 @@ export function FeedbackForm({
     [canSubmit, handleSubmit]
   );
 
+  const handleAddFiles = useCallback((files: File[]) => {
+    setAttachFiles(prev => [...prev, ...files]);
+  }, []);
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setAttachFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   return (
     <div style={styles.container}>
-      {/* spin animation（ManualTabPage外で使用される場合のフォールバック） */}
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      {/* spin animation + ImageDropZone CSS */}
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }${IMAGE_DROP_ZONE_CSS}`}</style>
       {/* 種別タグ */}
       <div style={styles.section}>
         <div style={styles.tagGroup} role="radiogroup" aria-label="フィードバック種別">
@@ -171,6 +229,17 @@ export function FeedbackForm({
           rows={4}
           maxLength={4000}
           style={styles.textarea}
+        />
+      </div>
+
+      {/* 画像添付 */}
+      <div style={styles.section}>
+        <ImageDropZone
+          files={attachFiles}
+          onAdd={handleAddFiles}
+          onRemove={handleRemoveFile}
+          maxFiles={3}
+          disabled={submitting}
         />
       </div>
 
