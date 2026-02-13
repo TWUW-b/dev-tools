@@ -6,6 +6,7 @@ import { maskSensitive } from '../utils/maskSensitive';
 import type { DebugPanelProps, Severity, NoteInput, NetworkLogEntry, DomainTree, CapabilitySummary, CaseSummary, TestRunInput, Status, ManualItem } from '../types';
 import { useManualLoader } from '../hooks/useManualLoader';
 import { MarkdownRenderer } from './manual/MarkdownRenderer';
+import { DEBUG_COLORS as COLORS } from '../styles/colors';
 
 // Document Picture-in-Picture API 型定義
 interface DocumentPictureInPictureOptions {
@@ -23,24 +24,6 @@ declare global {
     documentPictureInPicture?: DocumentPictureInPicture;
   }
 }
-
-// カラー定義
-const COLORS = {
-  primary: '#1E40AF',
-  primaryHover: '#1E3A8A',
-  secondary: '#F59E0B',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray500: '#6B7280',
-  gray700: '#374151',
-  gray900: '#111827',
-  white: '#FFFFFF',
-  error: '#DC2626',
-  errorBg: '#FEE2E2',
-  success: '#059669',
-  successBg: '#D1FAE5',
-};
 
 type PipTab = 'record' | 'manage' | 'test' | 'manual';
 

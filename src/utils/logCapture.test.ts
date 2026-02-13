@@ -55,23 +55,6 @@ describe('createLogCapture', () => {
       capture.destroy();
     });
 
-    it('should ignore deprecated levels config and capture all levels', () => {
-      // levels は非推奨で無視される。error, warn, log は常にキャプチャされる
-      const capture = createLogCapture({
-        console: { levels: ['error'] },
-      });
-
-      console.error('Error message');
-      console.warn('Warning message');
-
-      const logs = capture.getConsoleLogs();
-      expect(logs).toHaveLength(2);
-      expect(logs[0].message).toBe('Error message');
-      expect(logs[1].message).toBe('Warning message');
-
-      capture.destroy();
-    });
-
     it('should respect filter function', () => {
       const capture = createLogCapture({
         console: {
@@ -85,25 +68,6 @@ describe('createLogCapture', () => {
       const logs = capture.getConsoleLogs();
       expect(logs).toHaveLength(1);
       expect(logs[0].message).toBe('This is important');
-
-      capture.destroy();
-    });
-
-    it('should fallback to deprecated maxEntries for backward compatibility', () => {
-      // maxEntries は非推奨。maxErrorEntries/maxLogEntries にフォールバック
-      const capture = createLogCapture({
-        console: { maxEntries: 3 },
-      });
-
-      console.error('Error 1');
-      console.error('Error 2');
-      console.error('Error 3');
-      console.error('Error 4');
-
-      const logs = capture.getConsoleLogs();
-      expect(logs).toHaveLength(3);
-      expect(logs[0].message).toBe('Error 2');
-      expect(logs[2].message).toBe('Error 4');
 
       capture.destroy();
     });

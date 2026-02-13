@@ -6,20 +6,7 @@ import { useResizable } from '../../hooks/useResizable';
 import { useFeedbackAdminMode } from '../../hooks/useFeedbackAdminMode';
 import { loadMaterialSymbols, isAutoLoadDisabled } from '../../styles/material-symbols';
 import type { ManualTabPageProps } from '../../types';
-
-// project デザインカラー
-const COLORS = {
-  primary: '#043E80',
-  secondary: '#F5B500',
-  tertiary: '#1E3A5F',
-  gray100: '#F3F4F6',
-  gray300: '#D1D5DB',
-  gray500: '#6B7280',
-  gray700: '#374151',
-  white: '#FFFFFF',
-  error: '#DC2626',
-  errorBg: '#FEE2E2',
-};
+import { MANUAL_COLORS as COLORS } from '../../styles/colors';
 
 // モジュールレベルで定義し、毎レンダーの再生成を回避
 const GLOBAL_CSS = `

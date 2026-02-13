@@ -19,24 +19,19 @@ export function MarkdownRenderer({
   // カスタムリンクコンポーネント
   const components: Components = {
     a: ({ href, children, ...props }) => {
-      // 全てのリンクをログ出力（デバッグ用）
-      console.log('[MarkdownRenderer] Link rendered', { href, hasOnAppLinkClick: !!onAppLinkClick, type: href?.startsWith('app:') ? 'APP' : href?.endsWith('.md') ? 'MD' : 'OTHER' });
       // app:リンクの場合はonAppLinkClickで処理（メイン画面遷移）
       // NOTE: <a>タグではなく<span>を使用してブラウザのデフォルト動作を回避
       // PiPウィンドウ内で<a>タグを使うと、別ウィンドウコンテキストでの処理により
       // ブラウザが勝手に新しいタブを開いてしまう問題を回避
       if (href && href.startsWith('app:') && onAppLinkClick) {
         const appPath = href.replace('app:', '');
-        console.log('[MarkdownRenderer] app: link detected', { href, appPath, hasOnAppLinkClick: !!onAppLinkClick });
         return (
           <span
             role="link"
             tabIndex={0}
             onClick={(e) => {
-              console.log('[MarkdownRenderer] app: link clicked', { appPath });
               e.preventDefault();
               e.stopPropagation();
-              console.log('[MarkdownRenderer] calling onAppLinkClick');
               onAppLinkClick(appPath);
             }}
             onKeyDown={(e) => {

@@ -48,12 +48,8 @@ export function createLogCapture(config: LogCaptureConfig): LogCaptureInstance {
     const consoleConfig: ConsoleLogConfig =
       config.console === true ? DEFAULT_CONSOLE : config.console;
 
-    if (config.console !== true && (config.console as ConsoleLogConfig).levels) {
-      console.warn('[logCapture] ConsoleLogConfig.levels is deprecated and ignored. error, warn, log are always captured.');
-    }
-
-    const errorMax = consoleConfig.maxErrorEntries ?? consoleConfig.maxEntries ?? DEFAULT_CONSOLE.maxErrorEntries!;
-    const logMax = consoleConfig.maxLogEntries ?? consoleConfig.maxEntries ?? DEFAULT_CONSOLE.maxLogEntries!;
+    const errorMax = consoleConfig.maxErrorEntries ?? DEFAULT_CONSOLE.maxErrorEntries!;
+    const logMax = consoleConfig.maxLogEntries ?? DEFAULT_CONSOLE.maxLogEntries!;
 
     const originalMethods: Partial<Record<string, (...args: unknown[]) => void>> = {};
     const levels: Array<'error' | 'warn' | 'log'> = ['error', 'warn', 'log'];

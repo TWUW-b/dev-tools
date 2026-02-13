@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { loadMaterialSymbols, isAutoLoadDisabled } from '../../styles/material-symbols';
 import type { ManualSidebarProps, ManualItem } from '../../types';
+import { MANUAL_COLORS as COLORS } from '../../styles/colors';
 
 /**
  * サイドバー用マニュアルリスト
@@ -100,12 +101,6 @@ interface SidebarItemProps {
 }
 
 function SidebarItem({ item, isActive, onSelect, onPiP, onNewTab }: SidebarItemProps) {
-  const COLORS = {
-    primary: '#043E80',
-    gray100: '#F3F4F6',
-    gray500: '#6B7280',
-  };
-
   const styles = {
     itemRow: {
       display: 'flex',

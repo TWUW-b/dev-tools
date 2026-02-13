@@ -25,6 +25,7 @@ export interface Note {
   network_log?: NetworkLogEntry[] | null;
   environment?: EnvironmentInfo | null;
   source?: 'manual' | 'test';
+  /** @deprecated test_case_ids を使用 */
   test_case_id?: number | null;
   test_case_ids?: number[];
 }
@@ -42,7 +43,7 @@ export interface NoteInput {
   networkLogs?: NetworkLogEntry[];
   environment?: EnvironmentInfo;
   source?: 'manual' | 'test';
-  testCaseId?: number;
+  testCaseIds?: number[];
 }
 
 /** パース済みテストケース */
@@ -132,11 +133,7 @@ export interface EnvironmentInfo {
 
 /** Console キャプチャ設定 */
 export interface ConsoleLogConfig {
-  /** @deprecated 無視される。error, warn, log を固定キャプチャ */
-  levels?: Array<'error' | 'warn' | 'log' | 'info'>;
   filter?: (message: string) => boolean;
-  /** @deprecated maxErrorEntries / maxLogEntries を使用 */
-  maxEntries?: number;
   maxErrorEntries?: number;
   maxLogEntries?: number;
 }

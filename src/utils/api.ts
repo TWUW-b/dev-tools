@@ -103,7 +103,7 @@ export const api = {
         networkLogs: input.networkLogs || null,
         environment: input.environment || null,
         source: input.source || null,
-        testCaseId: input.testCaseId ?? null,
+        testCaseIds: input.testCaseIds ?? null,
       }),
     });
 

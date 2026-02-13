@@ -38,6 +38,7 @@ export { createFeedbackLogCapture } from './utils/feedbackLogCapture';
 
 // Styles
 export { loadMaterialSymbols, isAutoLoadDisabled, MATERIAL_SYMBOLS_CDN, materialSymbolsStyle } from './styles/material-symbols';
+export { DEBUG_COLORS, MANUAL_COLORS } from './styles/colors';
 
 // Types
 export type {
