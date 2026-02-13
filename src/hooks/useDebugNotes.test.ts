@@ -81,7 +81,7 @@ describe('useDebugNotes', () => {
     });
 
     expect(success).toBe(true);
-    expect(mockApi.updateStatus).toHaveBeenCalledWith('dev', 1, 'fixed');
+    expect(mockApi.updateStatus).toHaveBeenCalledWith('dev', 1, 'fixed', undefined);
     expect(result.current.notes.find(n => n.id === 1)?.status).toBe('fixed');
   });
 
