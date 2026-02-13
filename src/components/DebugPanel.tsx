@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { useDebugNotes } from '../hooks/useDebugNotes';
 import { setDebugApiBaseUrl, api } from '../utils/api';
 import { maskSensitive } from '../utils/maskSensitive';
-import type { DebugPanelProps, Severity, NoteInput, NetworkLogEntry, DomainTree, CapabilitySummary, CaseSummary, TestRunInput, Status } from '../types';
+import type { DebugPanelProps, Severity, NoteInput, NetworkLogEntry, DomainTree, CapabilitySummary, CaseSummary, TestRunInput, Status, ManualItem } from '../types';
+import { useManualLoader } from '../hooks/useManualLoader';
+import { MarkdownRenderer } from './manual/MarkdownRenderer';
 
 // Document Picture-in-Picture API 型定義
 interface DocumentPictureInPictureOptions {
@@ -40,7 +42,61 @@ const COLORS = {
   successBg: '#D1FAE5',
 };
 
-type PipTab = 'record' | 'manage' | 'test';
+type PipTab = 'record' | 'manage' | 'test' | 'manual';
+
+/**
+ * マニュアルタブコンテンツ（hooks の条件呼び出し回避用）
+ */
+function ManualTabContent({
+  items,
+  defaultPath,
+  onNavigate,
+  onAppNavigate,
+}: {
+  items: ManualItem[];
+  defaultPath?: string;
+  onNavigate?: (path: string) => void;
+  onAppNavigate?: (path: string) => void;
+}) {
+  const [selectedPath, setSelectedPath] = useState<string>(defaultPath || items[0]?.path || '');
+  const { content, loading, error } = useManualLoader(selectedPath);
+
+  const handleSelect = (path: string) => {
+    setSelectedPath(path);
+    onNavigate?.(path);
+  };
+
+  return (
+    <div className="debug-manual-tab">
+      <div className="debug-manual-sidebar">
+        {items.map(item => (
+          <button
+            key={item.id}
+            className={`debug-manual-item ${selectedPath === item.path ? 'active' : ''}`}
+            onClick={() => handleSelect(item.path)}
+            title={item.title}
+          >
+            {item.title}
+          </button>
+        ))}
+      </div>
+      <div className="debug-manual-content">
+        {loading && <div className="debug-empty">読み込み中...</div>}
+        {error && <div className="debug-message debug-message-error">{error.message}</div>}
+        {content && (
+          <MarkdownRenderer
+            content={content}
+            onLinkClick={(path) => {
+              setSelectedPath(path);
+              onNavigate?.(path);
+            }}
+            onAppLinkClick={onAppNavigate}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
 /**
  * デバッグパネル（PiP）
@@ -53,6 +109,10 @@ export function DebugPanel({
   initialSize = { width: 400, height: 500 },
   testCases,
   logCapture,
+  manualItems,
+  manualDefaultPath,
+  onManualNavigate,
+  onManualAppNavigate,
 }: DebugPanelProps) {
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
@@ -62,6 +122,7 @@ export function DebugPanel({
   // タブ状態
   const [activeTab, setActiveTab] = useState<PipTab>('record');
   const hasTestTab = testCases && testCases.length > 0;
+  const hasManualTab = manualItems && manualItems.length > 0;
 
   // フォーム状態（記録タブ）
   const [content, setContent] = useState('');
@@ -516,6 +577,14 @@ export function DebugPanel({
             テスト
           </button>
         )}
+        {hasManualTab && (
+          <button
+            className={`debug-tab ${activeTab === 'manual' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('manual'); setMessage(null); }}
+          >
+            マニュアル
+          </button>
+        )}
       </nav>
 
       <main className="debug-content">
@@ -665,6 +734,16 @@ export function DebugPanel({
               ))
             )}
           </div>
+        )}
+
+        {/* マニュアルタブ */}
+        {activeTab === 'manual' && hasManualTab && (
+          <ManualTabContent
+            items={manualItems!}
+            defaultPath={manualDefaultPath}
+            onNavigate={onManualNavigate}
+            onAppNavigate={onManualAppNavigate}
+          />
         )}
 
         {/* テストタブ */}
@@ -1521,6 +1600,134 @@ function getPipStyles(): string {
       flex: none;
       padding: 8px 16px;
       font-size: 13px;
+    }
+
+    /* マニュアルタブ */
+    .debug-manual-tab {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .debug-manual-sidebar {
+      width: 140px;
+      min-width: 140px;
+      border-right: 1px solid ${COLORS.gray200};
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px;
+    }
+
+    .debug-manual-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      color: ${COLORS.gray700};
+      cursor: pointer;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .debug-manual-item:hover {
+      background: ${COLORS.gray100};
+    }
+
+    .debug-manual-item.active {
+      background: ${COLORS.primary};
+      color: ${COLORS.white};
+    }
+
+    .debug-manual-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    /* Markdown スタイル */
+    .manual-markdown {
+      font-size: 13px;
+      line-height: 1.6;
+      color: ${COLORS.gray900};
+    }
+
+    .manual-markdown h1 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid ${COLORS.gray200}; }
+    .manual-markdown h2 { font-size: 17px; font-weight: 600; margin: 14px 0 6px; }
+    .manual-markdown h3 { font-size: 15px; font-weight: 600; margin: 12px 0 4px; }
+    .manual-markdown h4 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+
+    .manual-markdown p { margin: 8px 0; }
+
+    .manual-markdown ul, .manual-markdown ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .manual-markdown li { margin: 2px 0; }
+
+    .manual-markdown code {
+      background: ${COLORS.gray100};
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    .manual-markdown pre {
+      background: ${COLORS.gray100};
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+
+    .manual-markdown pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .manual-markdown table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    .manual-markdown th, .manual-markdown td {
+      border: 1px solid ${COLORS.gray200};
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .manual-markdown th {
+      background: ${COLORS.gray100};
+      font-weight: 600;
+    }
+
+    .manual-markdown blockquote {
+      border-left: 3px solid ${COLORS.gray300};
+      padding-left: 12px;
+      margin: 8px 0;
+      color: ${COLORS.gray500};
+    }
+
+    .manual-markdown img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .manual-markdown hr {
+      border: none;
+      border-top: 1px solid ${COLORS.gray200};
+      margin: 16px 0;
     }
 
     @keyframes spin {

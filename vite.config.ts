@@ -4,25 +4,24 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'DebugNotes',
-      fileName: 'debug-notes',
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        components: resolve(__dirname, 'src/components/index.ts'),
+        hooks: resolve(__dirname, 'src/hooks/index.ts'),
+        'components/manual': resolve(__dirname, 'src/components/manual/index.ts'),
+      },
+      formats: ['es'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: ['react', 'react-dom', 'react/jsx-runtime'],
       output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
-        },
+        entryFileNames: '[name].js',
+        chunkFileNames: 'chunks/[name]-[hash].js',
       },
     },
+    outDir: 'dist',
+    emptyOutDir: true,
   },
 });
