@@ -1,0 +1,11 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./api:/var/www/api
+    environment:
+      - PHP_CLI_SERVER_WORKERS=4

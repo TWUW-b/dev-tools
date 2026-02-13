@@ -1,0 +1,350 @@
+<?php
+/**
+ * Debug Notes API - Notes Controller
+ */
+
+declare(strict_types=1);
+
+class NotesController
+{
+    private Database $db;
+
+    // 上限
+    private const MAX_CONTENT_LENGTH = 4000;
+    private const MAX_USER_LOG_LENGTH = 20000;
+    private const MAX_LOG_JSON_LENGTH = 500000; // 500KB
+    private const MAX_NOTES_COUNT = 500;
+
+    public function __construct(Database $db)
+    {
+        $this->db = $db;
+    }
+
+    /**
+     * 一覧取得
+     */
+    public function index(array $params): array
+    {
+        $sql = 'SELECT id, route, screen_name, title, content, user_log, steps, severity, status, deleted_at, created_at, source, test_case_id FROM notes WHERE 1=1';
+        $bindings = [];
+
+        // 削除済み除外
+        if (empty($params['includeDeleted'])) {
+            $sql .= ' AND deleted_at IS NULL';
+        }
+
+        // ステータスフィルタ
+        if (!empty($params['status'])) {
+            $sql .= ' AND status = ?';
+            $bindings[] = $params['status'];
+        }
+
+        // 検索
+        if (!empty($params['q'])) {
+            $sql .= ' AND (title LIKE ? OR content LIKE ?) ESCAPE ?';
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $params['q']);
+            $q = '%' . $escaped . '%';
+            $bindings[] = $q;
+            $bindings[] = $q;
+            $bindings[] = '\\';
+        }
+
+        $sql .= ' ORDER BY created_at DESC';
+
+        $notes = $this->db->query($sql, $bindings);
+
+        // test_case_ids を一括取得
+        $noteIds = array_column($notes, 'id');
+        if (!empty($noteIds)) {
+            $placeholders = implode(',', array_fill(0, count($noteIds), '?'));
+            $mappings = $this->db->query(
+                "SELECT note_id, case_id FROM note_test_cases WHERE note_id IN ($placeholders)",
+                $noteIds
+            );
+
+            $caseIdMap = [];
+            foreach ($mappings as $m) {
+                $caseIdMap[$m['note_id']][] = (int)$m['case_id'];
+            }
+
+            foreach ($notes as &$note) {
+                $note['test_case_ids'] = $caseIdMap[$note['id']] ?? [];
+            }
+        }
+
+        return [
+            'success' => true,
+            'data' => $notes,
+        ];
+    }
+
+    /**
+     * 詳細取得
+     */
+    public function show(int $id): array
+    {
+        $note = $this->db->fetchOne(
+            'SELECT * FROM notes WHERE id = ? AND deleted_at IS NULL',
+            [$id]
+        );
+
+        if (!$note) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        // test_case_ids を取得
+        $mappings = $this->db->query(
+            'SELECT case_id FROM note_test_cases WHERE note_id = ?',
+            [$id]
+        );
+        $note['test_case_ids'] = array_map(fn($m) => (int)$m['case_id'], $mappings);
+
+        return [
+            'success' => true,
+            'note' => $this->hydrateNote($note),
+        ];
+    }
+
+    /**
+     * 新規作成
+     */
+    public function create(array $input): array
+    {
+        // バリデーション
+        $errors = $this->validateCreate($input);
+        if (!empty($errors)) {
+            return ['success' => false, 'error' => implode(', ', $errors)];
+        }
+
+        // 件数チェック
+        $count = $this->db->fetchOne('SELECT COUNT(*) as cnt FROM notes WHERE deleted_at IS NULL');
+        if ($count && (int) $count['cnt'] >= self::MAX_NOTES_COUNT) {
+            return ['success' => false, 'error' => 'Maximum notes count reached'];
+        }
+
+        // steps を JSON 文字列に変換
+        $steps = null;
+        if (!empty($input['steps']) && is_array($input['steps'])) {
+            $steps = json_encode($input['steps'], JSON_UNESCAPED_UNICODE);
+        }
+
+        // ログ系カラムのバリデーション + エンコード
+        $consoleLogs = $this->encodeLogColumn($input['consoleLogs'] ?? null, true);
+        $networkLogs = $this->encodeLogColumn($input['networkLogs'] ?? null, true);
+        $environment = $this->encodeLogColumn($input['environment'] ?? null, false);
+
+        // title が未指定の場合は content の1行目から自動生成
+        $title = $input['title'] ?? '';
+        if (empty(trim($title))) {
+            $firstLine = strtok(trim($input['content']), "\n") ?: '';
+            $title = mb_strlen($firstLine) > 80 ? mb_substr($firstLine, 0, 80) . '...' : $firstLine;
+        }
+
+        // source / test_case_id(s)
+        $source = in_array($input['source'] ?? '', ['manual', 'test'], true)
+            ? $input['source']
+            : 'manual';
+
+        // testCaseIds 配列対応（旧 testCaseId 単一も互換）
+        $testCaseIds = [];
+        if (!empty($input['testCaseIds']) && is_array($input['testCaseIds'])) {
+            $testCaseIds = array_map('intval', $input['testCaseIds']);
+        } elseif (isset($input['testCaseId'])) {
+            $testCaseIds = [(int)$input['testCaseId']];
+        }
+
+        // caseIds の存在チェック
+        $validCaseIds = [];
+        foreach ($testCaseIds as $caseId) {
+            if ($caseId > 0) {
+                $exists = $this->db->fetchOne('SELECT id FROM test_cases WHERE id = ?', [$caseId]);
+                if ($exists) {
+                    $validCaseIds[] = $caseId;
+                }
+            }
+        }
+
+        // notes.test_case_id は先頭のIDを格納（後方互換）
+        $testCaseId = !empty($validCaseIds) ? $validCaseIds[0] : null;
+
+        // 挿入
+        $this->db->execute(
+            'INSERT INTO notes (route, screen_name, title, content, user_log, steps, severity, status, console_log, network_log, environment, source, test_case_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                $input['route'] ?? '',
+                $input['screenName'] ?? '',
+                $title,
+                $input['content'],
+                $input['userLog'] ?? null,
+                $steps,
+                $input['severity'] ?? null,
+                'open',
+                $consoleLogs,
+                $networkLogs,
+                $environment,
+                $source,
+                $testCaseId,
+            ]
+        );
+
+        $id = $this->db->lastInsertId();
+
+        // note_test_cases に全リンクを INSERT
+        foreach ($validCaseIds as $caseId) {
+            $this->db->execute(
+                'INSERT OR IGNORE INTO note_test_cases (note_id, case_id) VALUES (?, ?)',
+                [$id, $caseId]
+            );
+        }
+
+        $note = $this->db->fetchOne('SELECT * FROM notes WHERE id = ?', [$id]);
+
+        return [
+            'success' => true,
+            'note' => $note ? $this->hydrateNote($note) : $note,
+        ];
+    }
+
+    /**
+     * ステータス更新
+     */
+    public function updateStatus(int $id, array $input): array
+    {
+        $status = $input['status'] ?? null;
+        if (!in_array($status, ['open', 'resolved', 'rejected', 'fixed'], true)) {
+            return ['success' => false, 'error' => 'Invalid status'];
+        }
+
+        $note = $this->db->fetchOne(
+            'SELECT status FROM notes WHERE id = ? AND deleted_at IS NULL',
+            [$id]
+        );
+        if (!$note) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        if ($note['status'] === $status) {
+            return ['success' => true]; // 同一ステータス、no-op
+        }
+
+        $this->db->execute(
+            'UPDATE notes SET status = ? WHERE id = ? AND deleted_at IS NULL',
+            [$status, $id]
+        );
+
+        return ['success' => true];
+    }
+
+    /**
+     * 重要度更新
+     */
+    public function updateSeverity(int $id, array $input): array
+    {
+        $severity = $input['severity'] ?? null;
+        if ($severity !== null && !in_array($severity, ['critical', 'high', 'medium', 'low'], true)) {
+            return ['success' => false, 'error' => 'Invalid severity'];
+        }
+
+        $affected = $this->db->execute(
+            'UPDATE notes SET severity = ? WHERE id = ? AND deleted_at IS NULL',
+            [$severity, $id]
+        );
+
+        if ($affected === 0) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        return ['success' => true];
+    }
+
+    /**
+     * 削除（論理削除）
+     */
+    public function delete(int $id): array
+    {
+        $affected = $this->db->execute(
+            'UPDATE notes SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL',
+            [$id]
+        );
+
+        if ($affected === 0) {
+            return ['success' => false, 'error' => 'Note not found'];
+        }
+
+        return ['success' => true];
+    }
+
+    /**
+     * 作成時バリデーション
+     */
+    private function validateCreate(array $input): array
+    {
+        $errors = [];
+
+        if (empty($input['content'])) {
+            $errors[] = 'content is required';
+        } elseif (mb_strlen($input['content']) > self::MAX_CONTENT_LENGTH) {
+            $errors[] = 'content exceeds maximum length';
+        }
+
+        if (!empty($input['userLog']) && mb_strlen($input['userLog']) > self::MAX_USER_LOG_LENGTH) {
+            $errors[] = 'userLog exceeds maximum length';
+        }
+
+        if (!empty($input['severity']) && !in_array($input['severity'], ['critical', 'high', 'medium', 'low'], true)) {
+            $errors[] = 'Invalid severity';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * ログ系カラムをバリデーション・エンコードする
+     * @param mixed $data 入力データ
+     * @param bool $expectArray true=配列を期待、false=オブジェクトを期待
+     * @return string|null JSON文字列またはnull
+     */
+    private function encodeLogColumn(mixed $data, bool $expectArray): ?string
+    {
+        if (empty($data)) {
+            return null;
+        }
+
+        if ($expectArray && !is_array($data)) {
+            return null;
+        }
+
+        if (!$expectArray && !is_array($data)) {
+            return null;
+        }
+
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            return null;
+        }
+
+        // サイズ制限チェック
+        if (strlen($json) > self::MAX_LOG_JSON_LENGTH) {
+            return null;
+        }
+
+        return $json;
+    }
+
+    /**
+     * ノートのJSON文字列カラムをデコードする
+     */
+    private function hydrateNote(array $note): array
+    {
+        foreach (['console_log', 'network_log', 'environment'] as $col) {
+            if (!empty($note[$col]) && is_string($note[$col])) {
+                $note[$col] = json_decode($note[$col], true);
+            }
+        }
+        if (!empty($note['steps']) && is_string($note['steps'])) {
+            $note['steps'] = json_decode($note['steps'], true);
+        }
+        return $note;
+    }
+}
