@@ -1,4 +1,4 @@
-# @genlib/dev-tools
+# @twuw-b/dev-tools
 
 開発・テスト環境向けの統合デベロッパーツール。
 
@@ -16,18 +16,28 @@
 
 ## インストール
 
+GitHub Packages から配布。Consumer プロジェクトに `.npmrc` を作成:
+
+```
+@twuw-b:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+`GITHUB_TOKEN` に `read:packages` 権限のある GitHub Personal Access Token を設定:
+
 ```bash
-npm install @genlib/dev-tools
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+npm install @twuw-b/dev-tools
 ```
 
 ## インポートパス
 
 | パス | 内容 |
 |------|------|
-| `@genlib/dev-tools` | 全機能（デバッグ + マニュアル + フィードバック） |
-| `@genlib/dev-tools/components` | コンポーネントのみ |
-| `@genlib/dev-tools/hooks` | フックのみ |
-| `@genlib/dev-tools/manual` | マニュアル系コンポーネントのみ |
+| `@twuw-b/dev-tools` | 全機能（デバッグ + マニュアル + フィードバック） |
+| `@twuw-b/dev-tools/components` | コンポーネントのみ |
+| `@twuw-b/dev-tools/hooks` | フックのみ |
+| `@twuw-b/dev-tools/manual` | マニュアル系コンポーネントのみ |
 
 ## クイックスタート
 
@@ -39,7 +49,7 @@ import {
   useDebugMode,
   setDebugApiBaseUrl,
   createLogCapture,
-} from '@genlib/dev-tools';
+} from '@twuw-b/dev-tools';
 
 // API URL を設定
 setDebugApiBaseUrl('https://your-domain.com/__debug/api');
@@ -74,13 +84,13 @@ function App() {
 ```
 
 デバッグモードの起動:
-- URL: `?mode=debug`
+- URL: `#debug`
 - キーボード: `z` キーを素早く3回押す（トグル）
 
 ### マニュアル PiP（単体使用）
 
 ```typescript
-import { ManualPiP, useManualPiP } from '@genlib/dev-tools/manual';
+import { ManualPiP, useManualPiP } from '@twuw-b/dev-tools/manual';
 
 function App() {
   const { isOpen, currentPath, openPiP, closePiP, setPath } = useManualPiP();
@@ -102,7 +112,7 @@ function App() {
 ### フィードバック
 
 ```typescript
-import { FeedbackForm } from '@genlib/dev-tools/manual';
+import { FeedbackForm } from '@twuw-b/dev-tools/manual';
 
 // FeedbackForm は ManualPiP / ManualTabPage 内で自動表示される
 // feedbackApiBaseUrl を指定すると有効化
@@ -176,7 +186,7 @@ npm run docker:up
 npm run sample
 
 # ブラウザでアクセス
-# http://localhost:3000?mode=debug
+# http://localhost:3000#debug
 
 # テスト実行
 npm run test
@@ -189,6 +199,23 @@ npm run build
 
 # Docker 停止
 npm run docker:down
+```
+
+## パッケージ公開
+
+```bash
+# GitHub に認証（初回のみ）
+npm login --registry=https://npm.pkg.github.com
+
+# テスト + ビルド + publish（prepublishOnly で自動実行）
+npm publish
+```
+
+バージョン更新:
+
+```bash
+npm version patch  # 1.0.0 → 1.0.1
+npm publish
 ```
 
 ## ライセンス

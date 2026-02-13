@@ -15,6 +15,7 @@ coverage/
 # Editor
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 .DS_Store
@@ -26,3 +27,7 @@ api/feedback/config.php
 # SQLite files
 api/data/*.sqlite
 api/feedback/data/*.sqlite
+
+# Playwright
+test-results/
+playwright-report/

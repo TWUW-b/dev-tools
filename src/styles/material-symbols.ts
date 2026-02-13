@@ -43,7 +43,7 @@ export const materialSymbolsStyle = `
  *
  * @example
  * ```tsx
- * import { loadMaterialSymbols } from '@genlib/dev-tools';
+ * import { loadMaterialSymbols } from '@twuw-b/dev-tools';
  *
  * // アプリ起動時に一度だけ実行
  * loadMaterialSymbols();

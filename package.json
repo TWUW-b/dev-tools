@@ -1,5 +1,5 @@
 {
-  "name": "@genlib/dev-tools",
+  "name": "@twuw-b/dev-tools",
   "version": "1.0.0",
   "description": "Integrated developer tools: debug notes, test flow, manual viewer, and feedback",
   "license": "MIT",
@@ -7,6 +7,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/TWUW-b/dev-tools.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -33,18 +36,25 @@
       "types": "./dist/components/manual/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:api": "vitest run --config vitest.config.api.ts",
+    "test:api:watch": "vitest --config vitest.config.api.ts",
     "sample": "vite --config sample/vite.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api",
-    "docker:build": "docker compose build --no-cache"
+    "docker:build": "docker compose build --no-cache",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "react",
@@ -69,6 +79,7 @@
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
