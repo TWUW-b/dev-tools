@@ -12,6 +12,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
   const [pendingFixed, setPendingFixed] = useState<{ id: number; status: Status } | null>(null);
   const [fixedComment, setFixedComment] = useState('');
   const [fixedError, setFixedError] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const activeNotes = useMemo(() => {
     if (manageStatusFilter.size === 0) return notes;
@@ -81,8 +82,25 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
         activeNotes.map(note => (
           <div key={note.id}>
             <div className="debug-note-row" data-status={note.status}>
-              <div className="debug-note-info">
+              <div
+                className="debug-note-info"
+                style={{ cursor: note.latest_comment ? 'pointer' : undefined }}
+                onClick={() => {
+                  if (!note.latest_comment) return;
+                  setExpandedIds(prev => {
+                    const next = new Set(prev);
+                    if (next.has(note.id)) next.delete(note.id);
+                    else next.add(note.id);
+                    return next;
+                  });
+                }}
+              >
                 <span className="debug-note-id">#{note.id}</span>
+                {note.latest_comment && (
+                  <span style={{ fontSize: '10px', opacity: 0.5 }}>
+                    {expandedIds.has(note.id) ? '▲' : '▼'}
+                  </span>
+                )}
                 <span className={`debug-severity-dot ${note.severity || 'none'}`} />
                 <span className="debug-note-preview">
                   {note.source === 'test' && <span className="debug-source-badge">🧪</span>}
@@ -102,6 +120,18 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
                 <option value="rejected">rejected</option>
               </select>
             </div>
+            {expandedIds.has(note.id) && note.latest_comment && pendingFixed?.id !== note.id && (
+              <div style={{
+                padding: '4px 12px 6px 28px',
+                fontSize: '11px',
+                color: '#6B7280',
+                lineHeight: 1.4,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}>
+                💬 {note.latest_comment}
+              </div>
+            )}
             {pendingFixed?.id === note.id && (
               <div className="debug-fixed-comment" style={{
                 padding: '8px 12px 8px 28px',

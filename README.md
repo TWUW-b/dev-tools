@@ -16,17 +16,47 @@
 
 ## インストール
 
-GitHub Packages から配布。Consumer プロジェクトに `.npmrc` を作成:
+> **Private パッケージ**: GitHub Packages（private registry）から配布。npmjs.com には公開されていないため、認証設定が必要。
+
+### 1. プロジェクトの `.npmrc` を作成
 
 ```
 @twuw-b:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-`GITHUB_TOKEN` に `read:packages` 権限のある GitHub Personal Access Token を設定:
+### 2. 認証トークンを設定
+
+GitHub Personal Access Token（`read:packages` 権限）が必要。
+
+#### 方法 A: `~/.npmrc` に設定（ローカル開発）
+
+```
+//npm.pkg.github.com/:_authToken=ghp_xxxxxxxxxxxx
+```
+
+> トークンの作成: GitHub → Settings → Developer settings → Personal access tokens → `read:packages` 権限で生成
+
+#### 方法 B: 環境変数で設定（CI/CD）
+
+プロジェクトの `.npmrc` を以下に変更:
+
+```
+@twuw-b:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+GitHub Actions の場合:
+
+```yaml
+- name: Install dependencies
+  env:
+    NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+  run: npm ci
+```
+
+### 3. インストール
 
 ```bash
-export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 npm install @twuw-b/dev-tools
 ```
 
@@ -125,23 +155,14 @@ import { FeedbackForm } from '@twuw-b/dev-tools/manual';
 
 ## API バックエンド
 
-2つの PHP バックエンドを提供:
-
-| API | ディレクトリ | 用途 |
-|-----|-------------|------|
-| デバッグ API | `api/` | ノート記録・テストフロー |
-| フィードバック API | `api/feedback/` | フィードバック収集・管理 |
+PHP + SQLite のバックエンド。ノート記録・テストフロー・フィードバック収集を `api/` に統合。
 
 ### セットアップ
 
 ```bash
-# デバッグ API
 cp api/config.example.php api/config.php
 
-# フィードバック API
-cp api/feedback/config.example.php api/feedback/config.php
-
-# Docker で両方起動
+# Docker で起動（PHP 8.4）
 npm run docker:up
 ```
 
@@ -166,8 +187,7 @@ dev-tools/
 │   ├── utils/             # ユーティリティ
 │   ├── styles/            # スタイル定義
 │   └── types/             # 型定義
-├── api/                   # デバッグ API（PHP + SQLite）
-├── api/feedback/          # フィードバック API（PHP + SQLite）
+├── api/                   # API（PHP + SQLite）
 ├── sample/                # 開発用サンプルアプリ
 └── docs/                  # ドキュメント
 ```
@@ -177,7 +197,6 @@ dev-tools/
 ```bash
 # API 設定
 cp api/config.example.php api/config.php
-cp api/feedback/config.example.php api/feedback/config.php
 
 # Docker で API 起動（PHP 8.4）
 npm run docker:up
