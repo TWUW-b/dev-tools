@@ -9,9 +9,6 @@ interface ManageTabProps {
 export function ManageTab({ notes, updateStatus }: ManageTabProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [manageStatusFilter, setManageStatusFilter] = useState<Set<Status>>(new Set(['fixed']));
-  const [pendingFixed, setPendingFixed] = useState<{ id: number; status: Status } | null>(null);
-  const [fixedComment, setFixedComment] = useState('');
-  const [fixedError, setFixedError] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const activeNotes = useMemo(() => {
@@ -20,12 +17,6 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
   }, [notes, manageStatusFilter]);
 
   const handleStatusChange = useCallback(async (id: number, status: Status) => {
-    if (status === 'fixed') {
-      setPendingFixed({ id, status });
-      setFixedComment('');
-      setFixedError(false);
-      return;
-    }
     setLoadingAction(`status-${id}`);
     try {
       await updateStatus(id, status);
@@ -33,23 +24,6 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
       setLoadingAction(null);
     }
   }, [updateStatus]);
-
-  const handleFixedConfirm = useCallback(async () => {
-    if (!pendingFixed) return;
-    if (fixedComment.trim() === '') {
-      setFixedError(true);
-      return;
-    }
-    setLoadingAction(`status-${pendingFixed.id}`);
-    try {
-      await updateStatus(pendingFixed.id, pendingFixed.status, { comment: fixedComment.trim() });
-      setPendingFixed(null);
-      setFixedComment('');
-      setFixedError(false);
-    } finally {
-      setLoadingAction(null);
-    }
-  }, [pendingFixed, fixedComment, updateStatus]);
 
   return (
     <div className="debug-manage">
@@ -110,7 +84,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
               <select
                 data-testid={`note-status-select-${note.id}`}
                 className="debug-status-select"
-                value={pendingFixed?.id === note.id ? 'fixed' : note.status}
+                value={note.status}
                 onChange={(e) => handleStatusChange(note.id, e.target.value as Status)}
                 disabled={loadingAction !== null}
               >
@@ -120,7 +94,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
                 <option value="rejected">rejected</option>
               </select>
             </div>
-            {expandedIds.has(note.id) && note.latest_comment && pendingFixed?.id !== note.id && (
+            {expandedIds.has(note.id) && note.latest_comment && (
               <div style={{
                 padding: '4px 12px 6px 28px',
                 fontSize: '11px',
@@ -130,72 +104,6 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
                 wordBreak: 'break-word',
               }}>
                 💬 {note.latest_comment}
-              </div>
-            )}
-            {pendingFixed?.id === note.id && (
-              <div className="debug-fixed-comment" style={{
-                padding: '8px 12px 8px 28px',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'flex-start',
-              }}>
-                <textarea
-                  value={fixedComment}
-                  onChange={(e) => { setFixedComment(e.target.value); setFixedError(false); }}
-                  placeholder="何を修正したか記入してください（必須）"
-                  className="debug-fixed-textarea"
-                  style={{
-                    flex: 1,
-                    padding: '6px 10px',
-                    border: `1px solid ${fixedError ? '#EF4444' : '#ccc'}`,
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    resize: 'vertical',
-                    minHeight: '32px',
-                    fontFamily: 'inherit',
-                  }}
-                  rows={2}
-                  autoFocus
-                />
-                <button
-                  onClick={handleFixedConfirm}
-                  disabled={loadingAction !== null}
-                  className="debug-fixed-confirm"
-                  style={{
-                    padding: '6px 12px',
-                    background: '#6366F1',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    flexShrink: 0,
-                  }}
-                >
-                  確定
-                </button>
-                <button
-                  onClick={() => { setPendingFixed(null); setFixedComment(''); setFixedError(false); }}
-                  className="debug-fixed-cancel"
-                  style={{
-                    padding: '6px 12px',
-                    background: '#E5E7EB',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#374151',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  取消
-                </button>
-              </div>
-            )}
-            {fixedError && pendingFixed?.id === note.id && (
-              <div style={{ padding: '0 12px 8px 28px', fontSize: '11px', color: '#EF4444' }}>
-                コメントは必須です
               </div>
             )}
           </div>
