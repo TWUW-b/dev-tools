@@ -38,7 +38,8 @@ describe('api', () => {
       const result = await api.getNotes({ env: 'dev' });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/__debug/api/notes?env=dev&status=&q=&includeDeleted=0'
+        '/__debug/api/notes?env=dev&status=&q=&includeDeleted=0',
+        { signal: undefined },
       );
       expect(result).toEqual(mockNotes);
     });
@@ -51,7 +52,8 @@ describe('api', () => {
       await api.getNotes({ env: 'dev', status: 'open' });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/__debug/api/notes?env=dev&status=open&q=&includeDeleted=0'
+        '/__debug/api/notes?env=dev&status=open&q=&includeDeleted=0',
+        { signal: undefined },
       );
     });
 

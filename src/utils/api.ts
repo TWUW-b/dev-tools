@@ -50,6 +50,7 @@ export const api = {
     status?: Status | '';
     q?: string;
     includeDeleted?: boolean;
+    signal?: AbortSignal;
   }): Promise<Note[]> {
     const params = new URLSearchParams({
       env: options.env,
@@ -58,7 +59,9 @@ export const api = {
       includeDeleted: options.includeDeleted ? '1' : '0',
     });
 
-    const response = await fetch(`${apiBaseUrl}/notes?${params}`);
+    const response = await fetch(`${apiBaseUrl}/notes?${params}`, {
+      signal: options.signal,
+    });
     const data = await parseResponse<NotesResponse>(response);
 
     if (!data.success) {

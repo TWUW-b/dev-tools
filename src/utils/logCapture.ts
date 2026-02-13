@@ -16,11 +16,14 @@ const DEFAULT_CONSOLE: ConsoleLogConfig = {
 const DEFAULT_NETWORK_MAX_ENTRIES = 30;
 const SENSITIVE_HEADERS = ['authorization', 'cookie', 'set-cookie', 'x-api-key'];
 
-let activeInstanceCount = 0;
+let activeInstance: LogCaptureInstance | null = null;
 
 /**
  * ログキャプチャを初期化
  * アプリ起動時に呼び出し、DebugPanelに渡す
+ *
+ * 既にインスタンスが存在する場合は自動で destroy してから新規作成する。
+ * これにより monkey-patch の破損を防ぐ。
  */
 export function createLogCapture(config: LogCaptureConfig): LogCaptureInstance {
   // SSR ガード: window がない環境ではno-opインスタンスを返す
@@ -33,10 +36,10 @@ export function createLogCapture(config: LogCaptureConfig): LogCaptureInstance {
     };
   }
 
-  if (activeInstanceCount > 0) {
-    console.warn('[logCapture] Multiple instances detected. Previous monkey-patches may be corrupted. Call destroy() on the previous instance first.');
+  // 既存インスタンスを安全に破棄（monkey-patch 破損防止）
+  if (activeInstance) {
+    activeInstance.destroy();
   }
-  activeInstanceCount++;
 
   const errorLogs: ConsoleLogEntry[] = [];
   const generalLogs: ConsoleLogEntry[] = [];
@@ -199,7 +202,7 @@ export function createLogCapture(config: LogCaptureConfig): LogCaptureInstance {
     });
   }
 
-  return {
+  const instance: LogCaptureInstance = {
     getConsoleLogs: () => [...errorLogs, ...generalLogs].sort((a, b) =>
       a.timestamp.localeCompare(b.timestamp)
     ),
@@ -214,9 +217,14 @@ export function createLogCapture(config: LogCaptureConfig): LogCaptureInstance {
       errorLogs.length = 0;
       generalLogs.length = 0;
       networkLogs.length = 0;
-      activeInstanceCount = Math.max(0, activeInstanceCount - 1);
+      if (activeInstance === instance) {
+        activeInstance = null;
+      }
     },
   };
+
+  activeInstance = instance;
+  return instance;
 }
 
 /** URLパターンマッチ（簡易glob） */

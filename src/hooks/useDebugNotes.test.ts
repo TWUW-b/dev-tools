@@ -40,7 +40,7 @@ describe('useDebugNotes', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockApi.getNotes).toHaveBeenCalledWith({ env: 'dev' });
+    expect(mockApi.getNotes).toHaveBeenCalledWith(expect.objectContaining({ env: 'dev' }));
     expect(result.current.notes).toEqual(mockNotes);
   });
 

@@ -134,6 +134,15 @@ export function DebugPanel({
     }
   }, [pipWindow, onClose]);
 
+  // 親コンポーネント unmount 時に PiP ウィンドウを閉じる
+  const pipWindowRef = useRef(pipWindow);
+  pipWindowRef.current = pipWindow;
+  useEffect(() => {
+    return () => {
+      pipWindowRef.current?.close();
+    };
+  }, []);
+
   // --- 記録タブ: ハンドラ ---
   const resetForm = useCallback(() => {
     setContent('');

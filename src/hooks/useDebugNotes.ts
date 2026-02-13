@@ -13,23 +13,20 @@ export function useDebugNotes(env: Environment = 'dev'): UseDebugNotesReturn {
 
   // ノート一覧を取得
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     const fetchNotes = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const data = await api.getNotes({ env });
-        if (!cancelled) {
-          setNotes(data);
-        }
+        const data = await api.getNotes({ env, signal: controller.signal });
+        setNotes(data);
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setLoading(false);
         }
       }
@@ -38,7 +35,7 @@ export function useDebugNotes(env: Environment = 'dev'): UseDebugNotesReturn {
     fetchNotes();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [env, refreshTrigger]);
 
