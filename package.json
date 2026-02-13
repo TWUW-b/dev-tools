@@ -24,6 +24,10 @@
       "import": "./dist/hooks.js",
       "types": "./dist/hooks/index.d.ts"
     },
+    "./utils": {
+      "import": "./dist/utils.js",
+      "types": "./dist/utils/index.d.ts"
+    },
     "./manual": {
       "import": "./dist/components/manual.js",
       "types": "./dist/components/manual/index.d.ts"

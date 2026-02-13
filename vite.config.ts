@@ -10,6 +10,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         components: resolve(__dirname, 'src/components/index.ts'),
         hooks: resolve(__dirname, 'src/hooks/index.ts'),
+        utils: resolve(__dirname, 'src/utils/index.ts'),
         'components/manual': resolve(__dirname, 'src/components/manual/index.ts'),
       },
       formats: ['es'],
