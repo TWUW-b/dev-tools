@@ -235,11 +235,6 @@ class NotesController
         $comment = isset($input['comment']) ? trim((string)$input['comment']) : '';
         $author = isset($input['author']) ? trim((string)$input['author']) : '';
 
-        // fixed 変更時はコメント必須
-        if ($status === 'fixed' && $comment === '') {
-            return ['success' => false, 'error' => 'Comment is required when setting status to fixed'];
-        }
-
         // バリデーション
         if ($comment !== '' && mb_strlen($comment) > self::MAX_COMMENT_LENGTH) {
             return ['success' => false, 'error' => 'Comment exceeds maximum length'];

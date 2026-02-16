@@ -61,24 +61,13 @@ describe("Status change to fixed requires comment", () => {
     await deleteNote(noteId);
   });
 
-  test("PATCH status=fixed without comment → 400", async () => {
+  test("PATCH status=fixed without comment → 200", async () => {
     const res = await api(`/notes/${noteId}/status`, {
       method: "PATCH",
       json: { status: "fixed" },
     });
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("Comment is required");
-  });
-
-  test("PATCH status=fixed with empty comment → 400", async () => {
-    const res = await api(`/notes/${noteId}/status`, {
-      method: "PATCH",
-      json: { status: "fixed", comment: "   " },
-    });
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("Comment is required");
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
   });
 
   test("PATCH status=fixed with comment → 200", async () => {
