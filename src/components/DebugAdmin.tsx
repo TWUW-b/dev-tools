@@ -200,7 +200,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
   const handleConfirmStatusChange = useCallback(async () => {
     if (!pendingStatusChange) return;
     const { id, status } = pendingStatusChange;
-    if (status === 'fixed' && commentText.trim() === '') return;
+    if ((status === 'fixed' || status === 'rejected') && commentText.trim() === '') return;
     setLoadingAction(`status-${id}`);
     try {
       const options = commentText.trim() ? { comment: commentText.trim() } : undefined;
@@ -1383,11 +1383,17 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder={pendingStatusChange.status === 'fixed' ? 'コメント（必須）: 何を修正したか記入してください' : 'コメント（任意）'}
+              placeholder={
+                pendingStatusChange.status === 'fixed'
+                  ? 'コメント（必須）: 何を修正したか記入してください'
+                  : pendingStatusChange.status === 'rejected'
+                    ? 'コメント（必須）: 却下理由を記入してください'
+                    : 'コメント（任意）'
+              }
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                border: `1px solid ${commentText.trim() === '' && pendingStatusChange.status === 'fixed' ? colors.error : colors.border}`,
+                border: `1px solid ${commentText.trim() === '' && (pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') ? colors.error : colors.border}`,
                 borderRadius: '10px',
                 background: colors.bgSecondary,
                 color: colors.text,
@@ -1402,9 +1408,11 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
               autoFocus
               rows={3}
             />
-            {pendingStatusChange.status === 'fixed' && commentText.trim() === '' && (
+            {(pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') && commentText.trim() === '' && (
               <div style={{ fontSize: '12px', color: colors.error, marginTop: '6px' }}>
-                fixed に変更するにはコメントが必須です
+                {pendingStatusChange.status === 'fixed'
+                  ? 'fixed に変更するにはコメントが必須です'
+                  : '却下理由の入力が必須です'}
               </div>
             )}
             <div style={{
@@ -1430,14 +1438,14 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
               </button>
               <button
                 onClick={handleConfirmStatusChange}
-                disabled={loadingAction !== null || (pendingStatusChange.status === 'fixed' && commentText.trim() === '')}
+                disabled={loadingAction !== null || ((pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') && commentText.trim() === '')}
                 style={{
                   padding: '10px 20px',
-                  background: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? colors.bgTertiary : colors.primary,
+                  background: ((pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') && commentText.trim() === '') ? colors.bgTertiary : colors.primary,
                   border: 'none',
                   borderRadius: '10px',
-                  color: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? colors.textMuted : '#FFF',
-                  cursor: (pendingStatusChange.status === 'fixed' && commentText.trim() === '') ? 'not-allowed' : 'pointer',
+                  color: ((pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') && commentText.trim() === '') ? colors.textMuted : '#FFF',
+                  cursor: ((pendingStatusChange.status === 'fixed' || pendingStatusChange.status === 'rejected') && commentText.trim() === '') ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                   fontSize: '13px',
                   display: 'flex',

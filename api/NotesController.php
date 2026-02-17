@@ -243,6 +243,16 @@ class NotesController
             return ['success' => false, 'error' => 'Author exceeds maximum length'];
         }
 
+        // fixed / rejected はコメント必須
+        if (in_array($status, ['fixed', 'rejected'], true) && $comment === '') {
+            return [
+                'success' => false,
+                'error' => $status === 'fixed'
+                    ? 'Comment is required when setting status to fixed'
+                    : 'Reason is required when rejecting',
+            ];
+        }
+
         $note = $this->db->fetchOne(
             'SELECT status FROM notes WHERE id = ? AND deleted_at IS NULL',
             [$id]

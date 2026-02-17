@@ -61,13 +61,15 @@ describe("Status change to fixed requires comment", () => {
     await deleteNote(noteId);
   });
 
-  test("PATCH status=fixed without comment → 200", async () => {
+  test("PATCH status=fixed without comment → 400", async () => {
     const res = await api(`/notes/${noteId}/status`, {
       method: "PATCH",
       json: { status: "fixed" },
     });
-    expect(res.status).toBe(200);
-    expect((await res.json()).success).toBe(true);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error).toBe("Comment is required when setting status to fixed");
   });
 
   test("PATCH status=fixed with comment → 200", async () => {
@@ -80,7 +82,7 @@ describe("Status change to fixed requires comment", () => {
   });
 });
 
-// ─── Other statuses don't require comment ───
+// ─── Other statuses: rejected requires comment, resolved/open don't ───
 
 describe("Status change to resolved/rejected/open without comment", () => {
   let noteId: number;
@@ -102,10 +104,21 @@ describe("Status change to resolved/rejected/open without comment", () => {
     expect(res.status).toBe(200);
   });
 
-  test("PATCH status=rejected without comment → 200", async () => {
+  test("PATCH status=rejected without comment → 400", async () => {
     const res = await api(`/notes/${noteId}/status`, {
       method: "PATCH",
       json: { status: "rejected" },
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error).toBe("Reason is required when rejecting");
+  });
+
+  test("PATCH status=rejected with comment → 200", async () => {
+    const res = await api(`/notes/${noteId}/status`, {
+      method: "PATCH",
+      json: { status: "rejected", comment: "対応不要" },
     });
     expect(res.status).toBe(200);
   });
