@@ -35,6 +35,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 header('Content-Type: application/json; charset=utf-8');
 
+// パス計算（openapi.yaml ルートを env チェック前に処理するため先に算出）
+$method = $_SERVER['REQUEST_METHOD'];
+$uri = $_SERVER['REQUEST_URI'];
+$path = parse_url($uri, PHP_URL_PATH);
+$basePath = dirname($_SERVER['SCRIPT_NAME']);
+if ($basePath === '/' || $basePath === '\\') {
+    $basePath = '';
+}
+$relativePath = substr($path, strlen($basePath)) ?: '/';
+
+// GET /openapi.yaml（認証不要、DB 不要）
+if ($method === 'GET' && preg_match('#^/openapi\.yaml/?$#', $relativePath)) {
+    $yamlPath = __DIR__ . '/openapi.yaml';
+    if (!file_exists($yamlPath)) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'OpenAPI spec not found']);
+        exit;
+    }
+    header_remove('Content-Type');
+    header('Content-Type: application/yaml; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    readfile($yamlPath);
+    exit;
+}
+
 // 依存ファイル読み込み
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/NotesController.php';
@@ -94,16 +119,6 @@ function requireFeedbackAdmin(array $config): void
 }
 
 // ルーティング
-$method = $_SERVER['REQUEST_METHOD'];
-$uri = $_SERVER['REQUEST_URI'];
-$path = parse_url($uri, PHP_URL_PATH);
-
-// パスからベース部分を除去（/__debug/api/notes → /notes）
-$basePath = dirname($_SERVER['SCRIPT_NAME']);
-if ($basePath === '/' || $basePath === '\\') {
-    $basePath = '';
-}
-$relativePath = substr($path, strlen($basePath)) ?: '/';
 
 try {
     // GET /notes

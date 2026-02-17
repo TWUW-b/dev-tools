@@ -1,4 +1,6 @@
 RewriteEngine On
+# openapi.yaml を index.php 経由にする（CORS 付与のため）
+RewriteRule ^openapi\.yaml$ index.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]

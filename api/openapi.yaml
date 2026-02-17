@@ -1,0 +1,1539 @@
+openapi: 3.0.3
+info:
+  title: '@twuw-b/dev-tools API'
+  version: 1.0.0
+  description: |
+    @twuw-b/dev-tools バックエンド API
+
+    ## デプロイ形態
+
+    | デプロイ | パス | 用途 | 認証 |
+    |---------|------|------|------|
+    | Debug Notes API | `/__debug/api` | ノート・テスト・フィードバック全機能 | `X-Admin-Key`（Feedback のみ） |
+    | Feedback API | `/__manual/api` | フィードバック機能のみ | `X-Admin-Key`（管理操作） |
+
+    ## 共通仕様
+
+    - レスポンス: `application/json; charset=utf-8`（エクスポート・添付配信を除く）
+    - CORS: `config.php` の `allowed_origins` に基づく
+    - リクエストサイズ上限: 1MB
+    - DB: SQLite（`Database.php` が自動マイグレーション）
+
+    ## DB
+
+    SQLite。Database.php が自動マイグレーション（スキーマバージョン: 10）。
+
+    ### テーブル一覧
+
+    | テーブル | 用途 | バージョン |
+    |---------|------|----------|
+    | meta | スキーマバージョン管理 | v1 |
+    | notes | デバッグノート | v1（v2-v6 で拡張） |
+    | test_cases | テストケース定義 | v3 |
+    | test_runs | テスト実行結果 | v3 |
+    | note_test_cases | ノート↔テストケース紐付け | v6 |
+    | feedbacks | フィードバック | v7 |
+    | rate_limits | IP レート制限 | v7 |
+    | note_attachments | ノート添付ファイル | v8 |
+    | feedback_attachments | フィードバック添付ファイル | v9 |
+    | note_activities | ノートコメント・履歴 | v10 |
+
+    ### config.php
+
+    #### Debug Notes API 用
+
+    ```php
+    <?php
+    return [
+        'db' => [
+            'dev'  => __DIR__ . '/data/debug-dev.sqlite',
+            'test' => __DIR__ . '/data/debug-test.sqlite',
+        ],
+        'allowed_origins' => [
+            'https://your-domain.com',
+            'http://localhost:5173',
+        ],
+        'api_key' => null,
+        'feedback_admin_key' => 'your-admin-key',
+        'upload_dir' => __DIR__ . '/data/attachments',
+    ];
+    ```
+
+    #### Feedback API 用
+
+    ```php
+    <?php
+    return [
+        'db' => __DIR__ . '/data/feedback.sqlite',
+        'allowed_origins' => [
+            'https://your-domain.com',
+            'http://localhost:5173',
+        ],
+        'admin_key' => 'your-admin-key',
+    ];
+    ```
+
+    > `db` の型が異なる: Debug Notes は環境別の連想配列、Feedback は単一パスの文字列。
+
+servers: []
+
+tags:
+  - name: Notes
+    description: デバッグノート
+  - name: Activities
+    description: ノートコメント・履歴
+  - name: Note Attachments
+    description: ノート添付ファイル
+  - name: Test Cases
+    description: テストケース
+  - name: Test Runs
+    description: テスト実行
+  - name: Feedbacks
+    description: フィードバック
+  - name: Feedback Attachments
+    description: フィードバック添付ファイル
+  - name: Export
+    description: エクスポート
+  - name: OpenAPI
+    description: API 仕様書
+
+paths:
+  /notes:
+    get:
+      tags: [Notes]
+      summary: ノート一覧取得
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, resolved, rejected, fixed]
+        - name: q
+          in: query
+          description: title / content の全文検索
+          schema:
+            type: string
+        - name: includeDeleted
+          in: query
+          description: 削除済みを含む
+          schema:
+            type: string
+            enum: ['0', '1']
+            default: '0'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+    post:
+      tags: [Notes]
+      summary: ノート作成
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  note:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      status:
+                        type: string
+                      created_at:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/{id}:
+    get:
+      tags: [Notes]
+      summary: ノート詳細取得
+      description: 添付ファイルとアクティビティを含む。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  note:
+                    $ref: '#/components/schemas/NoteDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Notes]
+      summary: ノート論理削除
+      description: deleted_at を設定する論理削除。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /notes/{id}/status:
+    patch:
+      tags: [Notes]
+      summary: ステータス更新
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [open, resolved, rejected, fixed]
+                comment:
+                  type: string
+                  maxLength: 2000
+                author:
+                  type: string
+                  maxLength: 100
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/{id}/severity:
+    patch:
+      tags: [Notes]
+      summary: 重要度更新
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                severity:
+                  type: string
+                  nullable: true
+                  enum: [critical, high, medium, low, null]
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/{id}/activities:
+    get:
+      tags: [Activities]
+      summary: アクティビティ一覧
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  activities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Activity'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Activities]
+      summary: コメント追加
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  maxLength: 2000
+                  minLength: 1
+                author:
+                  type: string
+                  maxLength: 100
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  activity:
+                    $ref: '#/components/schemas/Activity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/{id}/attachments:
+    post:
+      tags: [Note Attachments]
+      summary: 画像アップロード
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    最大 5MB。許可 MIME: image/png, image/jpeg, image/webp, image/gif。
+                    1ノートあたり最大 5 ファイル。
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  attachment:
+                    $ref: '#/components/schemas/Attachment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Note Attachments]
+      summary: 添付一覧
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  attachments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Attachment'
+
+  /notes/{id}/attachments/{attachmentId}:
+    delete:
+      tags: [Note Attachments]
+      summary: 添付削除
+      description: ファイルも物理削除される。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/noteId'
+        - $ref: '#/components/parameters/attachmentId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /attachments/{filename}:
+    get:
+      tags: [Note Attachments]
+      summary: 添付ファイルのバイナリ配信
+      description: JSON ではなく画像バイナリを返す。パストラバーサル検出時は 400 エラー。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: filename
+          in: path
+          required: true
+          description: ランダム hex 32 文字 + 拡張子
+          schema:
+            type: string
+            pattern: '^[a-f0-9]+\.\w+$'
+      responses:
+        '200':
+          description: 画像バイナリ
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: 'public, max-age=86400'
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /test-cases:
+    get:
+      tags: [Test Cases]
+      summary: テストケース一覧
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TestCase'
+    delete:
+      tags: [Test Cases]
+      summary: テストケース一括削除
+      description: 関連する test_runs、note_test_cases も連動削除。最大 100 件/リクエスト。
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  maxItems: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  deleted:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /test-cases/import:
+    post:
+      tags: [Test Cases]
+      summary: テストケース一括インポート
+      description: 重複は無視（INSERT OR IGNORE）。最大 1,000 件/リクエスト。
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cases]
+              properties:
+                cases:
+                  type: array
+                  items:
+                    type: object
+                    required: [domain, capability, title]
+                    properties:
+                      domain:
+                        type: string
+                        maxLength: 200
+                      capability:
+                        type: string
+                        maxLength: 200
+                      title:
+                        type: string
+                        maxLength: 500
+                  maxItems: 1000
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /test-cases/tree:
+    get:
+      tags: [Test Cases]
+      summary: テストツリー取得
+      description: |
+        domain → capability → cases の階層構造で、テスト結果と未解決ノート数を集計。
+
+        capability.status の決定ロジック:
+        | 条件 | status |
+        |------|--------|
+        | fail あり + open ノートあり | `fail` |
+        | fail あり + open ノートなし | `retest` |
+        | 全 pass（1件以上） | `passed` |
+        | テスト未実行 | `null` |
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TestTree'
+
+  /test-runs:
+    post:
+      tags: [Test Runs]
+      summary: テスト結果を一括送信
+      description: |
+        同じ caseId が複数回ある場合、fail が優先（重複排除）。
+        fail 時に個別ノート（runs[].note）または共通ノート（failNote）を作成可能。
+        failNote は runs[].note 未指定の fail ケースに適用。
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRunRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        caseId:
+                          type: integer
+                        runId:
+                          type: integer
+                        result:
+                          type: string
+                          enum: [pass, fail, skip]
+                        noteId:
+                          type: integer
+                          description: fail 時にノートが作成された場合
+                  capability:
+                    $ref: '#/components/schemas/CapabilityResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /feedbacks:
+    post:
+      tags: [Feedbacks]
+      summary: フィードバック送信
+      description: |
+        認証不要（公開エンドポイント）。
+        レート制限: 10 req / 60 sec / IP。
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    $ref: '#/components/schemas/Feedback'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    get:
+      tags: [Feedbacks]
+      summary: フィードバック一覧（管理者）
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_progress, closed]
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [bug, question, request, share, other]
+        - name: target
+          in: query
+          schema:
+            type: string
+            enum: [app, manual]
+        - name: custom_tag
+          in: query
+          description: 完全一致
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Feedback'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  customTags:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /feedbacks/{id}:
+    get:
+      tags: [Feedbacks]
+      summary: フィードバック詳細（管理者）
+      description: 添付・ログを含む。
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    $ref: '#/components/schemas/FeedbackDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Feedbacks]
+      summary: フィードバック削除（管理者）
+      description: 関連する添付ファイルも削除。
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /feedbacks/{id}/status:
+    patch:
+      tags: [Feedbacks]
+      summary: フィードバックステータス更新（管理者）
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [open, in_progress, closed]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      updatedAt:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /feedbacks/{id}/attachments:
+    post:
+      tags: [Feedback Attachments]
+      summary: フィードバック画像アップロード
+      description: |
+        認証不要。レート制限あり。
+        1フィードバックあたり最大 3 ファイル。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    最大 5MB。許可 MIME: image/png, image/jpeg, image/webp, image/gif。
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  attachment:
+                    $ref: '#/components/schemas/Attachment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    get:
+      tags: [Feedback Attachments]
+      summary: フィードバック添付一覧（管理者）
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  attachments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Attachment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /feedbacks/{id}/attachments/{attachmentId}:
+    delete:
+      tags: [Feedback Attachments]
+      summary: フィードバック添付削除（管理者）
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - $ref: '#/components/parameters/feedbackId'
+        - $ref: '#/components/parameters/attachmentId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /feedbacks/export/{format}:
+    get:
+      tags: [Export]
+      summary: フィードバックエクスポート（管理者）
+      description: |
+        ファイル名: feedbacks-YYYYMMDD.{ext}
+
+        CSV カラム: ID, 種別, 対象, タグ, メッセージ, ステータス, ページURL, ユーザー種別, バージョン, 添付数, 作成日時, 更新日時
+      security:
+        - AdminKey: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: format
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [json, csv, sqlite]
+      responses:
+        '200':
+          description: |
+            | format | Content-Type |
+            |--------|-------------|
+            | json | application/json |
+            | csv | text/csv（UTF-8 BOM） |
+            | sqlite | application/octet-stream |
+          content:
+            application/json:
+              schema:
+                type: object
+            text/csv:
+              schema:
+                type: string
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /export/json:
+    get:
+      tags: [Export]
+      summary: Notes エクスポート（JSON）
+      description: |
+        ファイル名: debug-notes-{env}-YYYYMMDD.json
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exportedAt:
+                    type: string
+                    example: '2026-02-13T10:00:00+09:00'
+                  env:
+                    type: string
+                  version:
+                    type: string
+                  notes:
+                    type: array
+                    items:
+                      type: object
+                  testCases:
+                    type: array
+                    items:
+                      type: object
+                  testRuns:
+                    type: array
+                    items:
+                      type: object
+
+  /export/sqlite:
+    get:
+      tags: [Export]
+      summary: Notes エクスポート（SQLite）
+      description: |
+        ファイル名: debug-notes-{env}-YYYYMMDD.sqlite
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: SQLite DB ファイル
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /openapi.yaml:
+    get:
+      tags: [OpenAPI]
+      summary: OpenAPI 仕様書取得
+      description: この仕様書自体を YAML 形式で返す。認証不要。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+components:
+  schemas:
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        route:
+          type: string
+          nullable: true
+        screen_name:
+          type: string
+          nullable: true
+        title:
+          type: string
+        content:
+          type: string
+          maxLength: 4000
+        severity:
+          type: string
+          nullable: true
+          enum: [critical, high, medium, low, null]
+        status:
+          type: string
+          enum: [open, resolved, rejected, fixed]
+        source:
+          type: string
+          enum: [manual, test]
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+          nullable: true
+        attachment_count:
+          type: integer
+        latest_comment:
+          type: string
+          nullable: true
+        test_case_ids:
+          type: array
+          items:
+            type: integer
+
+    NoteDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        route:
+          type: string
+          nullable: true
+        screen_name:
+          type: string
+          nullable: true
+        title:
+          type: string
+        content:
+          type: string
+        user_log:
+          type: string
+          nullable: true
+          maxLength: 20000
+        steps:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: JSON、最大 500KB
+        severity:
+          type: string
+          nullable: true
+          enum: [critical, high, medium, low, null]
+        status:
+          type: string
+          enum: [open, resolved, rejected, fixed]
+        source:
+          type: string
+          enum: [manual, test]
+        test_case_id:
+          type: integer
+          nullable: true
+          deprecated: true
+        test_case_ids:
+          type: array
+          items:
+            type: integer
+        console_log:
+          type: array
+          nullable: true
+          items:
+            type: object
+          description: JSON、最大 500KB
+        network_log:
+          type: array
+          nullable: true
+          items:
+            type: object
+          description: JSON、最大 500KB
+        environment:
+          type: object
+          nullable: true
+          description: JSON、最大 500KB
+        deleted_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+
+    NoteCreateRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 4000
+        title:
+          type: string
+          description: 省略時は content 先頭行から自動生成（80 文字）
+          maxLength: 80
+        route:
+          type: string
+        screenName:
+          type: string
+        severity:
+          type: string
+          nullable: true
+          enum: [critical, high, medium, low, null]
+        userLog:
+          type: string
+          maxLength: 20000
+        steps:
+          type: array
+          items:
+            type: string
+          description: JSON、最大 500KB
+        consoleLogs:
+          type: array
+          items:
+            type: object
+          description: JSON、最大 500KB
+        networkLogs:
+          type: array
+          items:
+            type: object
+          description: JSON、最大 500KB
+        environment:
+          type: object
+          description: JSON、最大 500KB
+        source:
+          type: string
+          enum: [manual, test]
+          default: manual
+        testCaseIds:
+          type: array
+          items:
+            type: integer
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        note_id:
+          type: integer
+        action:
+          type: string
+          enum: [status_change, comment]
+        content:
+          type: string
+          nullable: true
+          maxLength: 2000
+        old_status:
+          type: string
+          nullable: true
+        new_status:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+          maxLength: 100
+        created_at:
+          type: string
+
+    Attachment:
+      type: object
+      description: |
+        ファイル名形式: ランダム hex 32 文字 + 拡張子。
+        MIME 判定: finfo（拡張子ではなくバイナリ解析）。
+        最大サイズ: 5MB。
+        許可 MIME: image/png, image/jpeg, image/webp, image/gif。
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        original_name:
+          type: string
+        mime_type:
+          type: string
+          enum: [image/png, image/jpeg, image/webp, image/gif]
+        size:
+          type: integer
+          maximum: 5242880
+        created_at:
+          type: string
+
+    TestCase:
+      type: object
+      properties:
+        id:
+          type: integer
+        domain:
+          type: string
+          maxLength: 200
+        capability:
+          type: string
+          maxLength: 200
+        title:
+          type: string
+          maxLength: 500
+        created_at:
+          type: string
+
+    TestTree:
+      type: object
+      properties:
+        domain:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityResult'
+
+    CapabilityResult:
+      type: object
+      properties:
+        capability:
+          type: string
+        total:
+          type: integer
+        passed:
+          type: integer
+        failed:
+          type: integer
+        status:
+          type: string
+          nullable: true
+          enum: [fail, retest, passed, null]
+          description: |
+            fail: fail あり + open ノートあり
+            retest: fail あり + open ノートなし
+            passed: 全 pass（1件以上）
+            null: テスト未実行
+        openIssues:
+          type: integer
+        cases:
+          type: array
+          items:
+            type: object
+            properties:
+              caseId:
+                type: integer
+              title:
+                type: string
+              last:
+                type: string
+                nullable: true
+                enum: [pass, fail, skip, null]
+              openIssues:
+                type: integer
+
+    TestRunRequest:
+      type: object
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            type: object
+            required: [caseId, result]
+            properties:
+              caseId:
+                type: integer
+              result:
+                type: string
+                enum: [pass, fail, skip]
+              note:
+                type: object
+                description: fail 時の個別ノート（任意）
+                properties:
+                  content:
+                    type: string
+                    maxLength: 4000
+                  severity:
+                    type: string
+                    nullable: true
+                    enum: [critical, high, medium, low, null]
+                  consoleLogs:
+                    type: array
+                    items:
+                      type: object
+                  networkLogs:
+                    type: array
+                    items:
+                      type: object
+                  environment:
+                    type: object
+        failNote:
+          type: object
+          description: fail 全体の共通ノート（note 未指定の fail ケースに適用）
+          properties:
+            content:
+              type: string
+              maxLength: 4000
+            severity:
+              type: string
+              nullable: true
+              enum: [critical, high, medium, low, null]
+
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [bug, question, request, share, other]
+        target:
+          type: string
+          nullable: true
+          enum: [app, manual, null]
+        customTag:
+          type: string
+          nullable: true
+          maxLength: 50
+        message:
+          type: string
+          maxLength: 4000
+        status:
+          type: string
+          enum: [open, in_progress, closed]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        attachmentCount:
+          type: integer
+
+    FeedbackDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [bug, question, request, share, other]
+        target:
+          type: string
+          nullable: true
+          enum: [app, manual, null]
+        customTag:
+          type: string
+          nullable: true
+        message:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, closed]
+        pageUrl:
+          type: string
+          nullable: true
+          maxLength: 2000
+        userType:
+          type: string
+          nullable: true
+          maxLength: 100
+        appVersion:
+          type: string
+          nullable: true
+          maxLength: 50
+        environment:
+          type: object
+          nullable: true
+        consoleLogs:
+          type: array
+          nullable: true
+          items:
+            type: object
+          description: 最大 15 件、JSON 最大 512KB
+        networkLogs:
+          type: array
+          nullable: true
+          items:
+            type: object
+          description: 最大 15 件、JSON 最大 512KB
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    FeedbackCreateRequest:
+      type: object
+      required: [kind, message]
+      properties:
+        kind:
+          type: string
+          enum: [bug, question, request, share, other]
+        target:
+          type: string
+          nullable: true
+          enum: [app, manual, null]
+        message:
+          type: string
+          maxLength: 4000
+        customTag:
+          type: string
+          maxLength: 50
+        pageUrl:
+          type: string
+          maxLength: 2000
+          pattern: '^https?://'
+        userType:
+          type: string
+          maxLength: 100
+        appVersion:
+          type: string
+          maxLength: 50
+        consoleLogs:
+          type: array
+          items:
+            type: object
+          maxItems: 15
+          description: JSON 最大 512KB
+        networkLogs:
+          type: array
+          items:
+            type: object
+          maxItems: 15
+          description: JSON 最大 512KB
+        environment:
+          type: object
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: string
+
+  securitySchemes:
+    AdminKey:
+      type: apiKey
+      in: header
+      name: X-Admin-Key
+
+  parameters:
+    env:
+      name: env
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [dev, test]
+    noteId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    feedbackId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    attachmentId:
+      name: attachmentId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    Success:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+    BadRequest:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: 認証失敗
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Unauthorized
+    NotFound:
+      description: リソース不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Not found
+    TooManyRequests:
+      description: レート制限（10 req / 60 sec / IP）
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Too many requests
