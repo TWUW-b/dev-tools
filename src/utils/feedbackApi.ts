@@ -1,6 +1,10 @@
 import type { Feedback, FeedbackStatus, NoteAttachment } from '../types';
 
 function validateApiBaseUrl(url: string): string {
+  // 相対パス (/api/__debug 等) はそのまま使用
+  if (url.startsWith('/')) {
+    return url.replace(/\/$/, '');
+  }
   const parsed = new URL(url);
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     throw new Error(`Invalid API base URL protocol: ${parsed.protocol}`);

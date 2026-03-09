@@ -831,6 +831,176 @@ export function getPipStyles(): string {
       text-align: center;
     }
 
+    /* 管理タブ: ビュー切り替え */
+    .debug-manage-toolbar {
+      padding-bottom: 8px;
+      border-bottom: 1px solid ${COLORS.gray200};
+    }
+
+    .debug-view-toggle {
+      display: flex;
+      gap: 4px;
+      background: ${COLORS.gray100};
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .debug-view-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: ${COLORS.gray500};
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .debug-view-btn:hover {
+      color: ${COLORS.gray700};
+    }
+
+    .debug-view-btn.active {
+      background: ${COLORS.white};
+      color: ${COLORS.primary};
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .debug-view-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: ${COLORS.primary};
+      color: ${COLORS.white};
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .debug-view-btn.active .debug-view-badge {
+      background: ${COLORS.secondary};
+      color: ${COLORS.gray900};
+    }
+
+    /* 確認手順ビュー */
+    .debug-checklist-view {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .debug-checklist-card {
+      border: 1px solid ${COLORS.gray200};
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .debug-checklist-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: ${COLORS.gray100};
+      border-bottom: 1px solid ${COLORS.gray200};
+    }
+
+    .debug-checklist-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: ${COLORS.gray900};
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .debug-checklist-items {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+    }
+
+    .debug-checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: ${COLORS.gray700};
+      cursor: pointer;
+      transition: background 0.1s;
+      line-height: 1.4;
+    }
+
+    .debug-checklist-item:hover {
+      background: ${COLORS.gray100};
+    }
+
+    .debug-checklist-item input[type="checkbox"] {
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: ${COLORS.primary};
+    }
+
+    .debug-checklist-done {
+      text-decoration: line-through;
+      color: ${COLORS.gray500};
+    }
+
+    .debug-checklist-no-items {
+      padding: 12px;
+      font-size: 12px;
+      color: ${COLORS.gray500};
+      text-align: center;
+    }
+
+    .debug-checklist-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-top: 1px solid ${COLORS.gray200};
+      background: ${COLORS.gray100};
+    }
+
+    .debug-checklist-progress {
+      font-size: 12px;
+      color: ${COLORS.gray500};
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .debug-btn-resolve {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: ${COLORS.primary};
+      color: ${COLORS.white};
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .debug-btn-resolve:hover:not(:disabled) {
+      background: ${COLORS.primaryHover};
+    }
+
+    .debug-btn-resolve:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }

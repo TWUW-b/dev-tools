@@ -37,7 +37,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "api/*.php",
+    "!api/config.php",
+    "api/*.yaml",
+    "api/*.sql",
+    "api/.htaccess",
+    "docs/integration-guide.md",
+    "docs/test-case-template.md"
   ],
   "scripts": {
     "dev": "vite",
