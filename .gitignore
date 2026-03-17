@@ -36,3 +36,4 @@ playwright-report/
 docs/migration.md
 docs/operation/
 docs/completed/feedback-export.md
+docs/fixed/debug-mode-localstorage.md
