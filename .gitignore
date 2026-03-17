@@ -31,3 +31,8 @@ api/data/attachments/
 # Playwright
 test-results/
 playwright-report/
+
+# Project-specific docs (contain server URLs / internal structure)
+docs/migration.md
+docs/operation/
+docs/completed/feedback-export.md
