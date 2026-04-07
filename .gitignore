@@ -16,6 +16,10 @@ coverage/
 !.claude/commands/
 .claude/commands/*
 !.claude/commands/*.md
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/devtools-testcase-author/
+!.claude/skills/devtools-testcase-author/**
 *.swp
 *.swo
 .DS_Store
