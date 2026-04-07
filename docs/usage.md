@@ -24,7 +24,25 @@
 | `@twuw-b/dev-tools/hooks` | フックのみ |
 | `@twuw-b/dev-tools/manual` | マニュアル系コンポーネントのみ |
 
-### 最小構成
+### 最小構成（推奨: `<DevTools>`）
+
+v1.2.0 以降は `<DevTools>` ワンストップ統合コンポーネントの使用を推奨します。
+`setDebugApiBaseUrl` / `createLogCapture` / `useDebugMode` の配線をすべて内包します。
+
+```typescript
+import { DevTools } from '@twuw-b/dev-tools';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <DevTools apiBaseUrl="https://your-domain.com/__debug/api" />
+    </>
+  );
+}
+```
+
+### レガシー構成（`<DebugPanel>` 直接配線）
 
 ```typescript
 import { DebugPanel, useDebugMode, setDebugApiBaseUrl } from '@twuw-b/dev-tools';
@@ -71,6 +89,62 @@ https://your-app.com/some-page#debug
 
 ## 2. コンポーネント
 
+### DevTools（推奨）
+
+dev-tools のワンストップ統合コンポーネント。`v1.2.0` で追加。
+
+```typescript
+import { DevTools } from '@twuw-b/dev-tools';
+
+<DevTools
+  apiBaseUrl={import.meta.env.VITE_DEBUG_API_URL}
+  env="dev"
+  testCases={allTestCases}
+  environmentsMd={environmentsMd}
+  manualItems={manualItems}
+/>
+```
+
+#### Props
+
+| Prop | 型 | 必須 | 説明 |
+|------|----|:-:|------|
+| `apiBaseUrl` | `string` | | デバッグ API のベース URL。未指定時は全体が非表示 |
+| `env` | `'dev' \| 'test'` | | 環境（デフォルト `'dev'`） |
+| `testCases` | `ParsedTestCase[]` | | テストケース配列。指定時に **test タブ有効化 + 実行中ケース自動紐付け** が動作 |
+| `environmentsMd` | `string` | | 環境情報 MD 文字列。指定時に **環境タブ** が追加 |
+| `manualItems` | `ManualItem[]` | | マニュアル項目。指定時にマニュアルタブ有効化 |
+| `manualDefaultPath` | `string` | | マニュアルのデフォルトパス |
+| `onManualNavigate` | `(path: string) => void` | | マニュアル内リンク遷移ハンドラ |
+| `onManualAppNavigate` | `(path: string) => void` | | `app:` リンク遷移ハンドラ |
+| `onSave` | `(note: Note) => void` | | ノート保存時コールバック |
+| `initialSize` | `{ width, height }` | | PiP の初期サイズ |
+| `logCaptureConfig` | `LogCaptureConfig` | | logCapture の設定を上書き（既定: console + `/api/**`） |
+| `disableLogCapture` | `boolean` | | logCapture を完全無効化 |
+| `adminRoutePath` | `string` | | debug mode を強制 ON するパス（デフォルト `/__admin`） |
+
+#### 内部動作
+
+- `apiBaseUrl` を `setDebugApiBaseUrl()` に渡す
+- `createLogCapture({ console: true, network: ['/api/**'] })` を自動生成（`logCaptureConfig` で上書き可）
+- `useDebugMode()` を購読し、PiP を条件レンダ
+- **`adminRoutePath` に一致する pathname では debug mode を強制 ON** し、管理ダッシュボードと PiP を同時表示
+  （`popstate` / `hashchange` / `pushState` / `replaceState` すべて検知）
+
+#### 置き場所
+
+Routes の外（`AppContent` 直下等）に 1 つ置きます。管理ダッシュボードは従来通り別 Route で配線:
+
+```typescript
+<Routes>
+  <Route path="/__admin" element={<DebugAdmin env="dev" feedbackApiBaseUrl={...} feedbackAdminKey={...} />} />
+  <Route element={<MainLayout />}>{/* ... */}</Route>
+</Routes>
+<DevTools apiBaseUrl={debugApiUrl} testCases={allTestCases} environmentsMd={environmentsMd} />
+```
+
+---
+
 ### DebugPanel
 
 バグ記録用の入力パネル。PiP（Picture-in-Picture）ウィンドウとして表示されます。
@@ -86,6 +160,8 @@ import { DebugPanel } from '@twuw-b/dev-tools';
   initialSize={{ width: 400, height: 500 }}      // 初期サイズ
   testCases={testCases}                          // テストケース配列
   logCapture={logCapture}                        // ログキャプチャインスタンス
+  manualItems={manualItems}                      // マニュアル項目（マニュアルタブ有効化）
+  environmentsMd={environmentsMd}                // 環境情報 MD（環境タブ有効化、v1.2.0+）
 />
 ```
 
@@ -110,13 +186,20 @@ import { DebugPanel } from '@twuw-b/dev-tools';
 > - ネットワークログ（URL, メソッド, ステータス, POST等のボディ）
 > - 環境情報（userAgent, viewport, URL, timestamp）
 
-#### 3タブ構成
+#### 5タブ構成
 
-| タブ | 機能 |
-|------|------|
-| **記録** | バグ報告フォーム（内容・補足メモ・重要度・添付オプション） |
-| **管理** | ノート一覧 + セレクトボックス（open/fixed/resolved/rejected）+ source badge |
-| **テスト** | チェックボックス式テスト実行（Domain/Capability/Case階層、Capability単位で送信） |
+| タブ | 条件 | 機能 |
+|------|:-:|------|
+| **記録** | 常時 | バグ報告フォーム。**test タブで展開中の capability の case IDs を自動紐付け**（v1.2.0+、バッジ表示） |
+| **管理** | 常時 | ノート一覧 + セレクトボックス（open/fixed/resolved/rejected）+ source badge |
+| **テスト** | `testCases` 指定時 | チェックボックス式テスト実行（Domain/Capability/Case階層、Capability単位で送信） |
+| **マニュアル** | `manualItems` 指定時 | Markdown マニュアルの閲覧 |
+| **環境** | `environmentsMd` 指定時 | 環境情報ビューア（v1.2.0+） |
+
+> **実行中テストケースの自動紐付け**（v1.2.0+）: テストタブで capability を展開すると、
+> そのケース IDs が「実行中」扱いになります。記録タブ上部にバッジ `実行中: #12, #15 [解除]`
+> が表示され、バグを保存すると `test_case_ids` に自動付与されます。
+> 手動解除はバッジの [解除] ボタンで可能。
 
 #### 動作
 
@@ -143,6 +226,99 @@ open → fixed → resolved
 | `rejected` | 対応不要・却下 | undo | error |
 
 > 厳格な遷移ルールはなし。任意のステータス間で自由に変更可能。
+
+### 環境情報タブ（v1.2.0+）
+
+`<DevTools environmentsMd={...} />` または `<DebugPanel environmentsMd={...} />` に Markdown 文字列を渡すと、
+PiP に「環境」タブが追加され、プロジェクト・環境別の URL / 認証情報 / 注意点を構造化表示します。
+
+#### MD フォーマット
+
+```markdown
+---
+title: アプリケーション アカウント情報
+warning: 取り扱い注意
+---
+
+# 共通
+
+## Basic認証
+
+- user: demo_user
+- pass: REDACTED_BASIC_AUTH
+
+# trinos
+
+phase: Phase 1
+
+## dev / ルートアカウント
+
+- url: https://d1example-dev.cloudfront.net/admin/login/
+- email: admin@example.com
+- pass: REDACTED_PASSWORD_ROOT_DEV
+
+## dev / その他アカウント
+
+| ロール | メール | パスワード |
+|---|---|---|
+| 閲覧 | viewer@example.com | REDACTED_PASSWORD_USER |
+
+## staging / ルートアカウント
+
+- url: https://d2example-stg.cloudfront.net/admin/login/
+- email: staging@example.com
+- pass: REDACTED_PASSWORD_ROOT_STG
+
+## 前提・注意点
+
+- staging は毎週月曜リセット
+- prod は書き込み厳禁
+```
+
+#### パース規約
+
+| 記法 | 意味 |
+|---|---|
+| frontmatter `title` / `warning` | タブ上部に表示 |
+| `# プロジェクト名` | 折り畳みブロック（`共通` は特別扱い） |
+| `phase: xxx`（H1 直下の行） | phase バッジ |
+| `## env / ラベル` | env タブ付きセクション（`dev` / `staging` / `prod` / 任意） |
+| `## ラベル` | env 無し共通セクション |
+| `## dev環境` 等 | 末尾の「環境」を除去して env として解釈 |
+| `- key: value` | KV カード（`url` / `email` / `pass` / `user` を自動判定してアイコン・マスク・リンク化） |
+| パイプテーブル | 表として表示（ヘッダに `パスワード` を含むカラムは自動マスク） |
+| `## 前提・注意点` / `## Notes` 等 | 折り畳み可能な注意事項として分離 |
+| 段落・コードブロック・`###` 以降 | そのまま Markdown レンダ（柔軟性確保） |
+
+#### UI 機能
+
+- 警告バナー（frontmatter `warning`）を上部固定
+- プロジェクト折り畳み + phase バッジ
+- env タブ切替（dev / staging / prod ごと）
+- KV カード: アイコン + ラベル + 値 + 操作ボタン
+  - パスワード: デフォルトマスク `••••••••` + 目アイコンで表示切替 + コピー
+  - URL: `[🔗 開く]` で新タブ + コピー
+  - メール・ユーザー: コピー
+- テーブルセル: `パスワード` カラム自動マスク、URL 自動リンク化、全セルコピー可
+- `## 前提・注意点` セクションは `<details>` 折り畳み
+- 規約外の要素は `MarkdownRenderer` でそのまま描画
+
+#### セキュリティ注意
+
+`environments.md` に実パスワードを書く場合は必ず `.gitignore` に登録してください。
+推奨はパスワードマネージャー参照 ID のみ記載する運用です。
+
+#### パーサ単体使用
+
+```typescript
+import { parseEnvironmentsMd } from '@twuw-b/dev-tools';
+import type { EnvironmentInfoDoc } from '@twuw-b/dev-tools';
+
+const doc: EnvironmentInfoDoc = parseEnvironmentsMd(mdString);
+// doc.projects[i].envs[j].sections[k].entries[l] ...
+```
+
+---
 
 ### DebugAdmin
 

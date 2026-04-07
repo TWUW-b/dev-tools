@@ -6,9 +6,12 @@
 
 ## 特徴
 
+- **`<DevTools>` 1 コンポーネントで統合**（v1.2.0+）: ルーティング / logCapture / debug mode を自動配線
 - **デバッグノート**: PiP ウィンドウで不具合・違和感を最小入力で記録
 - **テストフロー**: Domain/Capability/Case 階層のチェックリスト実行
+  - 展開中の capability の case ID を record タブ保存時に **自動紐付け**（v1.2.0+）
 - **マニュアル表示**: Markdown ドキュメントの PiP / サイドバー / タブ表示
+- **環境情報タブ**（v1.2.0+）: プロジェクト・環境別の URL / 認証情報 / 注意点を MD ベースで管理
 - **フィードバック**: ユーザーからのバグ報告・要望・質問を収集
 - コンソール・ネットワークログの自動キャプチャ
 - dev / test 環境ごとにデータ分離
@@ -71,7 +74,45 @@ npm install @twuw-b/dev-tools
 
 ## クイックスタート
 
-### デバッグパネル（デバッグノート + テストフロー + マニュアル）
+### デバッグパネル（デバッグノート + テストフロー + マニュアル + 環境情報）
+
+**推奨: `<DevTools>` ワンストップ統合コンポーネント（v1.2.0+）**
+
+```typescript
+import { DevTools } from '@twuw-b/dev-tools';
+import { allTestCases } from './debug/testCases';
+// 環境情報 MD（任意）
+import environmentsMd from '../docs/environments.md?raw';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <DevTools
+        apiBaseUrl="https://your-domain.com/__debug/api"
+        env="dev"
+        testCases={allTestCases}
+        environmentsMd={environmentsMd}
+      />
+    </>
+  );
+}
+```
+
+`<DevTools>` が以下を内部で処理します:
+
+- `setDebugApiBaseUrl()` / `createLogCapture({ console: true, network: ['/api/**'] })` の自動配線
+- `useDebugMode()` の購読と PiP の条件レンダ
+- `/__admin` ルート滞在中は debug mode を強制 ON 扱い（管理ダッシュボード表示中に PiP も同時表示）
+- test タブで capability を展開中なら、その case IDs を record タブ保存時に **自動紐付け**
+
+デバッグモードの起動:
+- URL: `#debug`
+- キーボード: `z` キーを素早く3回押す（トグル）
+- `/__admin` を開いている間は自動 ON
+
+<details>
+<summary>レガシー API: <code>&lt;DebugPanel&gt;</code> 直接配線</summary>
 
 ```typescript
 import {
@@ -81,41 +122,21 @@ import {
   createLogCapture,
 } from '@twuw-b/dev-tools';
 
-// API URL を設定
 setDebugApiBaseUrl('https://your-domain.com/__debug/api');
-
-// ログキャプチャ初期化（アプリ起動時に1回）
-const logCapture = createLogCapture({
-  console: true,
-  network: ['/api/**'],
-});
-
-// マニュアル項目
-const manualItems = [
-  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md' },
-  { id: 'faq', title: 'よくある質問', path: '/docs/faq.md' },
-];
+const logCapture = createLogCapture({ console: true, network: ['/api/**'] });
 
 function App() {
   const { isDebugMode } = useDebugMode();
-
   return (
     <>
       <YourApp />
-      {isDebugMode && (
-        <DebugPanel
-          logCapture={logCapture}
-          manualItems={manualItems}
-        />
-      )}
+      {isDebugMode && <DebugPanel logCapture={logCapture} />}
     </>
   );
 }
 ```
 
-デバッグモードの起動:
-- URL: `#debug`
-- キーボード: `z` キーを素早く3回押す（トグル）
+</details>
 
 ### マニュアル PiP（単体使用）
 
