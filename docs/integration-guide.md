@@ -164,33 +164,21 @@ export default defineConfig({
 })
 ```
 
-## Step 8: App.tsx に DebugPanel + DebugAdmin を追加
+## Step 8: App.tsx に DevTools + DebugAdmin を追加
+
+**推奨**: `<DevTools>` 1 コンポーネントで PiP 配線が完了します。
+`setDebugApiBaseUrl` / `createLogCapture` / `useDebugMode` の手動配線は不要です。
 
 ```typescript
-import {
-  DebugPanel,
-  DebugAdmin,
-  useDebugMode,
-  setDebugApiBaseUrl,
-  createLogCapture,
-} from '@twuw-b/dev-tools';
+import { DevTools, DebugAdmin } from '@twuw-b/dev-tools';
 import { allTestCases } from '@/debug/testCases';
+// 環境情報 MD を raw 文字列で取り込み（任意）
+import environmentsMd from '@/../docs/environments.md?raw';
 
-// dev-tools 初期化 (モジュールレベル)
 const debugApiUrl = import.meta.env.VITE_DEBUG_API_URL;
-if (debugApiUrl) {
-  setDebugApiBaseUrl(debugApiUrl);
-}
-
-const logCapture = debugApiUrl
-  ? createLogCapture({ console: true, network: ['/api/**'] })
-  : null;
-
 const feedbackAdminKey = import.meta.env.VITE_DEBUG_ADMIN_KEY || 'dev-admin-key-change-me';
 
 function AppContent() {
-  const { isDebugMode } = useDebugMode();
-
   return (
     <>
       <Routes>
@@ -214,14 +202,99 @@ function AppContent() {
         </Route>
       </Routes>
 
-      {/* PiP デバッグパネル */}
-      {debugApiUrl && isDebugMode && logCapture && (
-        <DebugPanel logCapture={logCapture} testCases={allTestCases} />
-      )}
+      {/* PiP デバッグパネル（DevTools が内部で logCapture / useDebugMode を管理） */}
+      <DevTools
+        apiBaseUrl={debugApiUrl}
+        env="dev"
+        testCases={allTestCases}
+        environmentsMd={environmentsMd}
+      />
     </>
   );
 }
 ```
+
+**`<DevTools>` の挙動**:
+
+- `apiBaseUrl` を内部で `setDebugApiBaseUrl()` に渡し、`createLogCapture({ console: true, network: ['/api/**'] })` を自動生成
+- `useDebugMode()` を購読し、debug mode ON で `DebugPanel`(PiP) をレンダ
+- **`/__admin` ルート滞在中は debug mode を強制 ON 扱い**し、管理ダッシュボードと PiP を同時に表示
+- `testCases` を渡すと **test タブで展開中の capability の全ケース ID が「実行中」扱い**となり、
+  record タブでバグを保存すると `test_case_ids` に自動紐付けされる（record タブ上部にバッジ表示）
+
+ログ設定を変えたい場合は `logCaptureConfig` prop を渡すか、`disableLogCapture` で無効化可能。
+
+### 環境情報タブ（任意）
+
+`environmentsMd` に Markdown 文字列を渡すと PiP に「環境」タブが追加され、
+各プロジェクト・環境ごとの URL / ログイン情報 / Basic 認証 / 注意点を一覧できます。
+
+**MD フォーマット規約**:
+
+```markdown
+---
+title: アプリケーション アカウント情報
+warning: 取り扱い注意
+---
+
+# 共通
+
+## Basic認証
+
+- user: demo_user
+- pass: REDACTED_BASIC_AUTH
+
+# trinos
+
+phase: Phase 1
+
+## dev / ルートアカウント
+
+- url: https://d1example-dev.cloudfront.net/admin/login/
+- email: admin@example.com
+- pass: REDACTED_PASSWORD_ROOT_DEV
+
+## dev / その他アカウント
+
+| ロール | メール | パスワード |
+|---|---|---|
+| 閲覧 | viewer@example.com | REDACTED_PASSWORD_USER |
+
+## staging / ルートアカウント
+
+- url: https://d2example-stg.cloudfront.net/admin/login/
+- email: staging@example.com
+- pass: REDACTED_PASSWORD_ROOT_STG
+
+## 前提・注意点
+
+- staging は毎週月曜リセット
+- prod は書き込み厳禁
+```
+
+**規約**:
+
+| 記法 | 意味 |
+|---|---|
+| frontmatter `title` / `warning` | タブ上部に表示 |
+| `# プロジェクト名` | 折り畳みブロック |
+| `phase: xxx`（H1 直下の行） | phase バッジ |
+| `## env / ラベル` | env タブ付きセクション（`dev` / `staging` / `prod` 等） |
+| `## ラベル` | 共通セクション（env 無し） |
+| `## dev環境` 等 | 末尾の「環境」を除去して env として解釈 |
+| `- key: value` | KV カード（`url` / `email` / `pass` 等を自動判定） |
+| パイプテーブル | 表として表示（`パスワード` カラムは自動マスク） |
+| `## 前提・注意点` / `## Notes` 等 | 折り畳み可能な注意事項として分離 |
+| その他（段落・コードブロック等） | 生 Markdown としてそのままレンダ |
+
+**UI 機能**:
+- パスワードはデフォルトマスク + 目アイコンで表示切替
+- URL は `[🔗 開く]` ボタンで新タブ、コピーボタン付き
+- メール・ユーザー名もクリップボードコピー可能
+- `## 前提・注意点` セクションは折り畳みブロックで表示
+
+**セキュリティ注意**: `environments.md` に実パスワードを書く場合は必ず `.gitignore` に登録してください。
+推奨はパスワードマネージャー参照 ID のみ記載する運用です。
 
 ## Step 9: テストケースローダーを作成
 

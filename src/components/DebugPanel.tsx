@@ -8,6 +8,7 @@ import { ManageTab } from './debug/ManageTab';
 import { TestTab } from './debug/TestTab';
 import type { TestTabHandle } from './debug/TestTab';
 import { ManualTabContent } from './debug/ManualTabContent';
+import { EnvironmentTab } from './debug/EnvironmentTab';
 import { ImageDropZone } from './debug/ImageDropZone';
 import { getPipStyles, triggerButtonStyle, fallbackStyles } from './debug/styles';
 
@@ -28,7 +29,7 @@ declare global {
   }
 }
 
-type PipTab = 'record' | 'manage' | 'test' | 'manual';
+type PipTab = 'record' | 'manage' | 'test' | 'manual' | 'env';
 
 /**
  * デバッグパネル（PiP）
@@ -45,6 +46,7 @@ export function DebugPanel({
   manualDefaultPath,
   onManualNavigate,
   onManualAppNavigate,
+  environmentsMd,
 }: DebugPanelProps) {
   // --- PiP state ---
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
@@ -56,6 +58,7 @@ export function DebugPanel({
   const [activeTab, setActiveTab] = useState<PipTab>('record');
   const hasTestTab = testCases && testCases.length > 0;
   const hasManualTab = manualItems && manualItems.length > 0;
+  const hasEnvTab = !!environmentsMd && environmentsMd.trim().length > 0;
 
   // --- 記録タブ: フォーム state ---
   const [content, setContent] = useState('');
@@ -68,6 +71,9 @@ export function DebugPanel({
   const [attachHeaders, setAttachHeaders] = useState(false);
   const [attachFiles, setAttachFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // --- 実行中テストケース（record タブで自動紐付け用） ---
+  const [runningTestCaseIds, setRunningTestCaseIds] = useState<number[]>([]);
 
   // --- リフレッシュ ---
   const [refreshing, setRefreshing] = useState(false);
@@ -197,6 +203,7 @@ export function DebugPanel({
       content: content.trim(),
       userLog: userLog ? maskSensitive(userLog) : undefined,
       severity: severity || undefined,
+      testCaseIds: runningTestCaseIds.length > 0 ? runningTestCaseIds : undefined,
       consoleLogs: logCapture?.getConsoleLogs(),
       networkLogs: filteredNetworkLogs.length > 0 ? filteredNetworkLogs : undefined,
       environment: typeof window !== 'undefined' ? {
@@ -233,7 +240,7 @@ export function DebugPanel({
     }
 
     setSaving(false);
-  }, [content, userLog, severity, attachFiles, attachGetResponse, attachDuration, attachHeaders, createNote, onSave, resetForm, logCapture, env]);
+  }, [content, userLog, severity, runningTestCaseIds, attachFiles, attachGetResponse, attachDuration, attachHeaders, createNote, onSave, resetForm, logCapture, env]);
 
   // --- リフレッシュ ---
   const handleRefresh = useCallback(async () => {
@@ -312,12 +319,55 @@ export function DebugPanel({
             マニュアル
           </button>
         )}
+        {hasEnvTab && (
+          <button
+            className={`debug-tab ${activeTab === 'env' ? 'active' : ''}`}
+            onClick={() => setActiveTab('env')}
+          >
+            環境
+          </button>
+        )}
       </nav>
 
       <main className="debug-content">
         {/* 記録タブ */}
         {activeTab === 'record' && (
           <>
+            {runningTestCaseIds.length > 0 && (
+              <div
+                className="debug-running-cases-badge"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 10px',
+                  marginBottom: '8px',
+                  background: '#EEF2FF',
+                  border: '1px solid #C7D2FE',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#3730A3',
+                }}
+              >
+                <span className="debug-icon" style={{ fontSize: '14px' }}>science</span>
+                <span>実行中: {runningTestCaseIds.map(id => `#${id}`).join(', ')}</span>
+                <button
+                  type="button"
+                  onClick={() => setRunningTestCaseIds([])}
+                  style={{
+                    marginLeft: 'auto',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#3730A3',
+                    fontSize: '11px',
+                  }}
+                  title="紐付けを解除"
+                >
+                  解除
+                </button>
+              </div>
+            )}
             {message && (
               <div className={`debug-message debug-message-${message.type}`}>
                 {message.text}
@@ -432,6 +482,11 @@ export function DebugPanel({
         )}
 
         {/* テストタブ */}
+        {/* 環境タブ */}
+        {activeTab === 'env' && hasEnvTab && (
+          <EnvironmentTab md={environmentsMd!} />
+        )}
+
         {activeTab === 'test' && hasTestTab && (
           <TestTab
             ref={testTabRef}
@@ -439,6 +494,7 @@ export function DebugPanel({
             env={env}
             logCapture={logCapture}
             onNotesRefresh={refresh}
+            onRunningCasesChange={setRunningTestCaseIds}
           />
         )}
       </main>

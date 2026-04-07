@@ -22,10 +22,12 @@ interface TestTabProps {
   env: Environment;
   logCapture?: LogCaptureInstance;
   onNotesRefresh: () => void;
+  /** 現在「実行中」のテストケース ID が変化したときに呼ばれる。展開中の capability の全 case ID の和集合 */
+  onRunningCasesChange?: (caseIds: number[]) => void;
 }
 
 export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
-  { testCases, env, logCapture, onNotesRefresh },
+  { testCases, env, logCapture, onNotesRefresh, onRunningCasesChange },
   ref,
 ) {
   const [testTree, setTestTree] = useState<DomainTree[]>([]);
@@ -97,6 +99,21 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
   }, [env]);
 
   useImperativeHandle(ref, () => ({ refresh: refreshTestTree }), [refreshTestTree]);
+
+  // 展開中の capability に属する case ID を「実行中」として親に通知
+  useEffect(() => {
+    if (!onRunningCasesChange) return;
+    const running: number[] = [];
+    for (const domain of testTree) {
+      for (const cap of domain.capabilities) {
+        const capKey = `${domain.domain}/${cap.capability}`;
+        if (expandedCapabilities.has(capKey)) {
+          for (const c of cap.cases) running.push(c.caseId);
+        }
+      }
+    }
+    onRunningCasesChange(running);
+  }, [expandedCapabilities, testTree, onRunningCasesChange]);
 
   // Capability単位で送信
   const handleSubmitCapability = useCallback(async (domain: string, capName: string, cases: CaseSummary[]) => {

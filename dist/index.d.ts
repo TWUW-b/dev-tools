@@ -1,5 +1,7 @@
 export { DebugPanel } from './components/DebugPanel';
 export { DebugAdmin } from './components/DebugAdmin';
+export { DevTools } from './components/DevTools';
+export type { DevToolsProps } from './components/DevTools';
 export { MarkdownRenderer, ManualPiP, ManualSidebar, ManualLink, ManualPage, ManualTabPage, FeedbackAdmin, FeedbackForm, } from './components/manual';
 export { useDebugMode } from './hooks/useDebugMode';
 export { useDebugNotes } from './hooks/useDebugNotes';
@@ -17,8 +19,9 @@ export { useFeedbackAdminMode } from './hooks/useFeedbackAdminMode';
 export { setDebugApiBaseUrl } from './utils/api';
 export { maskSensitive } from './utils/maskSensitive';
 export { parseTestCaseMd } from './utils/parseTestCaseMd';
+export { parseEnvironmentsMd } from './utils/parseEnvironmentsMd';
 export { createLogCapture } from './utils/logCapture';
 export { createFeedbackLogCapture } from './utils/feedbackLogCapture';
 export { loadMaterialSymbols, isAutoLoadDisabled, MATERIAL_SYMBOLS_CDN, materialSymbolsStyle } from './styles/material-symbols';
 export { DEBUG_COLORS, MANUAL_COLORS } from './styles/colors';
-export type { Note, NoteInput, NotesResponse, ApiConfig, Severity, Status, ParsedTestCase, CaseSummary, CapabilitySummary, DomainTree, TestRunInput, TestRunResponse, ConsoleLogEntry, NetworkLogEntry, Environment, EnvironmentInfo, ConsoleLogConfig, NetworkLogConfig, LogCaptureConfig, LogCaptureInstance, DebugPanelProps, DebugAdminProps, UseDebugNotesReturn, UseDebugModeReturn, ManualItem, ManualViewMode, PiPState, UseManualPiPReturn, UseManualLoaderReturn, MarkdownRendererProps, ManualPiPProps, ManualSidebarProps, ManualLinkProps, ManualPageProps, ManualTabPageProps, FeedbackKind, FeedbackTarget, FeedbackStatus, FeedbackLogCapture, FeedbackLogCaptureConfig, Feedback, FeedbackInput, FeedbackAdminProps, } from './types';
+export type { Note, NoteInput, NotesResponse, ApiConfig, Severity, Status, ParsedTestCase, CaseSummary, CapabilitySummary, DomainTree, TestRunInput, TestRunResponse, ConsoleLogEntry, NetworkLogEntry, Environment, EnvironmentInfo, ConsoleLogConfig, NetworkLogConfig, LogCaptureConfig, LogCaptureInstance, DebugPanelProps, DebugAdminProps, EnvironmentInfoDoc, EnvironmentProject, EnvironmentGroup, EnvironmentSection, EnvironmentKV, EnvironmentTable, UseDebugNotesReturn, UseDebugModeReturn, ManualItem, ManualViewMode, PiPState, UseManualPiPReturn, UseManualLoaderReturn, MarkdownRendererProps, ManualPiPProps, ManualSidebarProps, ManualLinkProps, ManualPageProps, ManualTabPageProps, FeedbackKind, FeedbackTarget, FeedbackStatus, FeedbackLogCapture, FeedbackLogCaptureConfig, Feedback, FeedbackInput, FeedbackAdminProps, } from './types';

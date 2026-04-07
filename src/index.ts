@@ -1,6 +1,8 @@
 // Components
 export { DebugPanel } from './components/DebugPanel';
 export { DebugAdmin } from './components/DebugAdmin';
+export { DevTools } from './components/DevTools';
+export type { DevToolsProps } from './components/DevTools';
 
 // Manual Components
 export {
@@ -33,6 +35,7 @@ export { useFeedbackAdminMode } from './hooks/useFeedbackAdminMode';
 export { setDebugApiBaseUrl } from './utils/api';
 export { maskSensitive } from './utils/maskSensitive';
 export { parseTestCaseMd } from './utils/parseTestCaseMd';
+export { parseEnvironmentsMd } from './utils/parseEnvironmentsMd';
 export { createLogCapture } from './utils/logCapture';
 export { createFeedbackLogCapture } from './utils/feedbackLogCapture';
 
@@ -65,6 +68,12 @@ export type {
   LogCaptureInstance,
   DebugPanelProps,
   DebugAdminProps,
+  EnvironmentInfoDoc,
+  EnvironmentProject,
+  EnvironmentGroup,
+  EnvironmentSection,
+  EnvironmentKV,
+  EnvironmentTable,
   UseDebugNotesReturn,
   UseDebugModeReturn,
   // Manual types

@@ -15,5 +15,5 @@ declare global {
 /**
  * デバッグパネル（PiP）
  */
-export declare function DebugPanel({ apiBaseUrl, env, onSave, onClose, initialSize, testCases, logCapture, manualItems, manualDefaultPath, onManualNavigate, onManualAppNavigate, }: DebugPanelProps): import("react/jsx-runtime").JSX.Element;
+export declare function DebugPanel({ apiBaseUrl, env, onSave, onClose, initialSize, testCases, logCapture, manualItems, manualDefaultPath, onManualNavigate, onManualAppNavigate, environmentsMd, }: DebugPanelProps): import("react/jsx-runtime").JSX.Element;
 export {};

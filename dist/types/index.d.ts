@@ -66,6 +66,45 @@ export interface NoteInput {
     source?: 'manual' | 'test';
     testCaseIds?: number[];
 }
+/** 環境情報ドキュメント */
+export interface EnvironmentInfoDoc {
+    title?: string;
+    warning?: string;
+    projects: EnvironmentProject[];
+    /** frontmatter 以外で H1 より前に書かれた自由記述 Markdown */
+    preamble?: string;
+}
+export interface EnvironmentProject {
+    name: string;
+    phase?: string;
+    /** env ごとにグルーピングされたセクション */
+    envs: EnvironmentGroup[];
+    /** env を持たない共通セクション（`##` にスラッシュ無しのもの） */
+    common: EnvironmentSection[];
+    /** 「前提・注意点」「Notes」等のノートブロック（生 MD） */
+    notes?: string;
+}
+export interface EnvironmentGroup {
+    env: string;
+    sections: EnvironmentSection[];
+}
+export interface EnvironmentSection {
+    label: string;
+    entries: EnvironmentKV[];
+    table?: EnvironmentTable;
+    /** セクション内のその他自由記述 Markdown */
+    extraMd?: string;
+}
+export interface EnvironmentKV {
+    key: string;
+    value: string;
+    /** パーサが推定した種別（UI でアイコン/マスク/リンク化に使用） */
+    kind: 'url' | 'email' | 'password' | 'user' | 'text';
+}
+export interface EnvironmentTable {
+    headers: string[];
+    rows: string[][];
+}
 /** パース済みテストケース */
 export interface ParsedTestCase {
     domain: string;
@@ -202,6 +241,8 @@ export interface DebugPanelProps {
     onManualNavigate?: (path: string) => void;
     /** マニュアル内 app: リンク遷移時のハンドラ */
     onManualAppNavigate?: (path: string) => void;
+    /** 環境情報 MD 文字列（指定時に「環境」タブ表示） */
+    environmentsMd?: string;
 }
 /** DebugAdmin プロパティ */
 export interface DebugAdminProps {
