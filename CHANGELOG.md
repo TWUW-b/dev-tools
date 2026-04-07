@@ -2,6 +2,18 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.2] - 2026-04-07
+
+### Fixed
+
+- **環境タブのコピーボタンが PiP 内で動作しない問題を修正**
+  - PiP 子ウィンドウでは `navigator.clipboard.writeText()` がフォーカス/権限要件により
+    失敗することがあった。
+  - `src/utils/clipboard.ts` に `copyToClipboard()` ヘルパーを新規追加し、
+    (1) PiP window の navigator.clipboard → (2) メインウィンドウ → (3) PiP document 内の
+    textarea + `execCommand('copy')` の 3 段階フォールバックで確実にコピーできるようにした。
+  - コピー成功時に 1.2 秒間 ✓ アイコン + success カラーでフィードバック表示。
+
 ## [1.2.1] - 2026-04-07
 
 ### Fixed
