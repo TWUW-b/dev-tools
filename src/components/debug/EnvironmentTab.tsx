@@ -1,6 +1,7 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, createContext, useContext } from 'react';
 import { MarkdownRenderer } from '../manual/MarkdownRenderer';
 import { parseEnvironmentsMd } from '../../utils/parseEnvironmentsMd';
+import { copyToClipboard } from '../../utils/clipboard';
 import { DEBUG_COLORS as COLORS } from '../../styles/colors';
 import type {
   EnvironmentInfoDoc,
@@ -9,11 +10,15 @@ import type {
   EnvironmentKV,
 } from '../../types';
 
+const PipDocContext = createContext<Document | null>(null);
+
 interface EnvironmentTabProps {
   md: string;
+  /** PiP ウィンドウの document。子要素のクリップボードコピーに使用 */
+  pipDocument?: Document | null;
 }
 
-export function EnvironmentTab({ md }: EnvironmentTabProps) {
+export function EnvironmentTab({ md, pipDocument = null }: EnvironmentTabProps) {
   const doc = useMemo<EnvironmentInfoDoc>(() => parseEnvironmentsMd(md), [md]);
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(doc.projects.map(p => p.name)),
@@ -29,6 +34,7 @@ export function EnvironmentTab({ md }: EnvironmentTabProps) {
   }, []);
 
   return (
+    <PipDocContext.Provider value={pipDocument}>
     <div className="debug-env-tab">
       {doc.title && <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>{doc.title}</h3>}
       {doc.warning && (
@@ -69,6 +75,7 @@ export function EnvironmentTab({ md }: EnvironmentTabProps) {
         />
       ))}
     </div>
+    </PipDocContext.Provider>
   );
 }
 
@@ -253,7 +260,16 @@ function SectionBlock({ section }: { section: EnvironmentSection }) {
 }
 
 function KVRow({ entry }: { entry: EnvironmentKV }) {
+  const pipDoc = useContext(PipDocContext);
   const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(entry.value, pipDoc);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    }
+  };
   const isPassword = entry.kind === 'password';
   const displayValue = isPassword && !revealed ? '•'.repeat(Math.min(entry.value.length, 10)) : entry.value;
 
@@ -310,21 +326,32 @@ function KVRow({ entry }: { entry: EnvironmentKV }) {
       )}
       <button
         type="button"
-        onClick={() => navigator.clipboard?.writeText(entry.value)}
-        title="コピー"
-        style={iconBtnStyle}
+        onClick={handleCopy}
+        title={copied ? 'コピーしました' : 'コピー'}
+        style={{ ...iconBtnStyle, color: copied ? COLORS.success : iconBtnStyle.color }}
       >
-        <span className="debug-icon" style={{ fontSize: '14px' }}>content_copy</span>
+        <span className="debug-icon" style={{ fontSize: '14px' }}>
+          {copied ? 'check' : 'content_copy'}
+        </span>
       </button>
     </div>
   );
 }
 
 function TableCell({ value, header }: { value: string; header: string }) {
+  const pipDoc = useContext(PipDocContext);
   const isPassword = /pass|pwd|パスワード/i.test(header);
   const isUrl = /^https?:\/\//.test(value);
   const isEmail = /^[^\s@]+@[^\s@]+$/.test(value);
   const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(value, pipDoc);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    }
+  };
   const display = isPassword && !revealed ? '•'.repeat(Math.min(value.length, 10)) : value;
 
   return (
@@ -353,11 +380,13 @@ function TableCell({ value, header }: { value: string; header: string }) {
         )}
         <button
           type="button"
-          onClick={() => navigator.clipboard?.writeText(value)}
-          style={iconBtnStyle}
-          title="コピー"
+          onClick={handleCopy}
+          style={{ ...iconBtnStyle, color: copied ? COLORS.success : iconBtnStyle.color }}
+          title={copied ? 'コピーしました' : 'コピー'}
         >
-          <span className="debug-icon" style={{ fontSize: '12px' }}>content_copy</span>
+          <span className="debug-icon" style={{ fontSize: '12px' }}>
+            {copied ? 'check' : 'content_copy'}
+          </span>
         </button>
       </div>
     </td>

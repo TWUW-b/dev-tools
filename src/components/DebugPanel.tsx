@@ -484,7 +484,7 @@ export function DebugPanel({
         {/* テストタブ */}
         {/* 環境タブ */}
         {activeTab === 'env' && hasEnvTab && (
-          <EnvironmentTab md={environmentsMd!} />
+          <EnvironmentTab md={environmentsMd!} pipDocument={pipWindowRef.current?.document ?? null} />
         )}
 
         {activeTab === 'test' && hasTestTab && (
