@@ -2,6 +2,19 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.1] - 2026-04-07
+
+### Fixed
+
+- **notes 検索の LIKE ESCAPE をリテラル化** (`api/NotesController.php`)
+  - SQLite は ESCAPE 句にプレースホルダバインドを許容しないため、
+    旧実装 `AND (title LIKE ? OR content LIKE ?) ESCAPE ?` + `bind '\\'` では
+    検索 API がエラーとなり動作しなかった。
+  - 各 LIKE に `ESCAPE '\\'` をリテラル付与する形に修正。
+  - `%` / `_` / `\` を含む検索クエリが正しくエスケープされるようになる。
+  - **影響**: npm パッケージに `api/*.php` が同梱されているため、
+    `npm install @twuw-b/dev-tools@1.2.1` で利用側は初期設定時点から修正版を入手できる。
+
 ## [1.2.0] - 2026-04-07
 
 ### Added
