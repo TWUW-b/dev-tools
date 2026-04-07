@@ -2,6 +2,35 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.3] - 2026-04-07
+
+### Added
+
+- **`devtools-testcase-author` Claude Code skill を npm パッケージに同梱**
+  - `.claude/skills/devtools-testcase-author/**` を `package.json.files` に追加
+  - 利用者は `npm install @twuw-b/dev-tools` で skill 一式（`SKILL.md` / `assets/templates/*.md` / `scripts/import-test-cases.mjs`）を取得可能
+  - 導入手順: `cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/`
+  - 機能: ロール軸（guest / user / client / admin / app-admin）でテストケース MD を自動生成し、`/__debug/api/test-cases/import` へ purge → import → verify まで実行
+
+### Docs
+
+- `docs/integration-guide.md` Step 11 に skill の導入手順と使い方を追記
+- `docs/integration-guide.md` テストケース MD 作成ルールを「1 ファイル = 1 ユーザーロール」（ロール軸）と明示
+- `docs/test-case-template.md` にロール軸テンプレートの説明を追記
+
+### Tooling (internal)
+
+- `/release` slash command の判定ロジックを改善:
+  - 前タグ差分ガード（空リリース防止）
+  - 次バージョンプレビューとユーザー承認
+  - 変更ファイルの 3 分類（コード / 同梱 / 非同梱）とケース別 bump 強制
+  - `.claude/skills/devtools-testcase-author/**` を同梱分類に追加
+- `docs/rfc/001-environment-switching.md` を Proposed で起票（実装検討中・仕様未確定）
+
+### Tests
+
+- Unit: 98 passed / API: 83 passed / E2E: 36 passed
+
 ## [1.2.2] - 2026-04-07
 
 ### Fixed
