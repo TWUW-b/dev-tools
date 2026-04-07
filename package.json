@@ -44,7 +44,8 @@
     "api/*.sql",
     "api/.htaccess",
     "docs/integration-guide.md",
-    "docs/test-case-template.md"
+    "docs/test-case-template.md",
+    ".claude/skills/devtools-testcase-author/**"
   ],
   "scripts": {
     "dev": "vite",
