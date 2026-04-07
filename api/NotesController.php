@@ -43,12 +43,11 @@ class NotesController
 
         // 検索
         if (!empty($params['q'])) {
-            $sql .= ' AND (title LIKE ? OR content LIKE ?) ESCAPE ?';
+            $sql .= " AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')";
             $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $params['q']);
             $q = '%' . $escaped . '%';
             $bindings[] = $q;
             $bindings[] = $q;
-            $bindings[] = '\\';
         }
 
         $sql .= ' ORDER BY created_at DESC';
