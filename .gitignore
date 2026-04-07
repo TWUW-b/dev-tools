@@ -12,7 +12,10 @@ coverage/
 # Editor
 .vscode/
 .idea/
-.claude/
+.claude/*
+!.claude/commands/
+.claude/commands/*
+!.claude/commands/*.md
 *.swp
 *.swo
 .DS_Store
