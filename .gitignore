@@ -13,16 +13,19 @@ coverage/
 .vscode/
 .idea/
 .claude/*
-!.claude/commands/
-.claude/commands/*
-!.claude/commands/*.md
+# skill のみ追跡（npm パッケージに同梱される利用者向け）
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/devtools-testcase-author/
 !.claude/skills/devtools-testcase-author/**
+# .claude/commands/ は個人の開発環境用、チーム共有しない
+# CLAUDE.md も個人の Claude Code 設定
 *.swp
 *.swo
 .DS_Store
+
+# Claude Code local settings (not shared via git)
+CLAUDE.md
 
 # API config (environment-specific)
 api/config.php
