@@ -2,6 +2,48 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.4] - 2026-04-08
+
+### Security
+
+- **git 履歴の認証情報を完全除去**
+  - v1.2.0 で `docs/integration-guide.md` / `docs/usage.md` / `CHANGELOG.md` /
+    `src/utils/parseEnvironmentsMd.test.ts` に埋め込まれていたサンプル認証情報
+    （flc-design.jp ドメインのダミー email + password など）を `git filter-repo`
+    で全コミット履歴から purge
+  - タグ `v1.2.0` / `v1.2.1` / `v1.2.2` / `v1.2.3` を書き換え後のハッシュに force-push
+  - GitHub Packages 上の v1.2.0〜v1.2.3 は削除済み
+  - **該当認証情報はダミー・テスト環境のもので実害なし**
+  - 利用者は `npm install @twuw-b/dev-tools@1.2.4` 以降を使用してください
+
+### Added
+
+- **`scripts/release/security-check.sh`** — リリース前セキュリティ検査の独立スクリプト
+  - gitignore 追跡検知 / 禁止ファイル名 / サービストークン / git 履歴スキャン
+  - **同梱 MD 内の KV credential (`- pass: xxx` 形式) 検出**
+    値が placeholder-whitelist (`REDACTED_*` / `YOUR_*` / `<...>` 等) でなければ停止
+  - `--tgz` オプションで publish 前 tgz の中身を検査
+  - パターン定義: `scripts/release/secret-patterns.txt`
+  - 許可リスト: `scripts/release/placeholder-whitelist.txt`
+
+### Changed
+
+- **`.claude/commands/release.md` を再構成**（525 → 307 行、-42%）
+  - Step 番号を 0.X 混在から 1-13 のフラット構造に整理
+  - セキュリティ検査を `scripts/release/security-check.sh` 呼び出しに統一
+  - 差分ガードの 3 分類ロジックを Step 2 に集約
+  - 禁止事項を Git / バージョン / セキュリティ / スコープでカテゴリ分け
+- `docs/integration-guide.md` / `docs/usage.md` / `CHANGELOG.md` / test fixtures の
+  サンプル値を placeholder 形式（`admin@example.com` / `REDACTED_PASSWORD_*`）に置換
+
+### Fixed
+
+- `docs/draft/pip-autosetup-and-testcase-link.md`（v1.2.0 で実装済み）を `docs/done/` に移動
+
+### Tests
+
+- Unit: 98 passed / API: 83 passed / E2E: 36 passed
+
 ## [1.2.3] - 2026-04-07
 
 ### Added
