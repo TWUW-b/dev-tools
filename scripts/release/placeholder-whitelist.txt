@@ -1,0 +1,20 @@
+# 同梱ドキュメント内で許容される placeholder 値
+# KV credential 検出 (0.5.X) で、値がこのいずれかにマッチすれば OK
+# 正規表現 (大文字小文字問わず)
+
+^REDACTED[_A-Z0-9-]*$
+^YOUR[_A-Z0-9-]*$
+^CHANGE[_A-Z0-9-]*ME[_A-Z0-9-]*$
+^PLACEHOLDER[_A-Z0-9-]*$
+^EXAMPLE[_A-Z0-9-]*$
+^TODO[_A-Z0-9-]*$
+^FIXME[_A-Z0-9-]*$
+^<[^>]+>$
+^\$\{[A-Z_]+\}$
+^xxx+$
+^X+$
+^\*+$
+^test[_-]?(user|pass|auth)$
+^demo[_-]?(user|pass|auth)$
+^dummy[_-]?(user|pass|auth)$
+^<your[-_ ]*\w+>$
