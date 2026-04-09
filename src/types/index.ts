@@ -52,6 +52,8 @@ export interface Note {
   /** @deprecated test_case_ids を使用 */
   test_case_id?: number | null;
   test_case_ids?: number[];
+  /** 紐付いたテストケースの詳細情報 */
+  test_cases?: NoteTestCase[];
   attachment_count?: number;
   attachments?: NoteAttachment[];
   activities?: NoteActivity[];
@@ -117,6 +119,15 @@ export interface EnvironmentKV {
 export interface EnvironmentTable {
   headers: string[];
   rows: string[][];
+}
+
+/** ノートに紐付いたテストケース情報 */
+export interface NoteTestCase {
+  id: number;
+  case_key: string | null;
+  domain: string | null;
+  capability: string | null;
+  title: string | null;
 }
 
 /** パース済みテストケース */

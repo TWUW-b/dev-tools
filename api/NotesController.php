@@ -54,22 +54,34 @@ class NotesController
 
         $notes = $this->db->query($sql, $bindings);
 
-        // test_case_ids を一括取得
+        // test_case_ids + test_cases 情報を一括取得
         $noteIds = array_column($notes, 'id');
         if (!empty($noteIds)) {
             $placeholders = implode(',', array_fill(0, count($noteIds), '?'));
             $mappings = $this->db->query(
-                "SELECT note_id, case_id FROM note_test_cases WHERE note_id IN ($placeholders)",
+                "SELECT ntc.note_id, ntc.case_id, tc.case_key, tc.domain, tc.capability, tc.title
+                 FROM note_test_cases ntc
+                 LEFT JOIN test_cases tc ON tc.id = ntc.case_id
+                 WHERE ntc.note_id IN ($placeholders)",
                 $noteIds
             );
 
             $caseIdMap = [];
+            $caseInfoMap = [];
             foreach ($mappings as $m) {
                 $caseIdMap[$m['note_id']][] = (int)$m['case_id'];
+                $caseInfoMap[$m['note_id']][] = [
+                    'id' => (int)$m['case_id'],
+                    'case_key' => $m['case_key'] ?? null,
+                    'domain' => $m['domain'] ?? null,
+                    'capability' => $m['capability'] ?? null,
+                    'title' => $m['title'] ?? null,
+                ];
             }
 
             foreach ($notes as &$note) {
                 $note['test_case_ids'] = $caseIdMap[$note['id']] ?? [];
+                $note['test_cases'] = $caseInfoMap[$note['id']] ?? [];
             }
         }
 

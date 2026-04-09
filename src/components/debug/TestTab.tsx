@@ -48,11 +48,11 @@ export const TestTab = forwardRef<TestTabHandle, TestTabProps>(function TestTab(
     let cancelled = false;
 
     (async () => {
+      // import は best-effort。失敗しても tree 取得は必ず試みる
       try {
         await api.importTestCases(testCases);
       } catch (err) {
         console.warn('Failed to import test cases:', err);
-        return;
       }
       if (cancelled) return;
       try {
