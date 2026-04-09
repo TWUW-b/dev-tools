@@ -418,6 +418,17 @@ export function getPipStyles(): string {
       margin-right: 4px;
     }
 
+    .debug-tc-badge {
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.12);
+      color: #6366F1;
+      white-space: nowrap;
+    }
+
     .debug-severity-dot {
       width: 8px;
       height: 8px;

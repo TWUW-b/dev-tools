@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { Note, Status } from '../../types';
 
-type ManageView = 'list' | 'checklist';
-
 interface ManageTabProps {
   notes: Note[];
   updateStatus: (id: number, status: Status, options?: { comment?: string; author?: string }) => Promise<boolean>;
@@ -24,25 +22,19 @@ function parseChecklistItems(comment: string): string[] {
 export function ManageTab({ notes, updateStatus }: ManageTabProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [manageStatusFilter, setManageStatusFilter] = useState<Set<Status>>(new Set(['fixed']));
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
-  const [view, setView] = useState<ManageView>('list');
   // チェック状態: { noteId: Set<itemIndex> }
   const [checkedItems, setCheckedItems] = useState<Record<number, Set<number>>>({});
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const activeNotes = useMemo(() => {
     if (manageStatusFilter.size === 0) return notes;
     return notes.filter(n => manageStatusFilter.has(n.status));
   }, [notes, manageStatusFilter]);
 
-  const fixedNotes = useMemo(() => {
-    return notes.filter(n => n.status === 'fixed');
-  }, [notes]);
-
   const handleStatusChange = useCallback(async (id: number, status: Status) => {
     setLoadingAction(`status-${id}`);
     try {
       await updateStatus(id, status);
-      // resolved にしたらチェック状態をクリア
       if (status === 'resolved') {
         setCheckedItems(prev => {
           const next = { ...prev };
@@ -70,175 +62,111 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
 
   return (
     <div className="debug-manage">
-      {/* ビュー切り替え + ステータスフィルタ */}
+      {/* ステータスフィルタ */}
       <div className="debug-manage-toolbar">
-        <div className="debug-view-toggle">
-          <button
-            className={`debug-view-btn ${view === 'list' ? 'active' : ''}`}
-            onClick={() => setView('list')}
-          >
-            <span className="debug-icon" style={{ fontSize: '16px' }}>list</span>
-            一覧
-          </button>
-          <button
-            className={`debug-view-btn ${view === 'checklist' ? 'active' : ''}`}
-            onClick={() => setView('checklist')}
-          >
-            <span className="debug-icon" style={{ fontSize: '16px' }}>checklist</span>
-            確認手順
-            {fixedNotes.length > 0 && (
-              <span className="debug-view-badge">{fixedNotes.length}</span>
-            )}
-          </button>
+        <div className="debug-status-filter">
+          {(['open', 'fixed', 'resolved', 'rejected'] as Status[]).map(s => (
+            <button
+              key={s}
+              data-testid={`status-chip-${s}`}
+              className={`debug-status-chip ${manageStatusFilter.has(s) ? 'active' : ''}`}
+              onClick={() => {
+                setManageStatusFilter(prev => {
+                  const next = new Set(prev);
+                  if (next.has(s)) next.delete(s);
+                  else next.add(s);
+                  return next;
+                });
+              }}
+            >
+              {s}
+            </button>
+          ))}
+          <span className="debug-filter-count">{activeNotes.length}件</span>
         </div>
       </div>
 
-      {/* 一覧ビュー */}
-      {view === 'list' && (
-        <>
-          <div className="debug-status-filter">
-            {(['open', 'fixed', 'resolved', 'rejected'] as Status[]).map(s => (
-              <button
-                key={s}
-                data-testid={`status-chip-${s}`}
-                className={`debug-status-chip ${manageStatusFilter.has(s) ? 'active' : ''}`}
-                onClick={() => {
-                  setManageStatusFilter(prev => {
-                    const next = new Set(prev);
-                    if (next.has(s)) {
-                      next.delete(s);
-                    } else {
-                      next.add(s);
-                    }
-                    return next;
-                  });
-                }}
+      {activeNotes.length === 0 ? (
+        <div className="debug-empty">該当するノートはありません</div>
+      ) : (
+        activeNotes.map(note => {
+          const items = parseChecklistItems(note.latest_comment || '');
+          const checked = checkedItems[note.id] ?? new Set<number>();
+          const allChecked = items.length > 0 && checked.size === items.length;
+          const hasChecklist = items.length > 0;
+          return (
+            <div key={note.id} className="debug-checklist-card">
+              {/* ヘッダー: ID + severity + content preview + status */}
+              <div
+                className="debug-checklist-header"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setExpandedIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(note.id)) next.delete(note.id);
+                  else next.add(note.id);
+                  return next;
+                })}
               >
-                {s}
-              </button>
-            ))}
-            <span className="debug-filter-count">{activeNotes.length}件</span>
-          </div>
-          {activeNotes.length === 0 ? (
-            <div className="debug-empty">対応中のノートはありません</div>
-          ) : (
-            activeNotes.map(note => (
-              <div key={note.id}>
-                <div className="debug-note-row" data-status={note.status}>
-                  <div
-                    className="debug-note-info"
-                    style={{ cursor: note.latest_comment ? 'pointer' : undefined }}
-                    onClick={() => {
-                      if (!note.latest_comment) return;
-                      setExpandedIds(prev => {
-                        const next = new Set(prev);
-                        if (next.has(note.id)) next.delete(note.id);
-                        else next.add(note.id);
-                        return next;
-                      });
-                    }}
-                  >
-                    <span className="debug-note-id">#{note.id}</span>
-                    {note.latest_comment && (
-                      <span style={{ fontSize: '10px', opacity: 0.5 }}>
-                        {expandedIds.has(note.id) ? '▲' : '▼'}
-                      </span>
-                    )}
-                    <span className={`debug-severity-dot ${note.severity || 'none'}`} />
-                    <span className="debug-note-preview">
-                      {note.source === 'test' && <span className="debug-source-badge">🧪</span>}
-                      {note.content.split('\n')[0].slice(0, 40)}
-                    </span>
-                  </div>
-                  <select
-                    data-testid={`note-status-select-${note.id}`}
-                    className="debug-status-select"
-                    value={note.status}
-                    onChange={(e) => handleStatusChange(note.id, e.target.value as Status)}
-                    disabled={loadingAction !== null}
-                  >
-                    <option value="open">open</option>
-                    <option value="fixed">fixed</option>
-                    <option value="resolved">resolved</option>
-                    <option value="rejected">rejected</option>
-                  </select>
-                </div>
-                {expandedIds.has(note.id) && note.latest_comment && (
-                  <div style={{
-                    padding: '4px 12px 6px 28px',
-                    fontSize: '11px',
-                    color: '#6B7280',
-                    lineHeight: 1.4,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}>
-                    {note.latest_comment}
-                  </div>
-                )}
+                <span style={{ fontSize: '10px', opacity: 0.5 }}>
+                  {expandedIds.has(note.id) ? '▼' : '▶'}
+                </span>
+                <span className="debug-note-id">#{note.id}</span>
+                <span className={`debug-severity-dot ${note.severity || 'none'}`} />
+                {note.source === 'test' && <span className="debug-source-badge">🧪</span>}
+                <span className="debug-checklist-title">
+                  {note.content.split('\n')[0].slice(0, 50)}
+                </span>
+                <select
+                  data-testid={`note-status-select-${note.id}`}
+                  className="debug-status-select"
+                  value={note.status}
+                  onChange={(e) => handleStatusChange(note.id, e.target.value as Status)}
+                  disabled={loadingAction !== null}
+                  style={{ marginLeft: 'auto', flexShrink: 0 }}
+                >
+                  <option value="open">open</option>
+                  <option value="fixed">fixed</option>
+                  <option value="resolved">resolved</option>
+                  <option value="rejected">rejected</option>
+                </select>
               </div>
-            ))
-          )}
-        </>
-      )}
 
-      {/* 確認手順ビュー */}
-      {view === 'checklist' && (
-        <div className="debug-checklist-view">
-          {fixedNotes.length === 0 ? (
-            <div className="debug-empty">fixed のノートはありません</div>
-          ) : (
-            fixedNotes.map(note => {
-              const items = parseChecklistItems(note.latest_comment || '');
-              const checked = checkedItems[note.id] ?? new Set<number>();
-              const allChecked = items.length > 0 && checked.size === items.length;
-
-              return (
-                <div key={note.id} className="debug-checklist-card">
-                  <div className="debug-checklist-header">
-                    <span className="debug-note-id">#{note.id}</span>
-                    <span className="debug-checklist-title">
-                      {note.content.split('\n')[0].slice(0, 50)}
-                    </span>
-                  </div>
-
-                  {items.length > 0 ? (
-                    <div className="debug-checklist-items">
-                      {items.map((item, i) => (
-                        <label key={i} className="debug-checklist-item">
-                          <input
-                            type="checkbox"
-                            checked={checked.has(i)}
-                            onChange={() => toggleCheck(note.id, i)}
-                          />
-                          <span className={checked.has(i) ? 'debug-checklist-done' : ''}>
-                            {item}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="debug-checklist-no-items">
-                      確認手順が登録されていません
-                    </div>
-                  )}
-
+              {expandedIds.has(note.id) && <>
+              {/* チェックリスト（確認手順） */}
+              {hasChecklist && (
+                <div className="debug-checklist-items">
+                  {items.map((item, i) => (
+                    <label key={i} className="debug-checklist-item">
+                      <input
+                        type="checkbox"
+                        checked={checked.has(i)}
+                        onChange={() => toggleCheck(note.id, i)}
+                      />
+                      <span className={checked.has(i) ? 'debug-checklist-done' : ''}>
+                        {item}
+                      </span>
+                    </label>
+                  ))}
                   <div className="debug-checklist-actions">
                     <span className="debug-checklist-progress">
                       {checked.size}/{items.length}
                     </span>
-                    <button
-                      className="debug-btn debug-btn-resolve"
-                      disabled={!allChecked || loadingAction !== null}
-                      onClick={() => handleStatusChange(note.id, 'resolved')}
-                    >
-                      {loadingAction === `status-${note.id}` ? '更新中...' : 'resolved に変更'}
-                    </button>
+                    {note.status === 'fixed' && (
+                      <button
+                        className="debug-btn debug-btn-resolve"
+                        disabled={!allChecked || loadingAction !== null}
+                        onClick={() => handleStatusChange(note.id, 'resolved')}
+                      >
+                        {loadingAction === `status-${note.id}` ? '更新中...' : 'resolved'}
+                      </button>
+                    )}
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              )}
+              </>}
+            </div>
+          );
+        })
       )}
     </div>
   );

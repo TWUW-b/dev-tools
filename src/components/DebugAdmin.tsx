@@ -793,46 +793,6 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                   <span style={{ margin: '0 2px' }}>·</span>
                   <span>{formatDate(note.created_at)}</span>
                 </div>
-                {note.test_cases && note.test_cases.length > 0 && (
-                  <div style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '4px',
-                  }}>
-                    {note.test_cases.map((tc, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          background: `${colors.link}15`,
-                          color: colors.link,
-                          fontFamily: 'monospace',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          maxWidth: '240px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={tc.case_key
-                          ? `${tc.case_key} — ${tc.domain} / ${tc.capability} / ${tc.title}`
-                          : `#${tc.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTestCaseIdFilter(tc.id);
-                        }}
-                      >
-                        <Icon name="science" size={12} />
-                        {tc.case_key || `#${tc.id}`}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 {note.latest_comment && (
                   <div style={{
                     marginTop: '8px',
@@ -1044,6 +1004,41 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                   value={formatDateTime(selectedNote.created_at)}
                   colors={colors}
                 />
+                {selectedNote.test_cases && selectedNote.test_cases.length > 0 && (
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    alignItems: 'center',
+                  }}>
+                    <Icon name="science" size={16} color={colors.link} />
+                    {selectedNote.test_cases.map((tc, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: '12px',
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          background: `${colors.link}15`,
+                          color: colors.link,
+                          fontFamily: 'monospace',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                        title={tc.case_key
+                          ? `${tc.domain} / ${tc.capability}\n${tc.title}`
+                          : `#${tc.id}`}
+                        onClick={() => setTestCaseIdFilter(tc.id)}
+                      >
+                        {tc.case_key || `#${tc.id}`}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 内容 */}

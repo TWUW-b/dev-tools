@@ -105,12 +105,22 @@ class NotesController
             return ['success' => false, 'error' => 'Note not found'];
         }
 
-        // test_case_ids を取得
+        // test_case_ids + test_cases 詳細を取得
         $mappings = $this->db->query(
-            'SELECT case_id FROM note_test_cases WHERE note_id = ?',
+            'SELECT ntc.case_id, tc.case_key, tc.domain, tc.capability, tc.title
+             FROM note_test_cases ntc
+             LEFT JOIN test_cases tc ON tc.id = ntc.case_id
+             WHERE ntc.note_id = ?',
             [$id]
         );
         $note['test_case_ids'] = array_map(fn($m) => (int)$m['case_id'], $mappings);
+        $note['test_cases'] = array_map(fn($m) => [
+            'id' => (int)$m['case_id'],
+            'case_key' => $m['case_key'] ?? null,
+            'domain' => $m['domain'] ?? null,
+            'capability' => $m['capability'] ?? null,
+            'title' => $m['title'] ?? null,
+        ], $mappings);
 
         // 添付ファイル一覧
         $attachments = $this->db->query(
