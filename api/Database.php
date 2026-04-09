@@ -45,6 +45,8 @@ class Database
         $stmt = $this->pdo->prepare('SELECT value FROM meta WHERE key = ?');
         $stmt->execute(['schemaVersion']);
         $version = $stmt->fetchColumn();
+        $stmt->closeCursor();
+        $stmt = null;
 
         if ($version === false) {
             // 初期スキーマ作成
@@ -333,6 +335,32 @@ class Database
                 $this->pdo->rollBack();
                 throw $e;
             }
+        }
+
+        // v12: v3 で作成された UNIQUE(domain, capability, title) を削除し、
+        // v11 バックフィルの LEGACY-<id> 行を自動 archive する。
+        // - case_key 導入後は同一 title を別 case_key で共存させるケースがあり、
+        //   この旧制約が INSERT を誤って弾く。一意性は case_key 側で担保する。
+        // - LEGACY-* は v11 migration 時点の過渡的なプレースホルダーであり、
+        //   MD で管理される正式な case_key ではないため、UI 既定表示から外す。
+        //   物理削除はしない（test_runs/notes の紐付けがある可能性を考慮）。
+        if ((int)$version < 12) {
+            // DROP INDEX は autocommit で実行（SQLite の一部バージョンで
+            // トランザクション内 DROP INDEX が locked を起こすため）。
+            $this->pdo->exec('DROP INDEX IF EXISTS idx_test_cases_unique');
+
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec(
+                    "UPDATE test_cases SET archived_at = CURRENT_TIMESTAMP WHERE case_key LIKE 'LEGACY-%' AND archived_at IS NULL"
+                );
+                $this->pdo->exec("UPDATE meta SET value = '12' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '12';
         }
     }
 
