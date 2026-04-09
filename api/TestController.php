@@ -108,6 +108,23 @@ class TestController
                 return ['success' => false, 'error' => 'No valid cases to import'];
             }
 
+            // sync モード: payload に含まれない既存 case_key を自動 archive
+            $archived = 0;
+            if (!empty($input['sync'])) {
+                $allActive = $this->db->query(
+                    "SELECT id, case_key FROM test_cases WHERE archived_at IS NULL AND case_key NOT LIKE 'LEGACY-%'"
+                );
+                foreach ($allActive as $row) {
+                    if (!isset($seenKeys[$row['case_key']])) {
+                        $this->db->execute(
+                            'UPDATE test_cases SET archived_at = CURRENT_TIMESTAMP WHERE id = ?',
+                            [$row['id']]
+                        );
+                        $archived++;
+                    }
+                }
+            }
+
             $this->db->commit();
         } catch (\Exception $e) {
             $this->db->rollBack();
@@ -123,6 +140,7 @@ class TestController
             'inserted' => $inserted,
             'updated' => $updated,
             'unarchived' => $unarchived,
+            'archived' => $archived,
         ];
     }
 
