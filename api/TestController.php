@@ -76,11 +76,30 @@ class TestController
                         }
                     }
                 } else {
-                    $this->db->execute(
-                        'INSERT INTO test_cases (case_key, domain, capability, title) VALUES (?, ?, ?, ?)',
-                        [$caseKey, $domain, $capability, $title]
+                    // 新規 case_key だが、(domain, capability, title) 完全一致の
+                    // LEGACY-* 行が archived 状態で存在する場合はそれを合流させる。
+                    // これにより v11 バックフィル前に記録された test_runs が
+                    // 新しい case_key に自動的に紐付く（id 不変）。
+                    $legacy = $this->db->fetchOne(
+                        "SELECT id, case_key FROM test_cases
+                         WHERE domain = ? AND capability = ? AND title = ?
+                           AND case_key LIKE 'LEGACY-%'
+                         ORDER BY id ASC LIMIT 1",
+                        [$domain, $capability, $title]
                     );
-                    $inserted++;
+                    if ($legacy) {
+                        $this->db->execute(
+                            'UPDATE test_cases SET case_key = ?, archived_at = NULL WHERE id = ?',
+                            [$caseKey, $legacy['id']]
+                        );
+                        $unarchived++;
+                    } else {
+                        $this->db->execute(
+                            'INSERT INTO test_cases (case_key, domain, capability, title) VALUES (?, ?, ?, ?)',
+                            [$caseKey, $domain, $capability, $title]
+                        );
+                        $inserted++;
+                    }
                 }
             }
 
