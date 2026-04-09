@@ -44,7 +44,7 @@ test.describe('DebugPanel 管理タブ', () => {
     await page.getByRole('button', { name: 'デバッグノートを開く' }).click();
     await page.getByRole('button', { name: '管理', exact: true }).click();
 
-    await expect(page.getByText('対応中のノートはありません')).toBeVisible();
+    await expect(page.getByText('該当するノートはありません')).toBeVisible();
   });
 
   test('ステータスを変更できる', async ({ page }) => {
