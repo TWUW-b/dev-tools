@@ -1,6 +1,6 @@
 {
   "name": "@twuw-b/dev-tools",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Integrated developer tools: debug notes, test flow, manual viewer, and feedback",
   "license": "MIT",
   "author": "gen",
