@@ -17,7 +17,10 @@ class TestController
     }
 
     /**
-     * テストケースインポート（べき等）
+     * テストケースインポート（UPSERT、case_key ベース）
+     *
+     * 入力: cases[].case_key は必須。ドメイン/capability/title の変更は
+     * 既存行を UPDATE する（test_runs / notes の紐付けを維持）。
      */
     public function importCases(array $input): array
     {
@@ -32,23 +35,56 @@ class TestController
 
         $this->db->beginTransaction();
         try {
-            $imported = 0;
+            $inserted = 0;
+            $updated = 0;
+            $unarchived = 0;
+            $seenKeys = [];
             foreach ($cases as $case) {
+                $caseKey = isset($case['case_key']) ? mb_substr(trim((string)$case['case_key']), 0, 100) : '';
                 $domain = isset($case['domain']) ? mb_substr(trim($case['domain']), 0, 200) : '';
                 $capability = isset($case['capability']) ? mb_substr(trim($case['capability']), 0, 200) : '';
                 $title = isset($case['title']) ? mb_substr(trim($case['title']), 0, 500) : '';
 
-                if ($domain === '' || $capability === '' || $title === '') {
+                if ($caseKey === '' || $domain === '' || $capability === '' || $title === '') {
                     continue;
                 }
-                $this->db->execute(
-                    'INSERT OR IGNORE INTO test_cases (domain, capability, title) VALUES (?, ?, ?)',
-                    [$domain, $capability, $title]
+                if (isset($seenKeys[$caseKey])) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'error' => "Duplicate case_key in payload: {$caseKey}"];
+                }
+                $seenKeys[$caseKey] = true;
+
+                $existing = $this->db->fetchOne(
+                    'SELECT id, domain, capability, title, archived_at FROM test_cases WHERE case_key = ?',
+                    [$caseKey]
                 );
-                $imported++;
+                if ($existing) {
+                    if (
+                        $existing['domain'] !== $domain ||
+                        $existing['capability'] !== $capability ||
+                        $existing['title'] !== $title ||
+                        $existing['archived_at'] !== null
+                    ) {
+                        $this->db->execute(
+                            'UPDATE test_cases SET domain = ?, capability = ?, title = ?, archived_at = NULL WHERE case_key = ?',
+                            [$domain, $capability, $title, $caseKey]
+                        );
+                        if ($existing['archived_at'] !== null) {
+                            $unarchived++;
+                        } else {
+                            $updated++;
+                        }
+                    }
+                } else {
+                    $this->db->execute(
+                        'INSERT INTO test_cases (case_key, domain, capability, title) VALUES (?, ?, ?, ?)',
+                        [$caseKey, $domain, $capability, $title]
+                    );
+                    $inserted++;
+                }
             }
 
-            if ($imported === 0) {
+            if ($inserted === 0 && $updated === 0 && $unarchived === 0 && count($seenKeys) === 0) {
                 $this->db->rollBack();
                 return ['success' => false, 'error' => 'No valid cases to import'];
             }
@@ -60,20 +96,29 @@ class TestController
             return ['success' => false, 'error' => 'Failed to import cases'];
         }
 
-        $total = $this->db->fetchOne('SELECT COUNT(*) as cnt FROM test_cases');
+        $total = $this->db->fetchOne('SELECT COUNT(*) as cnt FROM test_cases WHERE archived_at IS NULL');
 
         return [
             'success' => true,
             'total' => (int)($total['cnt'] ?? 0),
+            'inserted' => $inserted,
+            'updated' => $updated,
+            'unarchived' => $unarchived,
         ];
     }
 
     /**
      * テストケース一覧（DebugAdmin用）
      */
-    public function listCases(): array
+    public function listCases(array $query = []): array
     {
-        $cases = $this->db->query('SELECT id, domain, capability, title, created_at FROM test_cases ORDER BY domain, capability, title');
+        $includeArchived = !empty($query['includeArchived']) && $query['includeArchived'] !== '0';
+        $sql = 'SELECT id, case_key, domain, capability, title, archived_at, created_at FROM test_cases';
+        if (!$includeArchived) {
+            $sql .= ' WHERE archived_at IS NULL';
+        }
+        $sql .= ' ORDER BY domain, capability, title';
+        $cases = $this->db->query($sql);
         return [
             'success' => true,
             'data' => $cases,
@@ -108,6 +153,7 @@ class TestController
                       AND n.deleted_at IS NULL
                 ) as open_issues
             FROM test_cases tc
+            WHERE tc.archived_at IS NULL
             ORDER BY tc.domain, tc.capability, tc.id
         ', [$env]);
 
@@ -219,17 +265,18 @@ class TestController
         $ids = array_values($ids);
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
+        // ソフトデリート: archived_at を立てるだけ。test_runs / notes 紐付けは維持。
         $this->db->beginTransaction();
         try {
-            $this->db->execute("DELETE FROM test_runs WHERE case_id IN ($placeholders)", $ids);
-            $this->db->execute("DELETE FROM note_test_cases WHERE case_id IN ($placeholders)", $ids);
-            $this->db->execute("UPDATE notes SET test_case_id = NULL WHERE test_case_id IN ($placeholders)", $ids);
-            $deleted = $this->db->execute("DELETE FROM test_cases WHERE id IN ($placeholders)", $ids);
+            $deleted = $this->db->execute(
+                "UPDATE test_cases SET archived_at = CURRENT_TIMESTAMP WHERE id IN ($placeholders) AND archived_at IS NULL",
+                $ids
+            );
             $this->db->commit();
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log('deleteCases error: ' . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to delete cases'];
+            return ['success' => false, 'error' => 'Failed to archive cases'];
         }
 
         return ['success' => true, 'deleted' => $deleted];

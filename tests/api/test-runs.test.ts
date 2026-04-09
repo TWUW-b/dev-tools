@@ -9,7 +9,7 @@ describe("Test Runs", () => {
     await api("/test-cases/import", {
       method: "POST",
       json: {
-        cases: [{ domain: "ApiTest_RunTest", capability: "Submit", title: "Basic run" }],
+        cases: [{ case_key: "ApiTest-RUN-001", domain: "ApiTest_RunTest", capability: "Submit", title: "Basic run" }],
       },
     });
     const listRes = await api("/test-cases");

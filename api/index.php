@@ -288,7 +288,7 @@ try {
 
     // GET /test-cases
     if ($method === 'GET' && preg_match('#^/test-cases/?$#', $relativePath)) {
-        $result = $testController->listCases();
+        $result = $testController->listCases($_GET);
         echo json_encode($result);
         exit;
     }

@@ -308,6 +308,32 @@ class Database
                 throw $e;
             }
         }
+
+        // v11: test_cases に case_key(不変ID) と archived_at(ソフトデリート) を追加
+        if ((int)$version < 11) {
+            $this->pdo->beginTransaction();
+            try {
+                $columns = $this->pdo->query('PRAGMA table_info(test_cases)')->fetchAll();
+                $existingCols = array_column($columns, 'name');
+
+                if (!in_array('case_key', $existingCols, true)) {
+                    $this->pdo->exec('ALTER TABLE test_cases ADD COLUMN case_key TEXT');
+                    // 既存行に暫定キーをバックフィル（LEGACY-<id>）
+                    $this->pdo->exec("UPDATE test_cases SET case_key = 'LEGACY-' || id WHERE case_key IS NULL");
+                    $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_test_cases_case_key ON test_cases(case_key)');
+                }
+                if (!in_array('archived_at', $existingCols, true)) {
+                    $this->pdo->exec('ALTER TABLE test_cases ADD COLUMN archived_at DATETIME');
+                    $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_test_cases_archived_at ON test_cases(archived_at)');
+                }
+
+                $this->pdo->exec("UPDATE meta SET value = '11' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
     }
 
     /**
