@@ -2,6 +2,32 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.5] - 2026-04-09
+
+### Added
+
+- **`POST /test-cases/import` に sync モード追加** (`api/TestController.php`)
+  - payload に `"sync": true` を含めると、payload に存在しない既存 case_key を自動 archive（soft delete）
+  - LEGACY-* 行は除外（旧バックフィル対象）
+  - レスポンスに `archived` カウントを追加
+  - MD 編集 → import だけで画面から古いケースが消える完全同期フローが実現
+
+- **`devtools-testcase-author` skill v2**
+  - case_key 命名規則（`TC-{role_code}-{連番}`、不変 ID）を skill に組み込み
+  - `role_code` frontmatter 必須化、接頭辞の自動検証
+  - アンチパターン A: **UI で検証できないテストを書かない**
+    - NG: `DB に正しく反映される` / OK: `メンバー一覧に表示される`
+  - アンチパターン B: **認可境界テストを通常ロール MD に混ぜない**
+    - `access-control.md` (`role_code: AC`) を新設して集約
+  - `import-test-cases.mjs`: `[TC-XX-NNN]` パーサ / role_code 検証 / 重複検知 / purge 廃止 / `--auto-archive` フラグ
+  - `references/case-key-guide.md`: 命名規則・アンチパターン詳細・PR レビューチェックリスト
+  - 6 テンプレート (guest/user/client/admin/app-admin/access-control) を case_key 形式に全面更新
+  - プロジェクト固有情報を「タスク管理 SaaS」サンプルに汎用化
+
+### Tests
+
+- Unit: 98 passed / API: 84 passed / E2E: 36 passed
+
 ## [1.2.4] - 2026-04-08
 
 ### Security
