@@ -2,6 +2,31 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.6] - 2026-04-09
+
+### Added
+
+- **DebugAdmin 詳細パネルにテストケース紐付け表示**
+  - メタ情報エリアに case_key バッジ (TC-XX-NNN) を表示
+  - hover で domain/capability/title、クリックでフィルタ
+  - NotesController.php の show() に test_cases JOIN を追加
+
+### Changed
+
+- **PiP 管理タブ: 一覧/確認手順を統合**
+  - ビュー切替ボタン (一覧 / 確認手順) を廃止
+  - 各カードにステータスセレクト + チェックリスト + resolved ボタンを統合
+  - デフォルト閉じ、ヘッダークリックで開閉
+
+### Fixed
+
+- **PiP テストタブ初回読込が「読み込み中」のまま止まる問題**
+  - importTestCases 失敗時も getTestTree を必ず呼ぶように変更
+
+### Tests
+
+- Unit: 98 / API: 84 / E2E: 36
+
 ## [1.2.5] - 2026-04-09
 
 ### Added
