@@ -3,30 +3,31 @@
  * 検証ラウンド用ディレクトリを初期化
  *
  * Usage:
+ *   # 非対話 (明示引数)
  *   node init-verification-round.mjs \
- *     --name round-2 \
- *     --dir docs/test-verifications \
- *     --api http://localhost:8082/api/__debug \
- *     --env dev \
- *     --frontend https://example.com \
- *     --project "My Project" \
- *     [--roles CA,GN,RO,GU]
- *     [--admin-key xxx]
+ *     --name round-2 --api http://localhost:8082/api/__debug \
+ *     --env dev --frontend https://example.com --project "My Project" \
+ *     [--dir docs/test-verifications] [--roles CA,GN] [--admin-key xxx]
+ *
+ *   # 対話モード (未指定の引数のみ prompt で確認)
+ *   node init-verification-round.mjs --interactive [--name round-2]
+ *
+ * 自動推測:
+ *   - project: package.json の "name" から取得
+ *   - roles: docs/test-cases/*.md の frontmatter role_code から抽出
  *
  * 出力:
  *   <dir>/<name>/
- *     CLAUDE.md
- *     00_plan.md
- *     01_checklist.md (fetch-test-cases.mjs を呼び出し)
- *     .verifier-config.json
- *     evidence/
- *     log/
- *     reports/
+ *     CLAUDE.md / 00_plan.md / 01_checklist.md / .verifier-config.json
+ *     .claude/settings.json / .claude/hooks/*
+ *     evidence/ log/ reports/
  */
-import { mkdirSync, readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(__dirname, '..');
@@ -37,15 +38,89 @@ const getFlag = (name, def) => {
   const hit = args.find(a => a.startsWith(`--${name}=`));
   return hit ? hit.split('=').slice(1).join('=') : def;
 };
+const INTERACTIVE = args.includes('--interactive') || args.includes('-i');
 
-const NAME = getFlag('name', null);
-const BASE_DIR = getFlag('dir', 'docs/test-verifications');
-const API_BASE = getFlag('api', process.env.DEVTOOLS_API || 'http://localhost:8082/api/__debug');
-const ENV = getFlag('env', 'dev');
-const FRONTEND = getFlag('frontend', '');
-const PROJECT_NAME = getFlag('project', 'Project');
-const ROLES = getFlag('roles', '');
-const ADMIN_KEY = getFlag('admin-key', '');
+// ---- 自動推測ユーティリティ ----
+function detectProjectName() {
+  try {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+    return pkg.name?.replace(/^@[^/]+\//, '') || null;
+  } catch { return null; }
+}
+
+function detectRoles() {
+  const tcDir = 'docs/test-cases';
+  if (!existsSync(tcDir)) return [];
+  const roles = new Set();
+  try {
+    for (const f of readdirSync(tcDir)) {
+      if (!f.endsWith('.md') || /readme/i.test(f)) continue;
+      const content = readFileSync(join(tcDir, f), 'utf8');
+      const m = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!m) continue;
+      const rc = m[1].match(/^role_code:\s*([A-Z][A-Z0-9]{1,5})/m);
+      if (rc) roles.add(rc[1]);
+    }
+  } catch {}
+  return Array.from(roles);
+}
+
+function detectNextRoundName() {
+  const base = 'docs/test-verifications';
+  if (!existsSync(base)) return 'round-1';
+  try {
+    const existing = readdirSync(base)
+      .filter(f => /^round-\d+$/.test(f))
+      .map(f => parseInt(f.slice(6), 10))
+      .sort((a, b) => a - b);
+    const next = existing.length ? existing[existing.length - 1] + 1 : 1;
+    return `round-${next}`;
+  } catch { return 'round-1'; }
+}
+
+// ---- 対話プロンプト ----
+async function prompt(rl, question, def) {
+  const hint = def ? ` [${def}]` : '';
+  const answer = await rl.question(`? ${question}${hint}: `);
+  return answer.trim() || def || '';
+}
+
+const detected = {
+  project: detectProjectName(),
+  roles: detectRoles(),
+  name: detectNextRoundName(),
+};
+
+let NAME = getFlag('name', null);
+let BASE_DIR = getFlag('dir', 'docs/test-verifications');
+let API_BASE = getFlag('api', process.env.DEVTOOLS_API || '');
+let ENV = getFlag('env', '');
+let FRONTEND = getFlag('frontend', '');
+let PROJECT_NAME = getFlag('project', '');
+let ROLES = getFlag('roles', '');
+let ADMIN_KEY = getFlag('admin-key', '');
+
+// 対話モード: 未指定の引数を prompt
+if (INTERACTIVE) {
+  const rl = createInterface({ input: stdin, output: stdout });
+  console.log('━━━ 検証ラウンド初期化 (対話モード) ━━━');
+  console.log(`自動推測: project=${detected.project || '?'} / roles=${detected.roles.join(',') || '?'} / next=${detected.name}`);
+  console.log('');
+  NAME = NAME || await prompt(rl, 'ラウンド名', detected.name);
+  PROJECT_NAME = PROJECT_NAME || await prompt(rl, 'プロジェクト名', detected.project || 'Project');
+  API_BASE = API_BASE || await prompt(rl, 'dev-tools API base URL', 'http://localhost:8082/api/__debug');
+  ENV = ENV || await prompt(rl, '環境 (dev/staging/prod)', 'dev');
+  FRONTEND = FRONTEND || await prompt(rl, 'Frontend URL', '');
+  ROLES = ROLES || await prompt(rl, `対象 role_code (カンマ区切り, 空=全部)`, detected.roles.join(','));
+  rl.close();
+} else {
+  // 非対話: 未指定は自動推測で埋める
+  NAME = NAME || detected.name;
+  PROJECT_NAME = PROJECT_NAME || detected.project || 'Project';
+  API_BASE = API_BASE || 'http://localhost:8082/api/__debug';
+  ENV = ENV || 'dev';
+  ROLES = ROLES || detected.roles.join(',');
+}
 
 if (!NAME) {
   console.error('Usage: node init-verification-round.mjs --name <round-N> --api <url> --env <env> [--dir <base>] [--frontend <url>] [--project <name>] [--roles CA,GN]');
@@ -242,5 +317,6 @@ console.log(`✅ initialized: ${ROUND_DIR}`);
 console.log('');
 console.log('次のステップ:');
 console.log(`  1. ${ROUND_DIR}/00_plan.md を編集して Phase 構成・スコープを記載`);
-console.log(`  2. ${ROUND_DIR}/CLAUDE.md にプロジェクト固有の禁止事項を追記`);
-console.log(`  3. Claude Code で検証を開始: 「${NAME} の検証を始めて」`);
+console.log(`  2. ${ROUND_DIR}/CLAUDE.md にプロジェクト固有の禁止事項を追記（保護対象アカウント等）`);
+console.log(`  3. cd ${ROUND_DIR} && claude   ← SessionStart hook が行動ルールを自動注入`);
+console.log(`     または現セッションで続行する場合:「${NAME} の検証を始めて」`);

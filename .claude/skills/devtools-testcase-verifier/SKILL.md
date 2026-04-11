@@ -69,21 +69,58 @@ Phase N+2: 総括 (次回ラウンドへの推奨事項)
 
 ### Step 1: ラウンド初期化
 
+**Claude Code 起動後の対話で完結できます。** ユーザーが「検証ラウンドを作って」「round-1 を始めたい」等と言ったら、以下の手順で実行してください:
+
+#### 1-A. 自動推測 (推奨)
+
+skill 側の init スクリプトは以下を自動で推測します:
+
+| 項目 | 推測元 |
+|---|---|
+| `--name` | `docs/test-verifications/round-*` の最大値 + 1 |
+| `--project` | `package.json` の `name`（npm scope は除去） |
+| `--roles` | `docs/test-cases/*.md` の frontmatter `role_code` |
+
+Claude は以下の順序で対応:
+
+1. **確定情報**: `package.json` / `docs/test-cases/` から project と roles を自動取得
+2. **AskUserQuestion** で以下を確認:
+   - API base URL (デフォルト `http://localhost:8082/api/__debug`)
+   - 環境 (`dev` / `staging` / `prod`)
+   - Frontend URL
+3. Bash で init スクリプトを実行:
+
 ```bash
-node scripts/init-verification-round.mjs \
-  --name round-1 \
-  --dir docs/test-verifications \
-  --api http://localhost:8082/api/__debug \
-  --env dev \
-  --frontend https://example.com \
-  --project "My Project" \
-  --roles CA,GN,RO,GU
+node .claude/skills/devtools-testcase-verifier/scripts/init-verification-round.mjs \
+  --api=${API_URL} \
+  --env=${ENV} \
+  --frontend=${FRONTEND_URL}
+  # name / project / roles は省略 → 自動推測
 ```
 
-生成物:
+#### 1-B. 対話スクリプト経由 (ターミナル単独起動時)
+
+Claude Code 経由でない場合や、ユーザーが値を順に確認したい場合は `--interactive` フラグ:
+
+```bash
+node .claude/skills/devtools-testcase-verifier/scripts/init-verification-round.mjs --interactive
+```
+
+自動推測値が `[ ]` 内にデフォルトとして表示され、Enter で受け入れ。
+
+#### 1-C. 明示引数 (CI / 非対話)
+
+```bash
+node .claude/skills/devtools-testcase-verifier/scripts/init-verification-round.mjs \
+  --name=round-1 --api=... --env=dev --frontend=... --project="My Project" --roles=CA,GN,RO,GU
+```
+
+### 生成物
+
 - `docs/test-verifications/round-1/` ディレクトリ + テンプレ展開
 - `01_checklist.md` が `fetch-test-cases.mjs` で自動生成される
 - `.verifier-config.json` に既定値保存
+- `.claude/settings.json` (allow/ask/deny) + `.claude/hooks/*` (SessionStart + PreToolUse)
 
 ### Step 2: 00_plan.md / CLAUDE.md の編集
 
