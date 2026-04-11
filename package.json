@@ -45,7 +45,8 @@
     "api/.htaccess",
     "docs/integration-guide.md",
     "docs/test-case-template.md",
-    ".claude/skills/devtools-testcase-author/**"
+    ".claude/skills/devtools-testcase-author/**",
+    ".claude/skills/devtools-testcase-verifier/**"
   ],
   "scripts": {
     "dev": "vite",

@@ -417,6 +417,47 @@ cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .cl
 
 スキルの更新があれば、`npm update @twuw-b/dev-tools` 後に同じコピー操作で最新版を取り込めます。
 
+### Claude Code skill: `devtools-testcase-verifier`（任意・推奨）
+
+作成した MD を Chrome MCP で実際にブラウザ操作して検証するスキルです。
+testcase-author と対になる検証専用 skill。
+
+プロジェクトへの導入:
+
+```bash
+mkdir -p .claude/skills
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+```
+
+前提条件:
+- Chrome MCP (chrome-devtools / chrome-workspace / playwright-mcp いずれか) が利用可能
+- `docs/test-cases/` に case_key 付き MD が投入済み（testcase-author 側で実行済み）
+
+検証ラウンドの開始:
+
+```bash
+# ラウンド初期化
+node .claude/skills/devtools-testcase-verifier/scripts/init-verification-round.mjs \
+  --name=round-1 \
+  --api=http://localhost:8082/api/__debug \
+  --env=dev \
+  --frontend=http://localhost:3000 \
+  --project="My Project" \
+  --roles=AD,US,AC
+```
+
+Claude Code の会話で「round-1 の検証を始めて」と指示するとスキルが起動し、以下を自動化します:
+
+- `docs/test-verifications/round-1/` に作業ディレクトリ生成（CLAUDE.md / 00_plan.md / 01_checklist.md / evidence/ / log/ / reports/）
+- dev-tools API から対象 TC を取得して checklist に展開
+- Chrome MCP ガイドライン G1〜G10 に従ってブラウザ操作
+- evidence (screenshot + network dump) を必須で保存
+- 5 バケット (OK / TC_WRONG / IMPL_BUG / OTHER / SKIP) に振り分け
+- 全ケース完了後にロール別レポート + 全体サマリを生成
+- （オプション）🐛 IMPL_BUG を dev-tools の notes API に投入して一元管理
+
+詳細は `.claude/skills/devtools-testcase-verifier/SKILL.md` および `references/` を参照。
+
 ## Step 12: テストケースを API に登録
 
 `docs/test-cases/import.js` を作成:

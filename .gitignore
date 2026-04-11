@@ -18,6 +18,8 @@ coverage/
 .claude/skills/*
 !.claude/skills/devtools-testcase-author/
 !.claude/skills/devtools-testcase-author/**
+!.claude/skills/devtools-testcase-verifier/
+!.claude/skills/devtools-testcase-verifier/**
 # .claude/commands/ は個人の開発環境用、チーム共有しない
 # CLAUDE.md も個人の Claude Code 設定
 *.swp

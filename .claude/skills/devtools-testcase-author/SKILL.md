@@ -279,6 +279,10 @@ node scripts/import-test-cases.mjs http://localhost:8082/api/__debug --dry-run
 - `scripts/import-test-cases.mjs` — パース + バリデート + UPSERT + 差分検出 + verify
 - `references/case-key-guide.md` — case_key とアンチパターンの詳細リファレンス
 
+## 関連 skill
+
+- **`devtools-testcase-verifier`** — 本 skill で作成した MD を Chrome MCP で実際に検証し、5 バケットに振り分けるスキル。テストケースを作成した後はこちらで実行 → レポート生成まで一貫して行う。
+
 ## 関連ドキュメント
 
 - dev-tools 側の設計: `docs/fixed/test-cases-stable-key.md` (v11 マイグレーション、UPSERT 実装)
