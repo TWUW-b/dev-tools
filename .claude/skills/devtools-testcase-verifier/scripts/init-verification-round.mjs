@@ -23,7 +23,7 @@
  *     log/
  *     reports/
  */
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -69,20 +69,79 @@ mkdirSync(join(ROUND_DIR, 'reports'), { recursive: true });
 mkdirSync(join(ROUND_DIR, '.claude', 'hooks'), { recursive: true });
 
 // ---- hook スクリプトのコピー ----
-// check-evaluate-script.sh: evaluate_script 内の API 直叩きを物理的にブロック
-const hookSrc = join(SKILL_ROOT, 'assets', 'hooks', 'check-evaluate-script.sh');
-const hookDest = join(ROUND_DIR, '.claude', 'hooks', 'check-evaluate-script.sh');
-if (existsSync(hookSrc)) {
-  const { readFileSync, chmodSync } = await import('node:fs');
-  writeFileSync(hookDest, readFileSync(hookSrc, 'utf8'));
-  chmodSync(hookDest, 0o755);
-  console.log(`  ✓ .claude/hooks/check-evaluate-script.sh`);
+const HOOK_FILES = [
+  'check-evaluate-script.sh',   // G6: evaluate_script 内の API 直叩きを物理ブロック
+  'session-start.sh',            // SessionStart: CLAUDE.md + 進捗サマリ + 最新 log を注入
+];
+for (const hookName of HOOK_FILES) {
+  const src = join(SKILL_ROOT, 'assets', 'hooks', hookName);
+  const dest = join(ROUND_DIR, '.claude', 'hooks', hookName);
+  if (!existsSync(src)) continue;
+  writeFileSync(dest, readFileSync(src, 'utf8'));
+  chmodSync(dest, 0o755);
+  console.log(`  ✓ .claude/hooks/${hookName}`);
 }
 
 // ---- ラウンド用 .claude/settings.json ----
-// PreToolUse hook で evaluate_script 系を gate
+// A-1: permissions を明示（allow / ask / deny）
+// A-2: SessionStart + PreToolUse hook を登録
 const settings = {
+  permissions: {
+    // 読み取り系・UI 操作系は allow
+    allow: [
+      'mcp__chrome__click',
+      'mcp__chrome__fill',
+      'mcp__chrome__fill_form',
+      'mcp__chrome__wait_for',
+      'mcp__chrome__take_screenshot',
+      'mcp__chrome__take_snapshot',
+      'mcp__chrome__handle_dialog',
+      'mcp__chrome__select_page',
+      'mcp__chrome__new_page',
+      'mcp__chrome__close_page',
+      'mcp__chrome__list_pages',
+      'mcp__chrome__list_console_messages',
+      'mcp__chrome__press_key',
+      'mcp__chrome__type_text',
+      'mcp__chrome__navigate_page',          // 捏造 URL は別途運用ルールで抑制
+      'mcp__chrome__upload_file',
+      'mcp__chrome__list_network_requests',  // API レスポンス監視の正規ルート
+      'mcp__chrome__get_network_request',
+      // 通常ファイル操作
+      'Read',
+      'Grep',
+      'Glob',
+      'TaskCreate',
+      'TaskUpdate',
+    ],
+    // 都度承認
+    ask: [
+      'mcp__chrome__evaluate_script',        // hook で内容も検査
+      'Write',                                // evidence/log 等への書込みは承認制
+      'Edit',
+      'Bash',
+    ],
+    // 禁止
+    deny: [
+      'Bash(rm -rf *)',
+      'Bash(git push --force*)',
+      'Bash(git reset --hard*)',
+      'WebFetch',
+    ],
+  },
   hooks: {
+    // SessionStart: 復帰時に CLAUDE.md と進捗を注入
+    SessionStart: [
+      {
+        hooks: [
+          {
+            type: 'command',
+            command: '${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh',
+          },
+        ],
+      },
+    ],
+    // PreToolUse: evaluate_script 内の API 直叩きを物理ブロック
     PreToolUse: [
       {
         matcher: 'mcp__chrome__evaluate_script',
@@ -97,7 +156,7 @@ const settings = {
   },
 };
 writeFileSync(join(ROUND_DIR, '.claude', 'settings.json'), JSON.stringify(settings, null, 2));
-console.log(`  ✓ .claude/settings.json (PreToolUse gate)`);
+console.log(`  ✓ .claude/settings.json (permissions + hooks)`);
 
 // ---- .verifier-config.json ----
 const config = {

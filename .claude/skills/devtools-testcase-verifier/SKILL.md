@@ -104,20 +104,29 @@ Claude が対話で以下を埋める:
 
 ### Step 4: 検証実施（Phase 7 以降）
 
-各ケースを 1 つずつ処理:
+各ケースを 1 つずつ処理。**TaskCreate / TaskUpdate を必ず併用する**:
 
 ```
 ┌─────────────────────────────────────┐
-│ 1. 手順実行 (Chrome MCP)              │
+│ 1. TaskCreate (case_key + title)     │  ← 必須。context 圧縮後も進捗復元可能
+│ 2. 手順実行 (Chrome MCP)              │
 │    - G1〜G10 ガイドライン遵守         │
 │    - handle_dialog, wait_for 等       │
-│ 2. screenshot + network dump 保存     │
+│    - evaluate_script 内 fetch は hook │
+│      で物理ブロック                   │
+│ 3. screenshot + network dump 保存     │
 │    - evidence/<caseId>_<slug>.png    │
-│ 3. バケット判定                       │
+│ 4. バケット判定                       │
 │    - bucket-definitions.md の基準     │
-│ 4. update-checklist.mjs で反映        │
+│ 5. update-checklist.mjs で反映        │
+│ 6. TaskUpdate (completed)            │  ← 必須
 └─────────────────────────────────────┘
 ```
+
+**TaskCreate / TaskUpdate 併用の理由**:
+- context 圧縮後も TaskList から進捗を復元できる
+- 1 ケースごとに `in_progress → completed` と遷移することで二重実行を防ぐ
+- 前セッション `b5380ac5` で「前のステップでやったはず」の記憶劣化が発生した原因の対策
 
 #### 1 ケース反映コマンド
 
