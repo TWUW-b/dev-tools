@@ -66,6 +66,38 @@ console.log(`📁 creating ${ROUND_DIR}`);
 mkdirSync(join(ROUND_DIR, 'evidence'), { recursive: true });
 mkdirSync(join(ROUND_DIR, 'log'), { recursive: true });
 mkdirSync(join(ROUND_DIR, 'reports'), { recursive: true });
+mkdirSync(join(ROUND_DIR, '.claude', 'hooks'), { recursive: true });
+
+// ---- hook スクリプトのコピー ----
+// check-evaluate-script.sh: evaluate_script 内の API 直叩きを物理的にブロック
+const hookSrc = join(SKILL_ROOT, 'assets', 'hooks', 'check-evaluate-script.sh');
+const hookDest = join(ROUND_DIR, '.claude', 'hooks', 'check-evaluate-script.sh');
+if (existsSync(hookSrc)) {
+  const { readFileSync, chmodSync } = await import('node:fs');
+  writeFileSync(hookDest, readFileSync(hookSrc, 'utf8'));
+  chmodSync(hookDest, 0o755);
+  console.log(`  ✓ .claude/hooks/check-evaluate-script.sh`);
+}
+
+// ---- ラウンド用 .claude/settings.json ----
+// PreToolUse hook で evaluate_script 系を gate
+const settings = {
+  hooks: {
+    PreToolUse: [
+      {
+        matcher: 'mcp__chrome__evaluate_script',
+        hooks: [
+          {
+            type: 'command',
+            command: '${CLAUDE_PROJECT_DIR}/.claude/hooks/check-evaluate-script.sh',
+          },
+        ],
+      },
+    ],
+  },
+};
+writeFileSync(join(ROUND_DIR, '.claude', 'settings.json'), JSON.stringify(settings, null, 2));
+console.log(`  ✓ .claude/settings.json (PreToolUse gate)`);
 
 // ---- .verifier-config.json ----
 const config = {

@@ -204,6 +204,34 @@ node scripts/sync-to-devtools.mjs \
 5. **evidence なしの判定は原則不可**
 6. **MCP 固有の症状を IMPL_BUG と断定しない**
 
+## 物理的に止まる禁止事項 (PreToolUse hook)
+
+`init-verification-round.mjs` が生成する `<round-dir>/.claude/settings.json` に
+PreToolUse hook が設定されており、以下のパターンは **claude の意図に関わらず物理的にブロック** されます:
+
+### G6 違反: evaluate_script 内での API 直叩き
+
+`mcp__chrome__evaluate_script` で以下を含むスクリプトは `check-evaluate-script.sh` がブロック:
+
+- `fetch(...)` — API 直叩き
+- `new XMLHttpRequest()` / `XMLHttpRequest(...)`
+- `axios.get` / `axios.post` / `axios(...)`
+- `navigator.sendBeacon(...)`
+- `$.ajax(...)` / `$.get(...)` / `$.post(...)`
+
+**許可される evaluate_script の用途**:
+- DOM 読取（`document.querySelector(...).textContent` 等）
+- スタイル取得（`getComputedStyle(el)`）
+- `window.location` / `window.history` の read-only
+- クッキー確認（auth state の読取のみ）
+
+**代替手段**:
+1. UI 操作で同じ結果を得る（click / fill / wait_for）
+2. ネットワーク監視: `mcp__chrome__list_network_requests` / `get_network_request`
+3. どうしても API レスポンスが必要な場合は人間操作に委ね OTHER 記録
+
+この hook により、**G6 違反は発生前にツール層で止まります**。ユーザーから「API を直接呼ぶのは禁止のはず」と怒られる前に claude 側で却下される構造です。
+
 ## 成功条件
 
 - 全ケースが 5 バケットのいずれかに分類されている
