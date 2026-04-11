@@ -2,6 +2,52 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.7] - 2026-04-11
+
+### Added
+
+- **`devtools-testcase-verifier` skill を新設**（testcase-author と対になる検証専用スキル）
+  - 5 バケット (OK / TC_WRONG / IMPL_BUG / OTHER / SKIP) で振り分け
+  - Chrome MCP ガイドライン G1〜G10 + 禁止事項 + 判定ルールを references/ に
+  - テンプレート: CLAUDE.md / 00_plan.md / 01_checklist.md / report-role.md / report-summary.md
+  - スクリプト: init-verification-round / fetch-test-cases / update-checklist / generate-reports / sync-to-devtools
+  - ドメイン別のロール別レポート + 全体サマリを自動生成
+
+- **PreToolUse hook で API 直叩きを物理ブロック** (`check-evaluate-script.sh`)
+  - `mcp__chrome__evaluate_script` の入力を検査し、`fetch()` / `XMLHttpRequest` / `axios` / `sendBeacon` / `$.ajax` を含む場合は exit 2 で却下
+  - 前セッション b5380ac5 解析で「API 直叩きで怒られる」問題が多発していた事例への対策
+  - Claude にブロック理由と代替手段（UI 操作 / list_network_requests / OTHER 記録）を feedback
+
+- **SessionStart hook で復帰時の記憶劣化を防止** (`session-start.sh`)
+  - ラウンドディレクトリ配下での起動・resume 時に CLAUDE.md + 進捗サマリ + 最新 log を自動注入
+  - context 圧縮後の「前のステップでやったはず」問題への対策
+
+- **strict settings.json を init 時に生成**
+  - allow: chrome MCP UI 操作系 + `list_network_requests` / `get_network_request` + TaskCreate/Update
+  - ask: `evaluate_script` / `Write` / `Edit` / `Bash`（hook で内容検査 + 承認制）
+  - deny: `rm -rf` / `git push --force` / `reset --hard` / `WebFetch`
+
+- **init-verification-round.mjs を対話モード + 自動推測対応**
+  - `package.json.name` → project, `docs/test-cases/*.md` の `role_code` → roles, 既存 round 番号 → 次 round を自動推測
+  - `--interactive` で readline prompt モード
+  - Claude Code 会話経由で「検証ラウンドを作って」と言えば、AskUserQuestion で不足情報を確認して Bash 実行する運用が可能に
+
+### Changed
+
+- **CLAUDE.md テンプレート 50 行化** (78 → 57 行)
+  - 冒頭に「セッション復帰時の必読手順」セクション追加
+  - 詳細を references/ に移譲し、context 圧縮後の再読込コストを低減
+
+- **SKILL.md (verifier) に TaskCreate/TaskUpdate 必須化を明記**
+  - 1 ケース = 1 Task の運用で context 圧縮後も進捗復元可能に
+
+- **SKILL.md (author) に verifier への相互リンク追加**
+  - 作成 → 検証のパイプライン化
+
+### Tests
+
+- Unit: 98 / API: 84 / E2E: 36 (全パス)
+
 ## [1.2.6] - 2026-04-09
 
 ### Added
