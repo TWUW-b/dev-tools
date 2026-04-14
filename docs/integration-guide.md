@@ -394,19 +394,29 @@ domain: user
 
 NG: `認証.md` / `ユーザー管理.md` のように機能軸で分割し、1ファイルに複数ロールを混在させること。
 
-### Claude Code skill: `devtools-testcase-author`（任意・推奨）
+### Claude Code skill のセットアップ（任意・推奨）
 
-npm パッケージに `devtools-testcase-author` skill を同梱しています。
-このスキルを利用すると Claude Code がロール軸でテストケース MD を自動生成し、
-`/__debug/api/test-cases/import` への同期まで実施します。
-
-プロジェクトへの導入:
+npm パッケージに **2 つの Claude Code skill** を同梱しています。以下の 1 コマンドで導入:
 
 ```bash
-# .claude/skills/ に skill をコピー（dev-tools インストール後）
+# 2 つの skill を一括コピー（dev-tools インストール後）
 mkdir -p .claude/skills
 cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
 ```
+
+skill の更新（dev-tools アップデート後）:
+
+```bash
+npm update @twuw-b/dev-tools
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+```
+
+### skill 1: `devtools-testcase-author`（テストケース作成）
+
+Claude Code がロール軸でテストケース MD を自動生成し、
+`/__debug/api/test-cases/import` への同期まで実施します。
 
 コピー後、Claude Code の会話で `devtools-testcase-author を使って` または
 `テストケースを作って` と指示するとスキルが起動します。スキルは以下を自動化します:
@@ -417,7 +427,7 @@ cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .cl
 
 スキルの更新があれば、`npm update @twuw-b/dev-tools` 後に同じコピー操作で最新版を取り込めます。
 
-### Claude Code skill: `devtools-testcase-verifier`（任意・推奨）
+### skill 2: `devtools-testcase-verifier`（テストケース検証）
 
 作成した MD を Chrome MCP で実際にブラウザ操作して検証するスキルです。
 testcase-author と対になる検証専用 skill。

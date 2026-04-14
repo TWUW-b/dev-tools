@@ -16,6 +16,54 @@
 - コンソール・ネットワークログの自動キャプチャ
 - dev / test 環境ごとにデータ分離
 - PHP + SQLite のシンプルなバックエンド
+- **Claude Code skill 同梱**:
+  - `devtools-testcase-author` — テストケース MD をロール軸で作成 + case_key ベース UPSERT
+  - `devtools-testcase-verifier` — Chrome MCP でテストケースを実行・5 バケット振り分け・レポート生成
+
+## Claude Code Skill のセットアップ
+
+npm パッケージに 2 つの Claude Code skill を同梱しています。インストール後に以下の 1 コマンドで利用側プロジェクトにコピーできます:
+
+```bash
+# 2 つの skill を一括コピー
+mkdir -p .claude/skills
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+```
+
+### devtools-testcase-author（テストケース作成）
+
+Claude Code の会話で「テストケースを作って」と指示すると起動。以下を自動化:
+
+- ロール軸（guest / user / admin 等）でテストケース MD を自動生成
+- `[TC-XX-NNN]` 形式の不変キー（case_key）付与
+- Domain → Capability → Case の 3 階層スキーマに準拠
+- `/__debug/api/test-cases/import` への UPSERT 同期（`--auto-archive` でMD 削除分も自動反映）
+- アンチパターン検出: UI 確認不可のテスト禁止 / 認可境界テストは別 domain に分離
+
+### devtools-testcase-verifier（テストケース検証）
+
+Claude Code の会話で「検証ラウンドを作って」と指示すると起動。以下を自動化:
+
+- `docs/test-verifications/round-N/` に作業ディレクトリ生成
+- dev-tools API から対象 TC を取得してチェックリスト展開
+- Chrome MCP ガイドライン G1〜G10 に従ってブラウザ操作
+- 5 バケット（OK / TC_WRONG / IMPL_BUG / OTHER / SKIP）に振り分け
+- evidence（screenshot + network dump）必須
+- ロール別レポート + 全体サマリを自動生成
+- **PreToolUse hook**: `evaluate_script` 内の `fetch()` / `XHR` を物理ブロック
+- **SessionStart hook**: 起動時に CLAUDE.md + 進捗を自動注入（context 圧縮後の記憶劣化防止）
+- （オプション）IMPL_BUG を dev-tools の notes API に投入
+
+### skill の更新
+
+```bash
+npm update @twuw-b/dev-tools
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+```
+
+詳細は `docs/integration-guide.md` を参照。
 
 ## インストール
 
