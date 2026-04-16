@@ -216,6 +216,7 @@ export function FeedbackForm({
             </button>
           ))}
         </div>
+        <div style={styles.tagHint}>どれか一つを選んでください</div>
       </div>
 
       {/* テキストエリア */}
@@ -322,6 +323,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '6px',
     flexWrap: 'wrap',
+  },
+  tagHint: {
+    fontSize: '10px',
+    color: '#9CA3AF',
+    marginTop: '4px',
   },
   tag: {
     padding: '4px 12px',

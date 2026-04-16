@@ -41,6 +41,15 @@ export interface DevToolsProps {
    * 既定: '/__admin'
    */
   adminRoutePath?: string;
+  /**
+   * トリガーボタン（バグ記録ボタン）の画面端からのオフセット。
+   * ボトムナビ等のある利用側アプリで、ボタンが重ならないよう位置をずらすために使用する。
+   * 未指定時は safe-area-inset-bottom/right + 24px。
+   */
+  triggerOffset?: {
+    bottom?: string | number;
+    right?: string | number;
+  };
 }
 
 /**
@@ -68,6 +77,7 @@ export function DevTools({
   logCaptureConfig,
   disableLogCapture,
   adminRoutePath = '/__admin',
+  triggerOffset,
 }: DevToolsProps) {
   const { isDebugMode } = useDebugMode();
 
@@ -140,6 +150,7 @@ export function DevTools({
       environmentsMd={environmentsMd}
       onSave={onSave}
       initialSize={initialSize}
+      triggerOffset={triggerOffset}
     />
   );
 }

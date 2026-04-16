@@ -280,6 +280,15 @@ export interface DebugPanelProps {
   onManualAppNavigate?: (path: string) => void;
   /** 環境情報 MD 文字列（指定時に「環境」タブ表示） */
   environmentsMd?: string;
+  /**
+   * トリガーボタン（バグ記録ボタン）の画面端からのオフセット。
+   * ボトムナビ等のある利用側アプリで、ボタンが重ならないよう位置をずらすために使用する。
+   * 未指定時は safe-area-inset-bottom/right + 24px。
+   */
+  triggerOffset?: {
+    bottom?: string | number;
+    right?: string | number;
+  };
 }
 
 /** DebugAdmin プロパティ */

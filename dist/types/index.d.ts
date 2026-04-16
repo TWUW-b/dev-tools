@@ -46,6 +46,8 @@ export interface Note {
     /** @deprecated test_case_ids を使用 */
     test_case_id?: number | null;
     test_case_ids?: number[];
+    /** 紐付いたテストケースの詳細情報 */
+    test_cases?: NoteTestCase[];
     attachment_count?: number;
     attachments?: NoteAttachment[];
     activities?: NoteActivity[];
@@ -104,6 +106,14 @@ export interface EnvironmentKV {
 export interface EnvironmentTable {
     headers: string[];
     rows: string[][];
+}
+/** ノートに紐付いたテストケース情報 */
+export interface NoteTestCase {
+    id: number;
+    case_key: string | null;
+    domain: string | null;
+    capability: string | null;
+    title: string | null;
 }
 /** パース済みテストケース */
 export interface ParsedTestCase {
@@ -243,6 +253,15 @@ export interface DebugPanelProps {
     onManualAppNavigate?: (path: string) => void;
     /** 環境情報 MD 文字列（指定時に「環境」タブ表示） */
     environmentsMd?: string;
+    /**
+     * トリガーボタン（バグ記録ボタン）の画面端からのオフセット。
+     * ボトムナビ等のある利用側アプリで、ボタンが重ならないよう位置をずらすために使用する。
+     * 未指定時は safe-area-inset-bottom/right + 24px。
+     */
+    triggerOffset?: {
+        bottom?: string | number;
+        right?: string | number;
+    };
 }
 /** DebugAdmin プロパティ */
 export interface DebugAdminProps {

@@ -2,6 +2,40 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.10] - 2026-04-17
+
+### Fixed
+
+- **DebugPanel 入力フォームの文字色が親アプリのテーマ色（ダーク）を継承してしまう問題を修正**
+  - `.debug-panel` に `color: gray900; background: white` を明示
+  - `.debug-field input/textarea/select` にも `color` と `background` を明示
+- **DebugAdmin がモバイルで崩れる問題を修正**
+  - 2カラム（サイドバー380px + 詳細）のままモバイルでも表示していたのを縦積みに変更
+  - モバイル（`max-width: 768px`）でノートを選択するとサイドバーを非表示にして詳細を全画面表示、一覧へ戻るボタンを追加
+  - ヘッダー・フィルターの padding/gap をモバイル用に縮小
+  - ヘッダーに `flex-wrap: wrap` を適用
+
+## [1.2.9] - 2026-04-17
+
+### Fixed
+
+- **モバイル UI 崩れ対応**
+  - `DebugPanel` のトリガーボタンが `position: fixed; bottom: 24px; right: 24px` 固定で、ボトムナビを持つアプリでは z-index 9999 で上に被さりナビを隠していた問題を修正
+  - fallback パネル（PiP 非対応ブラウザ時の画面内表示）が `width: 400px` 固定で、モバイル幅で画面外にはみ出す問題を修正
+  - モバイル（`max-width: 768px`）では PiP ウィンドウを開かず、画面内オーバーレイを強制する
+  - fallback 時に `.debug-*` クラスのスタイルが親 document に注入されずレイアウト崩れしていた問題を修正
+
+### Added
+
+- `DebugPanel` / `DevTools` に `triggerOffset?: { bottom?, right? }` prop を追加。ボトムナビのあるアプリで利用側から位置をずらせる
+- `getTriggerButtonStyle(offset?)` を styles.ts から export（既定値は `calc(env(safe-area-inset-bottom, 0px) + 24px)`）
+- `getPanelStyles()` を styles.ts から export（`.debug-*` クラスのみ、body/html reset を含まず fallback で安全に注入可能）
+
+### Changed
+
+- fallback panel は `width: min(400px, 92vw)` に変更
+- `.debug-panel` の `height: 100vh` → `height: 100%` に変更（親コンテナのサイズに追従、fallback でも正しく表示される）
+
 ## [1.2.7] - 2026-04-11
 
 ### Added

@@ -78,6 +78,17 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
     }
     return false;
   });
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px)').matches;
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback'>('notes');
@@ -320,8 +331,13 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
       />
 
       {/* ヘッダー */}
-      <header style={getHeaderStyle(colors)}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <header style={{
+        ...getHeaderStyle(colors),
+        padding: isMobile ? '12px 16px' : '16px 24px',
+        flexWrap: 'wrap',
+        gap: '8px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
@@ -534,20 +550,30 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
           refreshKey={refreshKey}
         />
       ) : (
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* サイドバー（一覧） */}
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        flex: 1,
+        overflow: 'hidden',
+      }}>
+        {/* サイドバー（一覧） — モバイルでは選択中の note があれば非表示 */}
         <aside style={{
-          width: '380px',
-          borderRight: `1px solid ${colors.border}`,
-          display: 'flex',
+          width: isMobile ? '100%' : '380px',
+          flex: isMobile ? '1 1 auto' : '0 0 auto',
+          minHeight: 0,
+          borderRight: isMobile ? 'none' : `1px solid ${colors.border}`,
+          borderBottom: isMobile ? `1px solid ${colors.border}` : 'none',
+          display: isMobile && selectedNote ? 'none' : 'flex',
           flexDirection: 'column',
           background: colors.bgSecondary,
+          overflow: 'hidden',
         }}>
           {/* フィルター */}
           <div style={{
-            padding: '16px',
+            padding: isMobile ? '12px' : '16px',
             display: 'flex',
-            gap: '10px',
+            gap: '8px',
+            flexWrap: 'wrap',
             borderBottom: `1px solid ${colors.border}`,
           }}>
             <select
@@ -849,21 +875,47 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
           </div>
         </aside>
 
-        {/* 詳細 */}
+        {/* 詳細 — モバイルで未選択時は aside のみ表示 */}
         <main style={{
           flex: 1,
           overflow: 'auto',
-          padding: '32px',
+          padding: isMobile ? '16px' : '32px',
           background: colors.bg,
+          display: isMobile && !selectedNote ? 'none' : 'block',
         }}>
           {selectedNote ? (
             <div style={{ maxWidth: '800px' }}>
+              {/* モバイル用: 戻るボタン */}
+              {isMobile && (
+                <button
+                  onClick={() => setSelectedNote(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    marginBottom: '16px',
+                    background: 'transparent',
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '8px',
+                    color: colors.textSecondary,
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icon name="arrow_back" size={16} color={colors.textSecondary} />
+                  一覧へ戻る
+                </button>
+              )}
               {/* ヘッダー */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                marginBottom: '32px',
+                marginBottom: isMobile ? '20px' : '32px',
+                flexWrap: 'wrap',
+                gap: '12px',
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{

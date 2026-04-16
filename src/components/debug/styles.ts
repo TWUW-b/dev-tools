@@ -1,23 +1,36 @@
 import { DEBUG_COLORS as COLORS } from '../../styles/colors';
 
-/** トリガーボタンのスタイル */
-export const triggerButtonStyle: React.CSSProperties = {
-  position: 'fixed',
-  bottom: '24px',
-  right: '24px',
-  width: '64px',
-  height: '64px',
-  borderRadius: '50%',
-  background: COLORS.primary,
-  color: COLORS.white,
-  border: 'none',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 9999,
-};
+/**
+ * トリガーボタンのスタイルを生成
+ * @param offset 利用側アプリのボトムナビ等を避けるためのオフセット
+ */
+export function getTriggerButtonStyle(offset?: {
+  bottom?: string | number;
+  right?: string | number;
+}): React.CSSProperties {
+  const bottom = offset?.bottom ?? 'calc(env(safe-area-inset-bottom, 0px) + 24px)';
+  const right = offset?.right ?? 'calc(env(safe-area-inset-right, 0px) + 24px)';
+  return {
+    position: 'fixed',
+    bottom: typeof bottom === 'number' ? `${bottom}px` : bottom,
+    right: typeof right === 'number' ? `${right}px` : right,
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    background: COLORS.primary,
+    color: COLORS.white,
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  };
+}
+
+/** 後方互換: 既定オフセットでのトリガーボタンスタイル */
+export const triggerButtonStyle: React.CSSProperties = getTriggerButtonStyle();
 
 /** フォールバック用スタイル */
 export const fallbackStyles: Record<string, React.CSSProperties> = {
@@ -32,36 +45,51 @@ export const fallbackStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
+    padding: 'env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)',
   },
   panel: {
-    width: '400px',
+    width: 'min(400px, 92vw)',
     maxHeight: '90vh',
     background: COLORS.white,
     borderRadius: '12px',
     overflow: 'hidden',
     boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+    display: 'flex',
+    flexDirection: 'column',
   },
 };
 
 /**
- * PiPウィンドウ用スタイル
+ * PiPウィンドウ用の body reset スタイル
+ * （利用側アプリに注入すると親アプリのスタイルを壊すため、fallback 時には使用しない）
  */
-export function getPipStyles(): string {
+const PIP_RESET_CSS = `
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: ${COLORS.white};
+    font-size: 14px;
+    color: ${COLORS.gray900};
+    overflow: hidden;
+  }
+`;
+
+/**
+ * `.debug-*` クラス系スタイル（PiP / fallback 両対応）
+ * 利用側アプリに注入しても `.debug-*` プレフィックス付きクラスのみなので副作用なし
+ */
+export function getPanelStyles(): string {
   return `
     @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: ${COLORS.white};
-      font-size: 14px;
-      color: ${COLORS.gray900};
-    }
 
     .debug-icon {
       font-family: 'Material Symbols Outlined';
@@ -72,7 +100,16 @@ export function getPipStyles(): string {
     .debug-panel {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100%;
+      min-height: 0;
+      color: ${COLORS.gray900};
+      background: ${COLORS.white};
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .debug-panel * {
+      box-sizing: border-box;
     }
 
     .debug-header {
@@ -222,6 +259,8 @@ export function getPipStyles(): string {
       border-radius: 6px;
       font-size: 14px;
       font-family: inherit;
+      color: ${COLORS.gray900};
+      background: ${COLORS.white};
       transition: border-color 0.15s;
     }
 
@@ -1016,4 +1055,11 @@ export function getPipStyles(): string {
       to { transform: rotate(360deg); }
     }
   `;
+}
+
+/**
+ * PiPウィンドウ用スタイル（PIP_RESET + panel 全部）
+ */
+export function getPipStyles(): string {
+  return `${PIP_RESET_CSS}${getPanelStyles()}`;
 }

@@ -10,7 +10,7 @@ import type { TestTabHandle } from './debug/TestTab';
 import { ManualTabContent } from './debug/ManualTabContent';
 import { EnvironmentTab } from './debug/EnvironmentTab';
 import { ImageDropZone } from './debug/ImageDropZone';
-import { getPipStyles, triggerButtonStyle, fallbackStyles } from './debug/styles';
+import { getPipStyles, getPanelStyles, getTriggerButtonStyle, fallbackStyles } from './debug/styles';
 
 // Document Picture-in-Picture API 型定義
 interface DocumentPictureInPictureOptions {
@@ -47,6 +47,7 @@ export function DebugPanel({
   onManualNavigate,
   onManualAppNavigate,
   environmentsMd,
+  triggerOffset,
 }: DebugPanelProps) {
   // --- PiP state ---
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
@@ -92,8 +93,15 @@ export function DebugPanel({
 
   // --- PiP制御 ---
   const openPipWindow = useCallback(async () => {
-    if (!window.documentPictureInPicture) {
-      console.warn('Document Picture-in-Picture API is not supported');
+    // モバイル幅では PiP ウィンドウを使わず画面内オーバーレイで表示（PiPは小さすぎて使いづらいため）
+    const isMobileViewport =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(max-width: 768px)').matches;
+
+    if (!window.documentPictureInPicture || isMobileViewport) {
+      if (!window.documentPictureInPicture) {
+        console.warn('Document Picture-in-Picture API is not supported');
+      }
       setIsOpen(true);
       return;
     }
@@ -149,6 +157,16 @@ export function DebugPanel({
     return () => {
       pipWindowRef.current?.close();
     };
+  }, []);
+
+  // fallback（画面内オーバーレイ）表示時に `.debug-*` スタイルを親 document に注入
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('twuw-debug-panel-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'twuw-debug-panel-styles';
+    style.textContent = getPanelStyles();
+    document.head.appendChild(style);
   }, []);
 
   // --- 記録タブ: ハンドラ ---
@@ -544,7 +562,7 @@ export function DebugPanel({
 
   // トリガーボタン
   return (
-    <button onClick={openPipWindow} style={triggerButtonStyle} aria-label="デバッグノートを開く">
+    <button onClick={openPipWindow} style={getTriggerButtonStyle(triggerOffset)} aria-label="デバッグノートを開く">
       <span style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.2, textAlign: 'center' }}>バグ<br />記録</span>
     </button>
   );

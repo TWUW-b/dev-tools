@@ -32,6 +32,15 @@ export interface DevToolsProps {
      * 既定: '/__admin'
      */
     adminRoutePath?: string;
+    /**
+     * トリガーボタン（バグ記録ボタン）の画面端からのオフセット。
+     * ボトムナビ等のある利用側アプリで、ボタンが重ならないよう位置をずらすために使用する。
+     * 未指定時は safe-area-inset-bottom/right + 24px。
+     */
+    triggerOffset?: {
+        bottom?: string | number;
+        right?: string | number;
+    };
 }
 /**
  * dev-tools のワンストップ統合コンポーネント。
@@ -44,4 +53,4 @@ export interface DevToolsProps {
  * 利用側は Routes の外（AppContent 直下等）に 1 つ置くだけで OK。
  * 管理ダッシュボードは従来通り `<Route path="/__admin" element={<DebugAdmin .../>} />` で別途配線する。
  */
-export declare function DevTools({ apiBaseUrl, env, testCases, manualItems, manualDefaultPath, onManualNavigate, onManualAppNavigate, environmentsMd, onSave, initialSize, logCaptureConfig, disableLogCapture, adminRoutePath, }: DevToolsProps): import("react/jsx-runtime").JSX.Element | null;
+export declare function DevTools({ apiBaseUrl, env, testCases, manualItems, manualDefaultPath, onManualNavigate, onManualAppNavigate, environmentsMd, onSave, initialSize, logCaptureConfig, disableLogCapture, adminRoutePath, triggerOffset, }: DevToolsProps): import("react/jsx-runtime").JSX.Element | null;
