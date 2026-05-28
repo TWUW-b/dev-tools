@@ -1,4 +1,4 @@
-export { api, setDebugApiBaseUrl, getDebugApiBaseUrl } from './api';
+export { api, setDebugApiBaseUrl, getDebugApiBaseUrl, setAuthTokenProvider, type AuthTokenProvider } from './api';
 export { maskSensitive } from './maskSensitive';
 export { parseTestCaseMd } from './parseTestCaseMd';
 export { createLogCapture } from './logCapture';

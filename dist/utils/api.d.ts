@@ -7,6 +7,31 @@ export declare function setDebugApiBaseUrl(url: string): void;
  * API Base URL を取得
  */
 export declare function getDebugApiBaseUrl(): string;
+/** Auth Token Provider（呼び出し側で Firebase 等の ID Token を返す） */
+export type AuthTokenProvider = () => Promise<string | null | undefined> | string | null | undefined;
+/**
+ * 認証トークンプロバイダを登録する。
+ * 各 API リクエストの前に呼び出され、戻り値が文字列なら
+ * `Authorization: Bearer {token}` ヘッダが自動付与される。
+ * null/undefined を返す/プロバイダ未設定の場合は従来通りヘッダ無しで送信。
+ *
+ * 用途: ホスト側のアプリで Firebase 等の認証ゲートを通すために使用。
+ */
+export declare function setAuthTokenProvider(provider: AuthTokenProvider | null): void;
+/**
+ * 設定済み provider から Authorization ヘッダを構築する。失敗時は空オブジェクトを返す。
+ */
+export declare function buildAuthHeaders(): Promise<Record<string, string>>;
+/**
+ * バックエンドのエラーレスポンスからメッセージ文字列を抽出する。
+ * `error` フィールドは文字列・オブジェクト ({code, message}) のどちらの形式も許容する。
+ */
+export declare function extractErrorMessage(data: unknown, fallback: string): string;
+/**
+ * fetch のラッパー。設定済み AuthTokenProvider があれば
+ * Authorization ヘッダを自動付与する。
+ */
+export declare function dbgFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
 /**
  * API クライアント
  */

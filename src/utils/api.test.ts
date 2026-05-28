@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { api, setDebugApiBaseUrl, getDebugApiBaseUrl } from './api';
+import { api, setDebugApiBaseUrl, getDebugApiBaseUrl, setAuthTokenProvider, extractErrorMessage } from './api';
 
 /** text() を含むモックレスポンスを生成 */
 function mockResponse(body: unknown, ok = true, status = 200) {
@@ -39,7 +39,7 @@ describe('api', () => {
 
       expect(fetch).toHaveBeenCalledWith(
         '/__debug/api/notes?env=dev&status=&q=&includeDeleted=0',
-        { signal: undefined },
+        expect.objectContaining({ signal: undefined }),
       );
       expect(result).toEqual(mockNotes);
     });
@@ -53,7 +53,7 @@ describe('api', () => {
 
       expect(fetch).toHaveBeenCalledWith(
         '/__debug/api/notes?env=dev&status=open&q=&includeDeleted=0',
-        { signal: undefined },
+        expect.objectContaining({ signal: undefined }),
       );
     });
 
@@ -203,7 +203,7 @@ describe('api', () => {
 
       const result = await api.getTestTree('dev');
 
-      expect(fetch).toHaveBeenCalledWith('/__debug/api/test-cases/tree?env=dev');
+      expect(fetch).toHaveBeenCalledWith('/__debug/api/test-cases/tree?env=dev', expect.any(Object));
       expect(result).toEqual(mockTree);
     });
   });
@@ -235,6 +235,57 @@ describe('api', () => {
         })
       );
       expect(result).toEqual(mockResp);
+    });
+  });
+
+  describe('setAuthTokenProvider / dbgFetch', () => {
+    it('プロバイダ未設定時は Authorization ヘッダ無し', async () => {
+      setAuthTokenProvider(null);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse({ success: true, data: [] }));
+      await api.getNotes({ env: 'dev' });
+      const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit)?.headers as Record<string, string>;
+      expect(headers?.Authorization).toBeUndefined();
+    });
+
+    it('プロバイダから文字列が返れば Authorization Bearer を付与', async () => {
+      setAuthTokenProvider(() => 'token-xyz');
+      global.fetch = vi.fn().mockResolvedValue(mockResponse({ success: true, data: [] }));
+      await api.getNotes({ env: 'dev' });
+      const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit)?.headers as Record<string, string>;
+      expect(headers.Authorization).toBe('Bearer token-xyz');
+      setAuthTokenProvider(null);
+    });
+
+    it('プロバイダが null を返す場合はヘッダ無し', async () => {
+      setAuthTokenProvider(async () => null);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse({ success: true, data: [] }));
+      await api.getNotes({ env: 'dev' });
+      const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit)?.headers as Record<string, string>;
+      expect(headers?.Authorization).toBeUndefined();
+      setAuthTokenProvider(null);
+    });
+
+    it('プロバイダが throw してもクラッシュしない', async () => {
+      setAuthTokenProvider(async () => { throw new Error('boom'); });
+      global.fetch = vi.fn().mockResolvedValue(mockResponse({ success: true, data: [] }));
+      await expect(api.getNotes({ env: 'dev' })).resolves.toBeDefined();
+      setAuthTokenProvider(null);
+    });
+  });
+
+  describe('extractErrorMessage', () => {
+    it('error: 文字列形式', () => {
+      expect(extractErrorMessage({ error: 'bad' }, 'fb')).toBe('bad');
+    });
+    it('error: { message } 形式', () => {
+      expect(extractErrorMessage({ error: { code: 'X', message: 'detail' } }, 'fb')).toBe('detail');
+    });
+    it('トップ message フィールド', () => {
+      expect(extractErrorMessage({ message: 'top' }, 'fb')).toBe('top');
+    });
+    it('構造一致しなければ fallback', () => {
+      expect(extractErrorMessage({}, 'fb')).toBe('fb');
+      expect(extractErrorMessage(null, 'fb')).toBe('fb');
     });
   });
 });

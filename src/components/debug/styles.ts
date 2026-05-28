@@ -79,7 +79,7 @@ const PIP_RESET_CSS = `
     background: ${COLORS.white};
     font-size: 14px;
     color: ${COLORS.gray900};
-    overflow: hidden;
+    overflow: auto;
   }
 `;
 
@@ -93,8 +93,19 @@ export function getPanelStyles(): string {
 
     .debug-icon {
       font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
       font-size: 24px;
       line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: 'liga';
     }
 
     .debug-panel {

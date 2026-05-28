@@ -1,12 +1,11 @@
 import { jsxs as n, jsx as e, Fragment as me } from "react/jsx-runtime";
 import { useState as w, useMemo as ve, useCallback as K, forwardRef as at, useRef as ue, useEffect as ne, useImperativeHandle as ot, createContext as st, useContext as Xe } from "react";
-import { a as Ye, u as lt } from "./useDebugMode-Bazrkz8S.js";
-import { a as re, s as We, g as dt } from "./api-BfEr37m2.js";
-import { d as ct, a as pt } from "./useFeedbackAdminMode-uS9p5VCZ.js";
-import { b as ut, c as gt, e as xt } from "./feedbackApi-CdFCjUgg.js";
+import { a as Ye, u as lt } from "./useDebugMode-CR55Iu7L.js";
+import { b as re, a as We, e as dt, f as ct, h as pt, i as ut } from "./feedbackApi-Dk9LT3W3.js";
+import { d as gt, a as xt } from "./useFeedbackAdminMode-COsS7hkT.js";
 import { createPortal as ht } from "react-dom";
 import { m as ft } from "./feedbackLogCapture-DUBfVREg.js";
-import { I as et, D as s, h as Be } from "./FeedbackAdmin-CDJAuNrz.js";
+import { I as et, D as s, h as Be } from "./FeedbackAdmin-oielK0h3.js";
 import { c as bt } from "./logCapture-Bkuy8MSd.js";
 function mt(i) {
   return i.split(`
@@ -469,7 +468,7 @@ function wt({
   onAppNavigate: p
 }) {
   var l;
-  const [u, z] = w(r || ((l = i[0]) == null ? void 0 : l.path) || ""), { content: h, loading: x, error: m } = ct(u), D = (k) => {
+  const [u, z] = w(r || ((l = i[0]) == null ? void 0 : l.path) || ""), { content: h, loading: x, error: m } = gt(u), D = (k) => {
     z(k), t == null || t(k);
   };
   return /* @__PURE__ */ n("div", { className: "debug-manual-tab", children: [
@@ -997,7 +996,7 @@ const He = {
     background: ${s.white};
     font-size: 14px;
     color: ${s.gray900};
-    overflow: hidden;
+    overflow: auto;
   }
 `;
 function it() {
@@ -1006,8 +1005,19 @@ function it() {
 
     .debug-icon {
       font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
       font-size: 24px;
       line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: 'liga';
     }
 
     .debug-panel {
@@ -2996,7 +3006,7 @@ function Gt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
     updateStatus: E,
     remove: y,
     refresh: T
-  } = pt({ apiBaseUrl: i, adminKey: r }), [g, S] = w(null), [c, O] = w(null), [W, P] = w(!1), [j, Q] = w(null), [U, ie] = w(null), te = ue(0), A = ue(u);
+  } = xt({ apiBaseUrl: i, adminKey: r }), [g, S] = w(null), [c, O] = w(null), [W, P] = w(!1), [j, Q] = w(null), [U, ie] = w(null), te = ue(0), A = ue(u);
   ne(() => {
     u !== A.current && (A.current = u, T());
   }, [u, T]);
@@ -3005,7 +3015,7 @@ function Gt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
     S(d), P(!0), O(null);
     const N = ++te.current;
     try {
-      const Y = await ut({ apiBaseUrl: i, adminKey: r, id: d });
+      const Y = await dt({ apiBaseUrl: i, adminKey: r, id: d });
       if (te.current !== N) return;
       O(Y);
     } catch {
@@ -3021,7 +3031,7 @@ function Gt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
   }, [y, g]), _ = K(async (d, N) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await gt({ apiBaseUrl: i, adminKey: r, feedbackId: d, attachmentId: N }), O((Y) => {
+        await ct({ apiBaseUrl: i, adminKey: r, feedbackId: d, attachmentId: N }), O((Y) => {
           var se;
           return !Y || Y.id !== d ? Y : {
             ...Y,
@@ -3041,7 +3051,7 @@ function Gt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
   }, [i]), B = K(async (d) => {
     ie(d);
     try {
-      await xt({ apiBaseUrl: i, adminKey: r, format: d });
+      await pt({ apiBaseUrl: i, adminKey: r, format: d });
     } catch (N) {
       console.error("Export failed:", N);
     } finally {
@@ -3813,7 +3823,7 @@ const Qt = {
   low: "#60A5FA",
   link: "#818CF8"
 }, Zt = 3e4;
-function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdminKey: p }) {
+function pn({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdminKey: p }) {
   const [u, z] = w(""), [h, x] = w(""), [m, D] = w(""), [l, k] = w(null), [L, b] = w(() => typeof window < "u" ? window.matchMedia("(prefers-color-scheme: dark)").matches : !1), [I, E] = w(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 768px)").matches);
   ne(() => {
     if (typeof window > "u") return;
@@ -3844,7 +3854,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
     return () => clearInterval(o);
   }, [y, N]);
   const Y = K((o) => {
-    const V = `${i || dt()}/export/${o}?env=${r}`;
+    const V = `${i || ut()}/export/${o}?env=${r}`;
     window.open(V, "_blank");
   }, [i, r]), se = K((o) => {
     j(o), z("open"), O("notes");
@@ -5328,7 +5338,7 @@ function en(i) {
     background: i.bg
   };
 }
-function gn({
+function un({
   apiBaseUrl: i,
   env: r = "dev",
   testCases: t,
@@ -5384,8 +5394,8 @@ function gn({
   );
 }
 export {
-  un as D,
+  pn as D,
   Et as a,
-  gn as b,
+  un as b,
   kt as p
 };

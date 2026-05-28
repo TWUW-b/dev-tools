@@ -2,6 +2,32 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.11] - 2026-05-28
+
+### Added
+
+- **`setAuthTokenProvider(provider)` API を追加**
+  - 各 admin API リクエスト前に登録済みプロバイダを呼び出し、戻り値の文字列を
+    `Authorization: Bearer {token}` ヘッダとして自動付与する
+  - ホスト側で Firebase Authentication 等の認証ゲートを通すために使用
+  - 型: `AuthTokenProvider = () => Promise<string|null|undefined> | string|null|undefined`
+- **`extractErrorMessage(data, fallback)` を内部追加**
+  - バックエンドが返す `{ error: { code, message } }` / `{ error: "..." }` /
+    `{ message: "..." }` のいずれの形式でも適切にメッセージを抽出する。
+    過去にエラー時の画面表示が "[object Object]" になっていた問題を根本対応
+- **`dbgFetch(input, init)` ラッパー**
+  - 全 admin API fetch を内部でラップし、自動で AuthHeader を付与する
+
+### Fixed
+
+- **TestTree のアイコンが "chevron_right" 等の文字列で表示されていた問題を修正**
+  - `.debug-icon` クラスに Material Symbols 標準の `font-feature-settings: 'liga'`
+    と表示安定化系プロパティを追加。リガチャが効くようになり、`<span class="debug-icon">chevron_right</span>`
+    が正しくアイコン描画されるようになった
+- **PiP ウィンドウでデバッグノートのテストケース紐付けが多いときに送信ボタンに到達できない問題を修正**
+  - PIP_RESET_CSS の `body { overflow: hidden }` を `overflow: auto` に変更し、
+    PiP ウィンドウ自体をスクロール可能化
+
 ## [1.2.10] - 2026-04-17
 
 ### Fixed

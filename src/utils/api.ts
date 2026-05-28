@@ -17,6 +17,72 @@ export function getDebugApiBaseUrl(): string {
   return apiBaseUrl;
 }
 
+/** Auth Token Provider（呼び出し側で Firebase 等の ID Token を返す） */
+export type AuthTokenProvider = () => Promise<string | null | undefined> | string | null | undefined;
+
+let authTokenProvider: AuthTokenProvider | null = null;
+
+/**
+ * 認証トークンプロバイダを登録する。
+ * 各 API リクエストの前に呼び出され、戻り値が文字列なら
+ * `Authorization: Bearer {token}` ヘッダが自動付与される。
+ * null/undefined を返す/プロバイダ未設定の場合は従来通りヘッダ無しで送信。
+ *
+ * 用途: ホスト側のアプリで Firebase 等の認証ゲートを通すために使用。
+ */
+export function setAuthTokenProvider(provider: AuthTokenProvider | null): void {
+  authTokenProvider = provider;
+}
+
+/**
+ * 設定済み provider から Authorization ヘッダを構築する。失敗時は空オブジェクトを返す。
+ */
+export async function buildAuthHeaders(): Promise<Record<string, string>> {
+  if (!authTokenProvider) return {};
+  try {
+    const token = await authTokenProvider();
+    if (typeof token === 'string' && token.length > 0) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch {
+    // プロバイダ失敗時はヘッダ無しで継続
+  }
+  return {};
+}
+
+/**
+ * バックエンドのエラーレスポンスからメッセージ文字列を抽出する。
+ * `error` フィールドは文字列・オブジェクト ({code, message}) のどちらの形式も許容する。
+ */
+export function extractErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object') return fallback;
+  const err = (data as Record<string, unknown>).error;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object') {
+    const msg = (err as Record<string, unknown>).message;
+    if (typeof msg === 'string' && msg.length > 0) return msg;
+  }
+  const top = (data as Record<string, unknown>).message;
+  if (typeof top === 'string' && top.length > 0) return top;
+  return fallback;
+}
+
+/**
+ * fetch のラッパー。設定済み AuthTokenProvider があれば
+ * Authorization ヘッダを自動付与する。
+ */
+export async function dbgFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const authHeaders = await buildAuthHeaders();
+  const mergedInit: RequestInit = {
+    ...(init || {}),
+    headers: {
+      ...(init?.headers || {}),
+      ...authHeaders,
+    },
+  };
+  return fetch(input, mergedInit);
+}
+
 /**
  * レスポンスを安全にパースする
  */
@@ -32,8 +98,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
     throw new Error('Invalid JSON response');
   }
   if (!response.ok) {
-    const errorMessage = (data as Record<string, unknown>).error || `HTTP ${response.status}`;
-    throw new Error(String(errorMessage));
+    throw new Error(extractErrorMessage(data, `HTTP ${response.status}`));
   }
   return data;
 }
@@ -59,7 +124,7 @@ export const api = {
       includeDeleted: options.includeDeleted ? '1' : '0',
     });
 
-    const response = await fetch(`${apiBaseUrl}/notes?${params}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes?${params}`, {
       signal: options.signal,
     });
     const data = await parseResponse<NotesResponse>(response);
@@ -75,7 +140,7 @@ export const api = {
    * ノート詳細を取得
    */
   async getNote(env: Environment, id: number): Promise<Note> {
-    const response = await fetch(`${apiBaseUrl}/notes/${id}?env=${env}`);
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${id}?env=${env}`);
     const data = await parseResponse<NotesResponse>(response);
 
     if (!data.success || !data.note) {
@@ -89,7 +154,7 @@ export const api = {
    * ノートを作成
    */
   async createNote(env: Environment, input: NoteInput): Promise<Note> {
-    const response = await fetch(`${apiBaseUrl}/notes?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes?env=${env}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -123,7 +188,7 @@ export const api = {
    * ノートのステータスを更新
    */
   async updateStatus(env: Environment, id: number, status: Status, options?: { comment?: string; author?: string }): Promise<void> {
-    const response = await fetch(`${apiBaseUrl}/notes/${id}/status?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${id}/status?env=${env}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, ...options }),
@@ -140,7 +205,7 @@ export const api = {
    * ノートの重要度を更新
    */
   async updateSeverity(env: Environment, id: number, severity: Severity | null): Promise<void> {
-    const response = await fetch(`${apiBaseUrl}/notes/${id}/severity?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${id}/severity?env=${env}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ severity }),
@@ -157,7 +222,7 @@ export const api = {
    * ノートを削除（論理削除）
    */
   async deleteNote(env: Environment, id: number): Promise<void> {
-    const response = await fetch(`${apiBaseUrl}/notes/${id}?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${id}?env=${env}`, {
       method: 'DELETE',
     });
 
@@ -172,7 +237,7 @@ export const api = {
    * テストケースインポート
    */
   async importTestCases(cases: ParsedTestCase[]): Promise<{ total: number }> {
-    const response = await fetch(`${apiBaseUrl}/test-cases/import`, {
+    const response = await dbgFetch(`${apiBaseUrl}/test-cases/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cases }),
@@ -191,7 +256,7 @@ export const api = {
    * テストツリー取得
    */
   async getTestTree(env: Environment): Promise<DomainTree[]> {
-    const response = await fetch(`${apiBaseUrl}/test-cases/tree?env=${env}`);
+    const response = await dbgFetch(`${apiBaseUrl}/test-cases/tree?env=${env}`);
     const data = await parseResponse<{ success: boolean; data: DomainTree[]; error?: string }>(response);
 
     if (!data.success) {
@@ -211,7 +276,7 @@ export const api = {
     networkLogs?: import('../types').NetworkLogEntry[];
     environment?: import('../types').EnvironmentInfo;
   }): Promise<TestRunResponse> {
-    const response = await fetch(`${apiBaseUrl}/test-runs?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/test-runs?env=${env}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ runs, failNote }),
@@ -236,7 +301,7 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`, {
       method: 'POST',
       body: formData,
     });
@@ -254,7 +319,7 @@ export const api = {
    * 添付一覧取得
    */
   async getAttachments(env: Environment, noteId: number): Promise<NoteAttachment[]> {
-    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`);
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${noteId}/attachments?env=${env}`);
     const data = await parseResponse<{ success: boolean; attachments: NoteAttachment[]; error?: string }>(response);
 
     if (!data.success) {
@@ -268,7 +333,7 @@ export const api = {
    * 添付削除
    */
   async deleteAttachment(env: Environment, noteId: number, attachmentId: number): Promise<void> {
-    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/attachments/${attachmentId}?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${noteId}/attachments/${attachmentId}?env=${env}`, {
       method: 'DELETE',
     });
 
@@ -283,7 +348,7 @@ export const api = {
    * アクティビティ一覧取得
    */
   async getActivities(env: Environment, noteId: number): Promise<NoteActivity[]> {
-    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`);
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`);
     const data = await parseResponse<{ success: boolean; activities: NoteActivity[]; error?: string }>(response);
 
     if (!data.success) {
@@ -297,7 +362,7 @@ export const api = {
    * コメント追加
    */
   async addActivity(env: Environment, noteId: number, input: { content: string; author?: string }): Promise<NoteActivity> {
-    const response = await fetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`, {
+    const response = await dbgFetch(`${apiBaseUrl}/notes/${noteId}/activities?env=${env}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),

@@ -1,4 +1,5 @@
 import type { Feedback, FeedbackStatus, NoteAttachment } from '../types';
+import { dbgFetch, extractErrorMessage } from './api';
 
 function validateApiBaseUrl(url: string): string {
   // 相対パス (/api/__debug 等) はそのまま使用
@@ -26,7 +27,7 @@ interface AdminRequestParams {
 
 export async function postFeedback({ apiBaseUrl, body, signal }: PostFeedbackParams): Promise<Feedback> {
   const base = validateApiBaseUrl(apiBaseUrl);
-  const res = await fetch(`${base}/feedbacks`, {
+  const res = await dbgFetch(`${base}/feedbacks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -34,7 +35,7 @@ export async function postFeedback({ apiBaseUrl, body, signal }: PostFeedbackPar
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to submit feedback');
+    throw new Error(extractErrorMessage(json, 'Failed to submit feedback'));
   }
   return json.data;
 }
@@ -45,13 +46,13 @@ export async function getFeedbacks(
   const base = validateApiBaseUrl(params.apiBaseUrl);
   const query = new URLSearchParams(params.query ?? {}).toString();
   const url = `${base}/feedbacks${query ? '?' + query : ''}`;
-  const res = await fetch(url, {
+  const res = await dbgFetch(url, {
     headers: { 'X-Admin-Key': params.adminKey },
     signal: params.signal,
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to fetch feedbacks');
+    throw new Error(extractErrorMessage(json, 'Failed to fetch feedbacks'));
   }
   return json;
 }
@@ -60,13 +61,13 @@ export async function getFeedbackDetail(
   params: AdminRequestParams & { id: number }
 ): Promise<Feedback> {
   const base = validateApiBaseUrl(params.apiBaseUrl);
-  const res = await fetch(`${base}/feedbacks/${params.id}`, {
+  const res = await dbgFetch(`${base}/feedbacks/${params.id}`, {
     headers: { 'X-Admin-Key': params.adminKey },
     signal: params.signal,
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to fetch feedback');
+    throw new Error(extractErrorMessage(json, 'Failed to fetch feedback'));
   }
   return json.data;
 }
@@ -75,7 +76,7 @@ export async function updateFeedbackStatus(
   params: AdminRequestParams & { id: number; status: FeedbackStatus }
 ): Promise<{ id: number; status: FeedbackStatus; updatedAt: string }> {
   const base = validateApiBaseUrl(params.apiBaseUrl);
-  const res = await fetch(`${base}/feedbacks/${params.id}/status`, {
+  const res = await dbgFetch(`${base}/feedbacks/${params.id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ export async function updateFeedbackStatus(
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to update status');
+    throw new Error(extractErrorMessage(json, 'Failed to update status'));
   }
   return json.data;
 }
@@ -95,14 +96,14 @@ export async function deleteFeedback(
   params: AdminRequestParams & { id: number }
 ): Promise<void> {
   const base = validateApiBaseUrl(params.apiBaseUrl);
-  const res = await fetch(`${base}/feedbacks/${params.id}`, {
+  const res = await dbgFetch(`${base}/feedbacks/${params.id}`, {
     method: 'DELETE',
     headers: { 'X-Admin-Key': params.adminKey },
     signal: params.signal,
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to delete feedback');
+    throw new Error(extractErrorMessage(json, 'Failed to delete feedback'));
   }
 }
 
@@ -113,13 +114,13 @@ export async function uploadFeedbackAttachment(
   const formData = new FormData();
   formData.append('file', params.file);
 
-  const res = await fetch(`${base}/feedbacks/${params.feedbackId}/attachments`, {
+  const res = await dbgFetch(`${base}/feedbacks/${params.feedbackId}/attachments`, {
     method: 'POST',
     body: formData,
   });
   const json = await res.json();
   if (!json.success || !json.attachment) {
-    throw new Error(json.error || 'Failed to upload attachment');
+    throw new Error(extractErrorMessage(json, 'Failed to upload attachment'));
   }
   return json.attachment;
 }
@@ -128,14 +129,14 @@ export async function deleteFeedbackAttachment(
   params: AdminRequestParams & { feedbackId: number; attachmentId: number }
 ): Promise<void> {
   const base = validateApiBaseUrl(params.apiBaseUrl);
-  const res = await fetch(`${base}/feedbacks/${params.feedbackId}/attachments/${params.attachmentId}`, {
+  const res = await dbgFetch(`${base}/feedbacks/${params.feedbackId}/attachments/${params.attachmentId}`, {
     method: 'DELETE',
     headers: { 'X-Admin-Key': params.adminKey },
     signal: params.signal,
   });
   const json = await res.json();
   if (!json.success) {
-    throw new Error(json.error || 'Failed to delete attachment');
+    throw new Error(extractErrorMessage(json, 'Failed to delete attachment'));
   }
 }
 
@@ -147,7 +148,7 @@ export async function exportFeedbacks(params: {
   const base = validateApiBaseUrl(params.apiBaseUrl);
   const url = `${base}/feedbacks/export/${params.format}`;
 
-  const res = await fetch(url, {
+  const res = await dbgFetch(url, {
     headers: { 'X-Admin-Key': params.adminKey },
   });
 

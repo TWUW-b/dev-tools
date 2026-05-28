@@ -1,44 +1,44 @@
-import { a as u, g as d, s as b } from "./chunks/api-BfEr37m2.js";
-import { c as h, m as k } from "./chunks/feedbackLogCapture-DUBfVREg.js";
-import { c as F } from "./chunks/logCapture-Bkuy8MSd.js";
-import { d as W, b as C, g as A, p as B, u as L } from "./chunks/feedbackApi-CdFCjUgg.js";
-function f(c) {
-  const n = c.split(`
+import { b as p, d, i as b, e as g, g as h, p as k, s as F, a as x, u as D } from "./chunks/feedbackApi-Dk9LT3W3.js";
+import { c as A, m as C } from "./chunks/feedbackLogCapture-DUBfVREg.js";
+import { c as B } from "./chunks/logCapture-Bkuy8MSd.js";
+function f(n) {
+  const c = n.split(`
 `), i = [];
   let r = "", a = "", s = !1, o = !1;
-  for (const l of n) {
-    const t = l.trim();
-    if (t === "---" && !o) {
+  for (const l of c) {
+    const e = l.trim();
+    if (e === "---" && !o) {
       s ? (s = !1, o = !0) : s = !0;
       continue;
     }
     if (s) {
-      const e = t.match(/^domain:\s*(.+)$/);
-      e && (r = e[1].trim());
+      const t = e.match(/^domain:\s*(.+)$/);
+      t && (r = t[1].trim());
       continue;
     }
-    if (t.startsWith("# ") && !t.startsWith("## ")) {
-      a = t.slice(2).trim();
+    if (e.startsWith("# ") && !e.startsWith("## ")) {
+      a = e.slice(2).trim();
       continue;
     }
-    if (!t.startsWith("## ") && t.startsWith("- ") && a) {
-      const e = t.slice(2).trim().replace(/^\[[ x]\]\s*/, "");
-      e && i.push({ domain: r, capability: a, title: e });
+    if (!e.startsWith("## ") && e.startsWith("- ") && a) {
+      const t = e.slice(2).trim().replace(/^\[[ x]\]\s*/, "");
+      t && i.push({ domain: r, capability: a, title: t });
     }
   }
   return i;
 }
 export {
-  u as api,
-  h as createFeedbackLogCapture,
-  F as createLogCapture,
-  W as deleteFeedback,
-  d as getDebugApiBaseUrl,
-  C as getFeedbackDetail,
-  A as getFeedbacks,
-  k as maskSensitive,
+  p as api,
+  A as createFeedbackLogCapture,
+  B as createLogCapture,
+  d as deleteFeedback,
+  b as getDebugApiBaseUrl,
+  g as getFeedbackDetail,
+  h as getFeedbacks,
+  C as maskSensitive,
   f as parseTestCaseMd,
-  B as postFeedback,
-  b as setDebugApiBaseUrl,
-  L as updateFeedbackStatus
+  k as postFeedback,
+  F as setAuthTokenProvider,
+  x as setDebugApiBaseUrl,
+  D as updateFeedbackStatus
 };

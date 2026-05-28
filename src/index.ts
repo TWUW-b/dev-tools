@@ -32,7 +32,7 @@ export type { UseFeedbackAdminOptions, FeedbackFilters, UseFeedbackAdminReturn }
 export { useFeedbackAdminMode } from './hooks/useFeedbackAdminMode';
 
 // Utils
-export { setDebugApiBaseUrl } from './utils/api';
+export { setDebugApiBaseUrl, setAuthTokenProvider, type AuthTokenProvider } from './utils/api';
 export { maskSensitive } from './utils/maskSensitive';
 export { parseTestCaseMd } from './utils/parseTestCaseMd';
 export { parseEnvironmentsMd } from './utils/parseEnvironmentsMd';

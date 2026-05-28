@@ -16,7 +16,7 @@ export type { UseFeedbackOptions, UseFeedbackReturn } from './hooks/useFeedback'
 export { useFeedbackAdmin } from './hooks/useFeedbackAdmin';
 export type { UseFeedbackAdminOptions, FeedbackFilters, UseFeedbackAdminReturn } from './hooks/useFeedbackAdmin';
 export { useFeedbackAdminMode } from './hooks/useFeedbackAdminMode';
-export { setDebugApiBaseUrl } from './utils/api';
+export { setDebugApiBaseUrl, setAuthTokenProvider, type AuthTokenProvider } from './utils/api';
 export { maskSensitive } from './utils/maskSensitive';
 export { parseTestCaseMd } from './utils/parseTestCaseMd';
 export { parseEnvironmentsMd } from './utils/parseEnvironmentsMd';

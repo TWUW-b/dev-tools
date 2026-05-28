@@ -1,44 +1,45 @@
-import { D as s, a as o, b as r, p as u } from "./chunks/DevTools-DE3RTBGk.js";
-import { D as l, F as t, a as n, M as b, b as m, c as M, d as i, e as p, f as c, g as D, h as f, i as g, l as A, m as L } from "./chunks/FeedbackAdmin-CDJAuNrz.js";
-import { u as x, a as S } from "./chunks/useDebugMode-Bazrkz8S.js";
+import { D as s, a as o, b as r, p as u } from "./chunks/DevTools-C4fexHap.js";
+import { D as t, F as l, a as n, M as b, b as m, c as i, d as M, e as p, f as c, g as D, h as A, i as f, l as g, m as k } from "./chunks/FeedbackAdmin-oielK0h3.js";
+import { u as x, a as S } from "./chunks/useDebugMode-CR55Iu7L.js";
 import { s as P, u as C } from "./chunks/useManualPiP-CjK-TJ87.js";
-import { u as R, a as T, b as B, c as U, d as _, e as v } from "./chunks/useFeedbackAdminMode-uS9p5VCZ.js";
-import { s as E } from "./chunks/api-BfEr37m2.js";
-import { c as w, m as h } from "./chunks/feedbackLogCapture-DUBfVREg.js";
-import { parseTestCaseMd as G } from "./utils.js";
-import { c as Y } from "./chunks/logCapture-Bkuy8MSd.js";
+import { u as O, a as R, b as v, c as B, d as U, e as _ } from "./chunks/useFeedbackAdminMode-COsS7hkT.js";
+import { s as E, a as N } from "./chunks/feedbackApi-Dk9LT3W3.js";
+import { c as w, m as z } from "./chunks/feedbackLogCapture-DUBfVREg.js";
+import { parseTestCaseMd as I } from "./utils.js";
+import { c as j } from "./chunks/logCapture-Bkuy8MSd.js";
 export {
-  l as DEBUG_COLORS,
+  t as DEBUG_COLORS,
   s as DebugAdmin,
   o as DebugPanel,
   r as DevTools,
-  t as FeedbackAdmin,
+  l as FeedbackAdmin,
   n as FeedbackForm,
   b as MANUAL_COLORS,
   m as MATERIAL_SYMBOLS_CDN,
-  M as ManualLink,
-  i as ManualPage,
+  i as ManualLink,
+  M as ManualPage,
   p as ManualPiP,
   c as ManualSidebar,
   D as ManualTabPage,
-  f as MarkdownRenderer,
+  A as MarkdownRenderer,
   w as createFeedbackLogCapture,
-  Y as createLogCapture,
-  g as isAutoLoadDisabled,
-  A as loadMaterialSymbols,
-  h as maskSensitive,
-  L as materialSymbolsStyle,
+  j as createLogCapture,
+  f as isAutoLoadDisabled,
+  g as loadMaterialSymbols,
+  z as maskSensitive,
+  k as materialSymbolsStyle,
   u as parseEnvironmentsMd,
-  G as parseTestCaseMd,
-  E as setDebugApiBaseUrl,
+  I as parseTestCaseMd,
+  E as setAuthTokenProvider,
+  N as setDebugApiBaseUrl,
   P as setManualTabBaseUrl,
   x as useDebugMode,
   S as useDebugNotes,
-  R as useFeedback,
-  T as useFeedbackAdmin,
-  B as useFeedbackAdminMode,
-  U as useManualDownload,
-  _ as useManualLoader,
+  O as useFeedback,
+  R as useFeedbackAdmin,
+  v as useFeedbackAdminMode,
+  B as useManualDownload,
+  U as useManualLoader,
   C as useManualPiP,
-  v as useResizable
+  _ as useResizable
 };
