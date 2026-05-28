@@ -11,6 +11,7 @@ import { ManualTabContent } from './debug/ManualTabContent';
 import { EnvironmentTab } from './debug/EnvironmentTab';
 import { ImageDropZone } from './debug/ImageDropZone';
 import { getPipStyles, getPanelStyles, getTriggerButtonStyle, fallbackStyles } from './debug/styles';
+import { MATERIAL_SYMBOLS_CDN } from '../styles/material-symbols';
 
 // Document Picture-in-Picture API 型定義
 interface DocumentPictureInPictureOptions {
@@ -114,6 +115,14 @@ export function DebugPanel({
         width: initialSize.width,
         height: initialSize.height,
       });
+
+      // Material Symbols フォントを明示的に <link> として PiP の <head> に inject。
+      // CSS の @import 経由だと PiP コンテキストで読み込み失敗するケースがあるため、
+      // <link rel="stylesheet"> で確実にフォントを取得させる。
+      const fontLink = pip.document.createElement('link');
+      fontLink.rel = 'stylesheet';
+      fontLink.href = MATERIAL_SYMBOLS_CDN;
+      pip.document.head.appendChild(fontLink);
 
       const style = pip.document.createElement('style');
       style.textContent = getPipStyles();

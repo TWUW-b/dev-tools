@@ -2,6 +2,16 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.12] - 2026-05-28
+
+### Fixed
+
+- **PiP ウィンドウで Material Symbols フォントが読み込まれずアイコンが文字列のまま表示される問題を修正**
+  - CSS `@import url('...Material+Symbols...')` だけでは PiP コンテキストで
+    フォント取得が失敗するケースがあったため、`requestWindow()` で開いた直後に
+    `<link rel="stylesheet" href="MATERIAL_SYMBOLS_CDN">` を PiP の `<head>` に
+    明示的に append するよう変更。`.debug-icon` 経由のアイコンが確実にリガチャ展開される
+
 ## [1.2.11] - 2026-05-28
 
 ### Added
