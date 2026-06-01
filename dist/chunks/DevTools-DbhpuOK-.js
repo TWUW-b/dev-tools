@@ -1,47 +1,47 @@
 import { jsxs as n, jsx as e, Fragment as me } from "react/jsx-runtime";
-import { useState as w, useMemo as ye, useCallback as K, forwardRef as at, useRef as ue, useEffect as ne, useImperativeHandle as ot, createContext as st, useContext as Ze } from "react";
-import { a as Xe, u as lt } from "./useDebugMode-CR55Iu7L.js";
-import { b as ae, a as Le, e as dt, f as ct, h as pt, i as ut } from "./feedbackApi-Dk9LT3W3.js";
-import { d as gt, a as xt } from "./useFeedbackAdminMode-COsS7hkT.js";
-import { createPortal as ht } from "react-dom";
-import { m as ft } from "./feedbackLogCapture-DUBfVREg.js";
-import { I as et, D as s, h as Be, b as bt } from "./FeedbackAdmin-oielK0h3.js";
-import { c as mt } from "./logCapture-Bkuy8MSd.js";
-function yt(i) {
+import { useState as w, useMemo as ye, useCallback as Z, forwardRef as pt, useRef as ue, useEffect as ne, useImperativeHandle as ut, createContext as gt, useContext as et } from "react";
+import { a as tt, u as xt } from "./useDebugMode-CXzrrGEB.js";
+import { b as ae, a as We, e as ht, f as ft, h as bt, i as mt } from "./feedbackApi-BAMqIntC.js";
+import { d as yt, a as vt } from "./useFeedbackAdminMode-DrN_wClc.js";
+import { createPortal as wt } from "react-dom";
+import { m as kt } from "./feedbackLogCapture-DUBfVREg.js";
+import { I as nt, D as s, h as Be, b as St } from "./FeedbackAdmin-CsYAOlba.js";
+import { c as $t } from "./logCapture-Bkuy8MSd.js";
+function zt(i) {
   return i.split(`
 `).map((r) => r.trim()).filter((r) => r.startsWith("- ")).map((r) => r.slice(2).trim()).filter(Boolean);
 }
-function vt({ notes: i, updateStatus: r }) {
-  const [t, p] = w(null), [u, z] = w(/* @__PURE__ */ new Set(["fixed"])), [h, x] = w({}), [m, D] = w(/* @__PURE__ */ new Set()), l = ye(() => u.size === 0 ? i : i.filter((b) => u.has(b.status)), [i, u]), k = K(async (b, I) => {
+function Ct({ notes: i, updateStatus: r }) {
+  const [t, p] = w(null), [g, I] = w(/* @__PURE__ */ new Set(["fixed"])), [h, x] = w({}), [m, D] = w(/* @__PURE__ */ new Set()), l = ye(() => g.size === 0 ? i : i.filter((b) => g.has(b.status)), [i, g]), k = Z(async (b, z) => {
     p(`status-${b}`);
     try {
-      await r(b, I), I === "resolved" && x((E) => {
-        const y = { ...E };
+      await r(b, z), (z === "resolved" || z === "closed") && x((N) => {
+        const y = { ...N };
         return delete y[b], y;
       });
     } finally {
       p(null);
     }
-  }, [r]), W = K((b, I) => {
-    x((E) => {
-      const y = E[b] ?? /* @__PURE__ */ new Set(), T = new Set(y);
-      return T.has(I) ? T.delete(I) : T.add(I), { ...E, [b]: T };
+  }, [r]), W = Z((b, z) => {
+    x((N) => {
+      const y = N[b] ?? /* @__PURE__ */ new Set(), B = new Set(y);
+      return B.has(z) ? B.delete(z) : B.add(z), { ...N, [b]: B };
     });
   }, []);
   return /* @__PURE__ */ n("div", { className: "debug-manage", children: [
     /* @__PURE__ */ e("div", { className: "debug-manage-toolbar", children: /* @__PURE__ */ n("div", { className: "debug-status-filter", children: [
-      ["open", "fixed", "resolved", "rejected"].map((b) => /* @__PURE__ */ e(
+      ["open", "fixed", "resolved", "closed", "rejected"].map((b) => /* @__PURE__ */ e(
         "button",
         {
           "data-testid": `status-chip-${b}`,
-          className: `debug-status-chip ${u.has(b) ? "active" : ""}`,
+          className: `debug-status-chip ${g.has(b) ? "active" : ""}`,
           onClick: () => {
-            z((I) => {
-              const E = new Set(I);
-              return E.has(b) ? E.delete(b) : E.add(b), E;
+            I((z) => {
+              const N = new Set(z);
+              return N.has(b) ? N.delete(b) : N.add(b), N;
             });
           },
-          children: b
+          children: b === "closed" ? "クローズ" : b
         },
         b
       )),
@@ -51,15 +51,15 @@ function vt({ notes: i, updateStatus: r }) {
       ] })
     ] }) }),
     l.length === 0 ? /* @__PURE__ */ e("div", { className: "debug-empty", children: "該当するノートはありません" }) : l.map((b) => {
-      const I = yt(b.latest_comment || ""), E = h[b.id] ?? /* @__PURE__ */ new Set(), y = I.length > 0 && E.size === I.length, T = I.length > 0;
+      const z = zt(b.latest_comment || ""), N = h[b.id] ?? /* @__PURE__ */ new Set(), y = z.length > 0 && N.size === z.length, B = z.length > 0;
       return /* @__PURE__ */ n("div", { className: "debug-checklist-card", children: [
         /* @__PURE__ */ n(
           "div",
           {
             className: "debug-checklist-header",
             style: { cursor: "pointer" },
-            onClick: () => D((g) => {
-              const S = new Set(g);
+            onClick: () => D((u) => {
+              const S = new Set(u);
               return S.has(b.id) ? S.delete(b.id) : S.add(b.id), S;
             }),
             children: [
@@ -78,13 +78,14 @@ function vt({ notes: i, updateStatus: r }) {
                   "data-testid": `note-status-select-${b.id}`,
                   className: "debug-status-select",
                   value: b.status,
-                  onChange: (g) => k(b.id, g.target.value),
+                  onChange: (u) => k(b.id, u.target.value),
                   disabled: t !== null,
                   style: { marginLeft: "auto", flexShrink: 0 },
                   children: [
                     /* @__PURE__ */ e("option", { value: "open", children: "open" }),
                     /* @__PURE__ */ e("option", { value: "fixed", children: "fixed" }),
                     /* @__PURE__ */ e("option", { value: "resolved", children: "resolved" }),
+                    /* @__PURE__ */ e("option", { value: "closed", children: "クローズ" }),
                     /* @__PURE__ */ e("option", { value: "rejected", children: "rejected" })
                   ]
                 }
@@ -92,23 +93,23 @@ function vt({ notes: i, updateStatus: r }) {
             ]
           }
         ),
-        m.has(b.id) && /* @__PURE__ */ e(me, { children: T && /* @__PURE__ */ n("div", { className: "debug-checklist-items", children: [
-          I.map((g, S) => /* @__PURE__ */ n("label", { className: "debug-checklist-item", children: [
+        m.has(b.id) && /* @__PURE__ */ e(me, { children: B && /* @__PURE__ */ n("div", { className: "debug-checklist-items", children: [
+          z.map((u, S) => /* @__PURE__ */ n("label", { className: "debug-checklist-item", children: [
             /* @__PURE__ */ e(
               "input",
               {
                 type: "checkbox",
-                checked: E.has(S),
+                checked: N.has(S),
                 onChange: () => W(b.id, S)
               }
             ),
-            /* @__PURE__ */ e("span", { className: E.has(S) ? "debug-checklist-done" : "", children: g })
+            /* @__PURE__ */ e("span", { className: N.has(S) ? "debug-checklist-done" : "", children: u })
           ] }, S)),
           /* @__PURE__ */ n("div", { className: "debug-checklist-actions", children: [
             /* @__PURE__ */ n("span", { className: "debug-checklist-progress", children: [
-              E.size,
+              N.size,
               "/",
-              I.length
+              z.length
             ] }),
             b.status === "fixed" && /* @__PURE__ */ e(
               "button",
@@ -125,12 +126,12 @@ function vt({ notes: i, updateStatus: r }) {
     })
   ] });
 }
-const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u, onRunningCasesChange: z }, h) {
-  const [x, m] = w([]), [D, l] = w(/* @__PURE__ */ new Set()), [k, W] = w(/* @__PURE__ */ new Set()), [b, I] = w({}), [E, y] = w({}), [T, g] = w(null), [S, c] = w(null), O = ue("");
+const It = pt(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: g, onRunningCasesChange: I }, h) {
+  const [x, m] = w([]), [D, l] = w(/* @__PURE__ */ new Set()), [k, W] = w(/* @__PURE__ */ new Set()), [b, z] = w({}), [N, y] = w({}), [B, u] = w(null), [S, c] = w(null), P = ue("");
   ne(() => {
     if (!r || r.length === 0) return;
     const v = JSON.stringify(r);
-    if (v === O.current) return;
+    if (v === P.current) return;
     let F = !1;
     return (async () => {
       try {
@@ -142,13 +143,13 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
         try {
           const f = await ae.getTestTree(t);
           if (F) return;
-          m(f), O.current = v;
-          const G = {};
+          m(f), P.current = v;
+          const J = {};
           for (const _ of f)
             for (const C of _.capabilities)
-              for (const B of C.cases)
-                B.last === "pass" && (G[B.caseId] = !0);
-          I(G);
+              for (const R of C.cases)
+                R.last === "pass" && (J[R.caseId] = !0);
+          z(J);
         } catch (f) {
           console.warn("Failed to fetch test tree:", f);
         }
@@ -156,42 +157,42 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
       F = !0;
     };
   }, [r, t]);
-  const L = K(async () => {
+  const L = Z(async () => {
     try {
       const v = await ae.getTestTree(t);
       m(v);
       const F = {};
       for (const f of v)
-        for (const G of f.capabilities)
-          for (const _ of G.cases)
+        for (const J of f.capabilities)
+          for (const _ of J.cases)
             F[_.caseId] = _.last === "pass";
-      I(F);
+      z(F);
     } catch {
       c({ type: "error", text: "データの更新に失敗しました" });
     }
   }, [t]);
-  ot(h, () => ({ refresh: L }), [L]), ne(() => {
-    if (!z) return;
+  ut(h, () => ({ refresh: L }), [L]), ne(() => {
+    if (!I) return;
     const v = [];
     for (const F of x)
       for (const f of F.capabilities) {
-        const G = `${F.domain}/${f.capability}`;
-        if (k.has(G))
+        const J = `${F.domain}/${f.capability}`;
+        if (k.has(J))
           for (const _ of f.cases) v.push(_.caseId);
       }
-    z(v);
-  }, [k, x, z]);
-  const P = K(async (v, F, f) => {
-    const G = `${v}/${F}`;
-    g(G), c(null);
+    I(v);
+  }, [k, x, I]);
+  const H = Z(async (v, F, f) => {
+    const J = `${v}/${F}`;
+    u(J), c(null);
     try {
-      const _ = [], C = E[G], B = C != null && C.content.trim() && C.caseIds.length > 0 ? C.caseIds : [], a = new Set(B);
-      for (const J of f)
-        b[J.caseId] && !a.has(J.caseId) && _.push({ caseId: J.caseId, result: "pass" });
-      for (const J of B)
-        _.push({ caseId: J, result: "fail" });
+      const _ = [], C = N[J], R = C != null && C.content.trim() && C.caseIds.length > 0 ? C.caseIds : [], a = new Set(R);
+      for (const G of f)
+        b[G.caseId] && !a.has(G.caseId) && _.push({ caseId: G.caseId, result: "pass" });
+      for (const G of R)
+        _.push({ caseId: G, result: "fail" });
       if (_.length === 0) {
-        c({ type: "error", text: "チェックまたはバグ報告が必要です" }), g(null);
+        c({ type: "error", text: "チェックまたはバグ報告が必要です" }), u(null);
         return;
       }
       const M = typeof window < "u" ? {
@@ -199,55 +200,55 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
         viewport: `${window.innerWidth}x${window.innerHeight}`,
         url: window.location.href,
         timestamp: (/* @__PURE__ */ new Date()).toISOString()
-      } : void 0, q = B.length > 0 ? {
+      } : void 0, V = R.length > 0 ? {
         content: C.content.trim(),
         severity: C.severity || void 0,
         consoleLogs: p == null ? void 0 : p.getConsoleLogs(),
         networkLogs: p == null ? void 0 : p.getNetworkLogs(),
         environment: M
-      } : void 0, Z = await ae.submitTestRuns(t, _, q);
-      if (C != null && C.files && C.files.length > 0 && Z.results) {
-        const X = Z.results.filter((d) => d.noteId != null).map((d) => d.noteId)[0];
+      } : void 0, Y = await ae.submitTestRuns(t, _, V);
+      if (C != null && C.files && C.files.length > 0 && Y.results) {
+        const X = Y.results.filter((d) => d.noteId != null).map((d) => d.noteId)[0];
         if (X)
           for (const d of C.files)
             try {
               await ae.uploadAttachment(t, X, d);
-            } catch (N) {
-              console.warn("Failed to upload attachment:", N);
+            } catch (E) {
+              console.warn("Failed to upload attachment:", E);
             }
       }
-      if (Z.capability) {
+      if (Y.capability) {
         m((X) => X.map((d) => d.domain !== v ? d : {
           ...d,
           capabilities: d.capabilities.map(
-            (N) => N.capability === F ? Z.capability : N
+            (E) => E.capability === F ? Y.capability : E
           )
         }));
-        const J = { ...b };
-        for (const X of Z.capability.cases)
-          J[X.caseId] = X.last === "pass";
-        I(J);
+        const G = { ...b };
+        for (const X of Y.capability.cases)
+          G[X.caseId] = X.last === "pass";
+        z(G);
       }
-      u(), y((J) => {
-        const X = { ...J };
-        return delete X[G], X;
+      g(), y((G) => {
+        const X = { ...G };
+        return delete X[J], X;
       }), c({ type: "success", text: "送信しました" });
     } catch (_) {
       c({ type: "error", text: _ instanceof Error ? _.message : "送信に失敗しました" });
     } finally {
-      g(null);
+      u(null);
     }
-  }, [b, E, t, p, u]), j = K((v) => {
+  }, [b, N, t, p, g]), j = Z((v) => {
     l((F) => {
       const f = new Set(F);
       return f.has(v) ? f.delete(v) : f.add(v), f;
     });
-  }, []), Q = K((v) => {
+  }, []), K = Z((v) => {
     W((F) => {
       const f = new Set(F);
       return f.has(v) ? f.delete(v) : f.add(v), f;
     });
-  }, []), U = (v) => v.last === "pass" ? "passed" : v.last === "fail" && v.openIssues === 0 ? "retest" : v.last === "fail" ? "fail" : "-", ie = (v) => v.last === "pass" ? s.success : v.last === "fail" && v.openIssues === 0 ? "#F59E0B" : v.last === "fail" ? s.error : s.gray500, te = (v) => v.status === "passed" ? "passed" : v.status === "retest" ? "retest" : v.status === "fail" ? "fail" : "", A = (v) => v.status === "passed" ? s.success : v.status === "retest" ? "#F59E0B" : v.status === "fail" ? s.error : s.gray500;
+  }, []), Q = (v) => v.last === "pass" ? "passed" : v.last === "fail" && v.openIssues === 0 ? "retest" : v.last === "fail" ? "fail" : "-", ie = (v) => v.last === "pass" ? s.success : v.last === "fail" && v.openIssues === 0 ? "#F59E0B" : v.last === "fail" ? s.error : s.gray500, te = (v) => v.status === "passed" ? "passed" : v.status === "retest" ? "retest" : v.status === "fail" ? "fail" : "", A = (v) => v.status === "passed" ? s.success : v.status === "retest" ? "#F59E0B" : v.status === "fail" ? s.error : s.gray500;
   return /* @__PURE__ */ n(me, { children: [
     S && /* @__PURE__ */ e("div", { className: `debug-message debug-message-${S.type}`, children: S.text }),
     /* @__PURE__ */ e("div", { className: "debug-test-tree", children: x.length === 0 ? /* @__PURE__ */ e("div", { className: "debug-empty", children: "テストケースを読み込み中..." }) : x.map((v) => /* @__PURE__ */ n("div", { className: "debug-tree-domain", children: [
@@ -264,16 +265,16 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
         }
       ),
       D.has(v.domain) && v.capabilities.map((F) => {
-        const f = `${v.domain}/${F.capability}`, G = k.has(f), _ = E[f];
+        const f = `${v.domain}/${F.capability}`, J = k.has(f), _ = N[f];
         return /* @__PURE__ */ n("div", { className: "debug-tree-capability", children: [
           /* @__PURE__ */ n(
             "button",
             {
               "data-testid": `cap-toggle-${f}`,
               className: "debug-tree-toggle debug-tree-cap-toggle",
-              onClick: () => Q(f),
+              onClick: () => K(f),
               children: [
-                /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: G ? "expand_more" : "chevron_right" }),
+                /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: J ? "expand_more" : "chevron_right" }),
                 /* @__PURE__ */ e("span", { className: "debug-tree-label", children: F.capability }),
                 /* @__PURE__ */ n("span", { className: "debug-tree-count", children: [
                   F.passed,
@@ -289,23 +290,23 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
               ]
             }
           ),
-          G && /* @__PURE__ */ n("div", { className: "debug-tree-cases", children: [
+          J && /* @__PURE__ */ n("div", { className: "debug-tree-cases", children: [
             F.cases.map((C) => /* @__PURE__ */ n("label", { "data-testid": `case-${C.caseId}`, className: "debug-tree-case", children: [
               /* @__PURE__ */ e(
                 "input",
                 {
                   type: "checkbox",
                   checked: !!b[C.caseId],
-                  onChange: (B) => {
-                    I((a) => ({
+                  onChange: (R) => {
+                    z((a) => ({
                       ...a,
-                      [C.caseId]: B.target.checked
+                      [C.caseId]: R.target.checked
                     }));
                   }
                 }
               ),
               /* @__PURE__ */ e("span", { className: "debug-tree-case-title", children: C.title }),
-              /* @__PURE__ */ e("span", { className: "debug-tree-case-status", style: { color: ie(C) }, children: U(C) }),
+              /* @__PURE__ */ e("span", { className: "debug-tree-case-status", style: { color: ie(C) }, children: Q(C) }),
               C.openIssues > 0 && /* @__PURE__ */ n("span", { className: "debug-tree-issues", children: [
                 "[",
                 C.openIssues,
@@ -317,17 +318,17 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
               /* @__PURE__ */ n("div", { className: "debug-field", children: [
                 /* @__PURE__ */ e("label", { children: "ケース（複数選択可）" }),
                 /* @__PURE__ */ e("div", { className: "debug-bug-cases", children: F.cases.map((C) => {
-                  const B = (_ == null ? void 0 : _.caseIds.includes(C.caseId)) ?? !1;
+                  const R = (_ == null ? void 0 : _.caseIds.includes(C.caseId)) ?? !1;
                   return /* @__PURE__ */ n("label", { className: "debug-bug-case-option", children: [
                     /* @__PURE__ */ e(
                       "input",
                       {
                         type: "checkbox",
-                        checked: B,
+                        checked: R,
                         onChange: (a) => {
                           y((M) => {
-                            const q = M[f] || { caseIds: [], content: "", severity: "", files: [] }, Z = a.target.checked ? [...q.caseIds, C.caseId] : q.caseIds.filter((J) => J !== C.caseId);
-                            return { ...M, [f]: { ...q, caseIds: Z } };
+                            const V = M[f] || { caseIds: [], content: "", severity: "", files: [] }, Y = a.target.checked ? [...V.caseIds, C.caseId] : V.caseIds.filter((G) => G !== C.caseId);
+                            return { ...M, [f]: { ...V, caseIds: Y } };
                           });
                         }
                       }
@@ -343,16 +344,16 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
                   {
                     value: (_ == null ? void 0 : _.content) || "",
                     onChange: (C) => {
-                      y((B) => {
-                        var a, M, q;
+                      y((R) => {
+                        var a, M, V;
                         return {
-                          ...B,
+                          ...R,
                           [f]: {
-                            ...B[f],
-                            caseIds: ((a = B[f]) == null ? void 0 : a.caseIds) || [],
+                            ...R[f],
+                            caseIds: ((a = R[f]) == null ? void 0 : a.caseIds) || [],
                             content: C.target.value,
-                            severity: ((M = B[f]) == null ? void 0 : M.severity) || "",
-                            files: ((q = B[f]) == null ? void 0 : q.files) || []
+                            severity: ((M = R[f]) == null ? void 0 : M.severity) || "",
+                            files: ((V = R[f]) == null ? void 0 : V.files) || []
                           }
                         };
                       });
@@ -369,16 +370,16 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
                   {
                     value: (_ == null ? void 0 : _.severity) || "",
                     onChange: (C) => {
-                      y((B) => {
-                        var a, M, q;
+                      y((R) => {
+                        var a, M, V;
                         return {
-                          ...B,
+                          ...R,
                           [f]: {
-                            ...B[f],
-                            caseIds: ((a = B[f]) == null ? void 0 : a.caseIds) || [],
-                            content: ((M = B[f]) == null ? void 0 : M.content) || "",
+                            ...R[f],
+                            caseIds: ((a = R[f]) == null ? void 0 : a.caseIds) || [],
+                            content: ((M = R[f]) == null ? void 0 : M.content) || "",
                             severity: C.target.value,
-                            files: ((q = B[f]) == null ? void 0 : q.files) || []
+                            files: ((V = R[f]) == null ? void 0 : V.files) || []
                           }
                         };
                       });
@@ -394,40 +395,40 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
                 )
               ] }),
               /* @__PURE__ */ e(
-                et,
+                nt,
                 {
                   files: (_ == null ? void 0 : _.files) || [],
                   onAdd: (C) => {
-                    y((B) => {
-                      var a, M, q, Z;
+                    y((R) => {
+                      var a, M, V, Y;
                       return {
-                        ...B,
+                        ...R,
                         [f]: {
-                          ...B[f],
-                          caseIds: ((a = B[f]) == null ? void 0 : a.caseIds) || [],
-                          content: ((M = B[f]) == null ? void 0 : M.content) || "",
-                          severity: ((q = B[f]) == null ? void 0 : q.severity) || "",
-                          files: [...((Z = B[f]) == null ? void 0 : Z.files) || [], ...C]
+                          ...R[f],
+                          caseIds: ((a = R[f]) == null ? void 0 : a.caseIds) || [],
+                          content: ((M = R[f]) == null ? void 0 : M.content) || "",
+                          severity: ((V = R[f]) == null ? void 0 : V.severity) || "",
+                          files: [...((Y = R[f]) == null ? void 0 : Y.files) || [], ...C]
                         }
                       };
                     });
                   },
                   onRemove: (C) => {
-                    y((B) => {
-                      var a, M, q, Z;
+                    y((R) => {
+                      var a, M, V, Y;
                       return {
-                        ...B,
+                        ...R,
                         [f]: {
-                          ...B[f],
-                          caseIds: ((a = B[f]) == null ? void 0 : a.caseIds) || [],
-                          content: ((M = B[f]) == null ? void 0 : M.content) || "",
-                          severity: ((q = B[f]) == null ? void 0 : q.severity) || "",
-                          files: (((Z = B[f]) == null ? void 0 : Z.files) || []).filter((J, X) => X !== C)
+                          ...R[f],
+                          caseIds: ((a = R[f]) == null ? void 0 : a.caseIds) || [],
+                          content: ((M = R[f]) == null ? void 0 : M.content) || "",
+                          severity: ((V = R[f]) == null ? void 0 : V.severity) || "",
+                          files: (((Y = R[f]) == null ? void 0 : Y.files) || []).filter((G, X) => X !== C)
                         }
                       };
                     });
                   },
-                  disabled: T !== null
+                  disabled: B !== null
                 }
               )
             ] }),
@@ -438,9 +439,9 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
                 {
                   "data-testid": `cap-submit-${f}`,
                   className: "debug-btn debug-btn-primary debug-cap-submit",
-                  onClick: () => P(v.domain, F.capability, F.cases),
-                  disabled: T !== null || a === 0,
-                  children: T === f ? /* @__PURE__ */ n("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" }, children: [
+                  onClick: () => H(v.domain, F.capability, F.cases),
+                  disabled: B !== null || a === 0,
+                  children: B === f ? /* @__PURE__ */ n("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" }, children: [
                     /* @__PURE__ */ e("span", { style: {
                       display: "inline-block",
                       width: "14px",
@@ -461,21 +462,21 @@ const wt = at(function({ testCases: r, env: t, logCapture: p, onNotesRefresh: u,
     ] }, v.domain)) })
   ] });
 });
-function kt({
+function Ft({
   items: i,
   defaultPath: r,
   onNavigate: t,
   onAppNavigate: p
 }) {
   var l;
-  const [u, z] = w(r || ((l = i[0]) == null ? void 0 : l.path) || ""), { content: h, loading: x, error: m } = gt(u), D = (k) => {
-    z(k), t == null || t(k);
+  const [g, I] = w(r || ((l = i[0]) == null ? void 0 : l.path) || ""), { content: h, loading: x, error: m } = yt(g), D = (k) => {
+    I(k), t == null || t(k);
   };
   return /* @__PURE__ */ n("div", { className: "debug-manual-tab", children: [
     /* @__PURE__ */ e("div", { className: "debug-manual-sidebar", children: i.map((k) => /* @__PURE__ */ e(
       "button",
       {
-        className: `debug-manual-item ${u === k.path ? "active" : ""}`,
+        className: `debug-manual-item ${g === k.path ? "active" : ""}`,
         onClick: () => D(k.path),
         title: k.title,
         children: k.title
@@ -490,7 +491,7 @@ function kt({
         {
           content: h,
           onLinkClick: (k) => {
-            z(k), t == null || t(k);
+            I(k), t == null || t(k);
           },
           onAppLinkClick: p
         }
@@ -498,78 +499,78 @@ function kt({
     ] })
   ] });
 }
-function St(i) {
-  const { meta: r, body: t } = $t(i), p = t.split(`
-`), u = {
+function Tt(i) {
+  const { meta: r, body: t } = Rt(i), p = t.split(`
+`), g = {
     title: r.title,
     warning: r.warning,
     projects: []
   };
-  let z = [], h = null, x = null, m = null, D = !1, l = [], k = [], W = [];
+  let I = [], h = null, x = null, m = null, D = !1, l = [], k = [], W = [];
   const b = () => {
     if (W.length === 0) return;
-    const g = zt(W);
-    W = [], g && (m ? m.table = g : k.push(...Ct(g)));
-  }, I = () => {
+    const u = Bt(W);
+    W = [], u && (m ? m.table = u : k.push(..._t(u)));
+  }, z = () => {
     if (b(), m && k.length > 0) {
-      const g = k.join(`
+      const u = k.join(`
 `).trim();
-      g && (m.extraMd = (m.extraMd ? m.extraMd + `
-` : "") + g);
+      u && (m.extraMd = (m.extraMd ? m.extraMd + `
+` : "") + u);
     }
     k = [];
-  }, E = () => {
-    if (I(), h && m)
+  }, N = () => {
+    if (z(), h && m)
       if (D) {
-        const g = [
+        const u = [
           m.entries.map((S) => `- ${S.key}: ${S.value}`).join(`
 `),
           m.extraMd ?? ""
         ].filter(Boolean).join(`
 
 `);
-        g.trim() && l.push(`## ${m.label}
+        u.trim() && l.push(`## ${m.label}
 
-${g}`);
+${u}`);
       } else if (x) {
-        let g = h.envs.find((S) => S.env === x);
-        g || (g = { env: x, sections: [] }, h.envs.push(g)), g.sections.push(m);
+        let u = h.envs.find((S) => S.env === x);
+        u || (u = { env: x, sections: [] }, h.envs.push(u)), u.sections.push(m);
       } else
         h.common.push(m);
     m = null, x = null, D = !1;
   }, y = () => {
-    E(), h && (l.length > 0 && (h.notes = l.join(`
+    N(), h && (l.length > 0 && (h.notes = l.join(`
 
-`).trim()), l = [], u.projects.push(h)), h = null;
+`).trim()), l = [], g.projects.push(h)), h = null;
   };
-  for (let g = 0; g < p.length; g++) {
-    const S = p[g], c = S.trim();
+  for (let u = 0; u < p.length; u++) {
+    const S = p[u], c = S.trim();
     if (/^\|.*\|$/.test(c)) {
       W.push(c);
       continue;
     } else W.length > 0 && b();
     if (/^---+$/.test(c)) continue;
-    const O = /^#\s+(.+)$/.exec(S);
-    if (O) {
+    const P = /^#\s+(.+)$/.exec(S);
+    if (P) {
       y();
-      const j = O[1].trim();
+      const j = P[1].trim();
       j === "共通" || /^(common|shared)$/i.test(j) ? h = { name: "共通", envs: [], common: [] } : h = { name: j, envs: [], common: [] };
       continue;
     }
     const L = /^##\s+(.+)$/.exec(S);
     if (L) {
-      E(), h || (h = { name: "共通", envs: [], common: [] });
+      N(), h || (h = { name: "共通", envs: [], common: [] });
       const j = L[1].trim();
       if (/前提|注意|注記|note|備考/i.test(j)) {
         m = { label: j, entries: [] }, D = !0;
         continue;
       }
-      const Q = /^(.+?)\s*\/\s*(.+)$/.exec(j);
-      if (Q)
-        x = Oe(Q[1].trim()), m = { label: Q[2].trim(), entries: [] };
+      const K = /^(.+?)\s*\/\s*(.+)$/.exec(j);
+      if (K)
+        x = Pe(K[1].trim()), m = { label: K[2].trim(), entries: [] };
       else {
-        const U = Oe(j.replace(/環境$/, "").trim());
-        U && /^(dev|staging|stg|prod|production|local|test)$/i.test(U) ? (x = U, m = { label: "アカウント", entries: [] }) : (x = null, m = { label: j, entries: [] });
+        const Q = Pe(j.replace(/環境$/, "").trim());
+        Q && /^(dev|staging|stg|prod|production|local|test)$/i.test(Q) ? (x = Q, m = { label: "アカウント", entries: [] }) : (x = null, m = { label: j, entries: [] });
       }
       continue;
     }
@@ -580,62 +581,62 @@ ${g}`);
         continue;
       }
     }
-    const P = /^\s*-\s+([^:]+?):\s*(.+)$/.exec(S);
-    if (P && m && !D) {
-      const j = P[1].trim(), Q = P[2].trim().replace(/^`|`$/g, "");
+    const H = /^\s*-\s+([^:]+?):\s*(.+)$/.exec(S);
+    if (H && m && !D) {
+      const j = H[1].trim(), K = H[2].trim().replace(/^`|`$/g, "");
       m.entries.push({
         key: j,
-        value: Q,
-        kind: It(j, Q)
+        value: K,
+        kind: Nt(j, K)
       });
       continue;
     }
-    c === "" && k.length === 0 || (m ? k.push(S) : h || z.push(S));
+    c === "" && k.length === 0 || (m ? k.push(S) : h || I.push(S));
   }
   y();
-  const T = z.join(`
+  const B = I.join(`
 `).trim();
-  return T && (u.preamble = T), u;
+  return B && (g.preamble = B), g;
 }
-function $t(i) {
+function Rt(i) {
   const r = /^---\n([\s\S]*?)\n---\n?/.exec(i);
   if (!r) return { meta: {}, body: i };
   const t = {};
   for (const p of r[1].split(`
 `)) {
-    const u = /^([a-zA-Z_][\w-]*)\s*:\s*(.*)$/.exec(p);
-    if (!u) continue;
-    const z = u[1].toLowerCase(), h = u[2].trim().replace(/^["']|["']$/g, "");
-    z === "title" ? t.title = h : z === "warning" && (t.warning = h);
+    const g = /^([a-zA-Z_][\w-]*)\s*:\s*(.*)$/.exec(p);
+    if (!g) continue;
+    const I = g[1].toLowerCase(), h = g[2].trim().replace(/^["']|["']$/g, "");
+    I === "title" ? t.title = h : I === "warning" && (t.warning = h);
   }
   return { meta: t, body: i.slice(r[0].length) };
 }
-function zt(i) {
+function Bt(i) {
   if (i.length < 2) return null;
-  const r = (u) => u.replace(/^\|/, "").replace(/\|$/, "").split("|").map((z) => z.trim()), t = r(i[0]);
+  const r = (g) => g.replace(/^\|/, "").replace(/\|$/, "").split("|").map((I) => I.trim()), t = r(i[0]);
   if (!/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/.test(i[1]))
     return { headers: t, rows: i.slice(1).map(r) };
   const p = i.slice(2).map(r);
   return { headers: t, rows: p };
 }
-function Ct(i) {
+function _t(i) {
   const r = ["| " + i.headers.join(" | ") + " |"];
   r.push("| " + i.headers.map(() => "---").join(" | ") + " |");
   for (const t of i.rows) r.push("| " + t.join(" | ") + " |");
   return r;
 }
-function Oe(i) {
+function Pe(i) {
   const r = i.toLowerCase();
   return /^(staging|stg)$/.test(r) ? "staging" : /^(prod|production|本番)$/.test(r) ? "prod" : /^(dev|development|開発)$/.test(r) ? "dev" : /^(local|ローカル)$/.test(r) ? "local" : /^(test|テスト)$/.test(r) ? "test" : i;
 }
-function It(i, r) {
+function Nt(i, r) {
   const t = i.toLowerCase();
   return /pass|pwd|password|パスワード/.test(t) ? "password" : /url|link|endpoint/.test(t) || /^https?:\/\//.test(r) ? "url" : /mail|email|メール/.test(t) || /^[^\s@]+@[^\s@]+$/.test(r) ? "email" : /user|id|name|account|ユーザー/.test(t) ? "user" : "text";
 }
-async function tt(i, r = typeof document < "u" ? document : null) {
-  var u, z, h;
-  const t = (u = r == null ? void 0 : r.defaultView) == null ? void 0 : u.navigator;
-  if ((z = t == null ? void 0 : t.clipboard) != null && z.writeText)
+async function it(i, r = typeof document < "u" ? document : null) {
+  var g, I, h;
+  const t = (g = r == null ? void 0 : r.defaultView) == null ? void 0 : g.navigator;
+  if ((I = t == null ? void 0 : t.clipboard) != null && I.writeText)
     try {
       return await t.clipboard.writeText(i), !0;
     } catch {
@@ -656,17 +657,17 @@ async function tt(i, r = typeof document < "u" ? document : null) {
     return !1;
   }
 }
-const We = st(null);
-function Ft({ md: i, pipDocument: r = null }) {
-  const t = ye(() => St(i), [i]), [p, u] = w(
+const Me = gt(null);
+function Et({ md: i, pipDocument: r = null }) {
+  const t = ye(() => Tt(i), [i]), [p, g] = w(
     () => new Set(t.projects.map((h) => h.name))
-  ), z = K((h) => {
-    u((x) => {
+  ), I = Z((h) => {
+    g((x) => {
       const m = new Set(x);
       return m.has(h) ? m.delete(h) : m.add(h), m;
     });
   }, []);
-  return /* @__PURE__ */ e(We.Provider, { value: r, children: /* @__PURE__ */ n("div", { className: "debug-env-tab", children: [
+  return /* @__PURE__ */ e(Me.Provider, { value: r, children: /* @__PURE__ */ n("div", { className: "debug-env-tab", children: [
     t.title && /* @__PURE__ */ e("h3", { style: { margin: "0 0 8px", fontSize: "14px" }, children: t.title }),
     t.warning && /* @__PURE__ */ n(
       "div",
@@ -692,23 +693,23 @@ function Ft({ md: i, pipDocument: r = null }) {
     t.preamble && /* @__PURE__ */ e("div", { style: { marginBottom: "10px", fontSize: "12px" }, children: /* @__PURE__ */ e(Be, { content: t.preamble }) }),
     t.projects.length === 0 && /* @__PURE__ */ e("div", { className: "debug-empty", children: "環境情報が空です" }),
     t.projects.map((h) => /* @__PURE__ */ e(
-      Rt,
+      Lt,
       {
         project: h,
         isExpanded: p.has(h.name),
-        onToggle: () => z(h.name)
+        onToggle: () => I(h.name)
       },
       h.name
     ))
   ] }) });
 }
-function Rt({
+function Lt({
   project: i,
   isExpanded: r,
   onToggle: t
 }) {
   var h;
-  const p = i.envs.map((x) => x.env), [u, z] = w(p[0] ?? null);
+  const p = i.envs.map((x) => x.env), [g, I] = w(p[0] ?? null);
   return /* @__PURE__ */ n(
     "div",
     {
@@ -759,7 +760,7 @@ function Rt({
           }
         ),
         r && /* @__PURE__ */ n("div", { style: { padding: "8px 10px" }, children: [
-          i.common.map((x, m) => /* @__PURE__ */ e(Pe, { section: x }, `common-${m}`)),
+          i.common.map((x, m) => /* @__PURE__ */ e(He, { section: x }, `common-${m}`)),
           i.envs.length > 0 && /* @__PURE__ */ n(me, { children: [
             /* @__PURE__ */ e(
               "div",
@@ -774,16 +775,16 @@ function Rt({
                   "button",
                   {
                     type: "button",
-                    onClick: () => z(x.env),
+                    onClick: () => I(x.env),
                     style: {
                       padding: "6px 12px",
                       background: "transparent",
                       border: "none",
-                      borderBottom: u === x.env ? `2px solid ${s.primary}` : "2px solid transparent",
+                      borderBottom: g === x.env ? `2px solid ${s.primary}` : "2px solid transparent",
                       cursor: "pointer",
                       fontSize: "12px",
-                      fontWeight: u === x.env ? 600 : 400,
-                      color: u === x.env ? s.primary : s.gray700
+                      fontWeight: g === x.env ? 600 : 400,
+                      color: g === x.env ? s.primary : s.gray700
                     },
                     children: x.env
                   },
@@ -791,7 +792,7 @@ function Rt({
                 ))
               }
             ),
-            (h = i.envs.find((x) => x.env === u)) == null ? void 0 : h.sections.map((x, m) => /* @__PURE__ */ e(Pe, { section: x }, `${u}-${m}`))
+            (h = i.envs.find((x) => x.env === g)) == null ? void 0 : h.sections.map((x, m) => /* @__PURE__ */ e(He, { section: x }, `${g}-${m}`))
           ] }),
           i.notes && /* @__PURE__ */ n("details", { style: { marginTop: "10px" }, children: [
             /* @__PURE__ */ e("summary", { style: { cursor: "pointer", fontSize: "12px", fontWeight: 600, color: s.gray700 }, children: "📝 前提・注意点" }),
@@ -802,10 +803,10 @@ function Rt({
     }
   );
 }
-function Pe({ section: i }) {
+function He({ section: i }) {
   return /* @__PURE__ */ n("div", { style: { marginBottom: "10px" }, children: [
     /* @__PURE__ */ e("div", { style: { fontSize: "12px", fontWeight: 600, color: s.gray700, marginBottom: "4px" }, children: i.label }),
-    i.entries.length > 0 && /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: i.entries.map((r, t) => /* @__PURE__ */ e(Bt, { entry: r }, t)) }),
+    i.entries.length > 0 && /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: i.entries.map((r, t) => /* @__PURE__ */ e(Wt, { entry: r }, t)) }),
     i.table && /* @__PURE__ */ e("div", { style: { marginTop: "6px", overflowX: "auto" }, children: /* @__PURE__ */ n("table", { style: { width: "100%", fontSize: "11px", borderCollapse: "collapse" }, children: [
       /* @__PURE__ */ e("thead", { children: /* @__PURE__ */ e("tr", { children: i.table.headers.map((r, t) => /* @__PURE__ */ e(
         "th",
@@ -820,21 +821,21 @@ function Pe({ section: i }) {
         },
         t
       )) }) }),
-      /* @__PURE__ */ e("tbody", { children: i.table.rows.map((r, t) => /* @__PURE__ */ e("tr", { children: r.map((p, u) => /* @__PURE__ */ e(
-        Tt,
+      /* @__PURE__ */ e("tbody", { children: i.table.rows.map((r, t) => /* @__PURE__ */ e("tr", { children: r.map((p, g) => /* @__PURE__ */ e(
+        Mt,
         {
           value: p,
-          header: i.table.headers[u] ?? ""
+          header: i.table.headers[g] ?? ""
         },
-        u
+        g
       )) }, t)) })
     ] }) }),
     i.extraMd && /* @__PURE__ */ e("div", { style: { marginTop: "6px", fontSize: "12px" }, children: /* @__PURE__ */ e(Be, { content: i.extraMd }) })
   ] });
 }
-function Bt({ entry: i }) {
-  const r = Ze(We), [t, p] = w(!1), [u, z] = w(!1), h = async () => {
-    await tt(i.value, r) && (z(!0), setTimeout(() => z(!1), 1200));
+function Wt({ entry: i }) {
+  const r = et(Me), [t, p] = w(!1), [g, I] = w(!1), h = async () => {
+    await it(i.value, r) && (I(!0), setTimeout(() => I(!1), 1200));
   }, x = i.kind === "password", m = x && !t ? "•".repeat(Math.min(i.value.length, 10)) : i.value, D = i.kind === "url" ? "link" : i.kind === "email" ? "mail" : i.kind === "password" ? "key" : i.kind === "user" ? "person" : "label";
   return /* @__PURE__ */ n(
     "div",
@@ -887,18 +888,18 @@ function Bt({ entry: i }) {
           {
             type: "button",
             onClick: h,
-            title: u ? "コピーしました" : "コピー",
-            style: { ...be, color: u ? s.success : be.color },
-            children: /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "14px" }, children: u ? "check" : "content_copy" })
+            title: g ? "コピーしました" : "コピー",
+            style: { ...be, color: g ? s.success : be.color },
+            children: /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "14px" }, children: g ? "check" : "content_copy" })
           }
         )
       ]
     }
   );
 }
-function Tt({ value: i, header: r }) {
-  const t = Ze(We), p = /pass|pwd|パスワード/i.test(r), u = /^https?:\/\//.test(i), z = /^[^\s@]+@[^\s@]+$/.test(i), [h, x] = w(!1), [m, D] = w(!1), l = async () => {
-    await tt(i, t) && (D(!0), setTimeout(() => D(!1), 1200));
+function Mt({ value: i, header: r }) {
+  const t = et(Me), p = /pass|pwd|パスワード/i.test(r), g = /^https?:\/\//.test(i), I = /^[^\s@]+@[^\s@]+$/.test(i), [h, x] = w(!1), [m, D] = w(!1), l = async () => {
+    await it(i, t) && (D(!0), setTimeout(() => D(!1), 1200));
   }, k = p && !h ? "•".repeat(Math.min(i.length, 10)) : i;
   return /* @__PURE__ */ e(
     "td",
@@ -910,7 +911,7 @@ function Tt({ value: i, header: r }) {
         wordBreak: "break-all"
       },
       children: /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-        u ? /* @__PURE__ */ e("a", { href: i, target: "_blank", rel: "noopener noreferrer", style: { color: s.primary, flex: 1 }, children: i }) : z ? /* @__PURE__ */ e("span", { style: { flex: 1 }, children: i }) : /* @__PURE__ */ e("span", { style: { flex: 1 }, children: k }),
+        g ? /* @__PURE__ */ e("a", { href: i, target: "_blank", rel: "noopener noreferrer", style: { color: s.primary, flex: 1 }, children: i }) : I ? /* @__PURE__ */ e("span", { style: { flex: 1 }, children: i }) : /* @__PURE__ */ e("span", { style: { flex: 1 }, children: k }),
         p && /* @__PURE__ */ e("button", { type: "button", onClick: () => x((W) => !W), style: be, title: h ? "隠す" : "表示", children: /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "12px" }, children: h ? "visibility_off" : "visibility" }) }),
         /* @__PURE__ */ e(
           "button",
@@ -935,7 +936,7 @@ const be = {
   display: "inline-flex",
   alignItems: "center"
 };
-function nt(i) {
+function rt(i) {
   const r = (i == null ? void 0 : i.bottom) ?? "calc(env(safe-area-inset-bottom, 0px) + 24px)", t = (i == null ? void 0 : i.right) ?? "calc(env(safe-area-inset-right, 0px) + 24px)";
   return {
     position: "fixed",
@@ -955,8 +956,8 @@ function nt(i) {
     zIndex: 9999
   };
 }
-nt();
-const He = {
+rt();
+const qe = {
   overlay: {
     position: "fixed",
     top: 0,
@@ -980,7 +981,7 @@ const He = {
     display: "flex",
     flexDirection: "column"
   }
-}, _t = `
+}, Dt = `
   * {
     margin: 0;
     padding: 0;
@@ -999,7 +1000,7 @@ const He = {
     overflow: auto;
   }
 `;
-function it() {
+function at() {
   return `
     @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
 
@@ -1979,16 +1980,16 @@ function it() {
     }
   `;
 }
-function Et() {
-  return `${_t}${it()}`;
+function At() {
+  return `${Dt}${at()}`;
 }
-function Nt({
+function jt({
   apiBaseUrl: i,
   env: r = "dev",
   onSave: t,
   onClose: p,
-  initialSize: u = { width: 400, height: 500 },
-  testCases: z,
+  initialSize: g = { width: 400, height: 500 },
+  testCases: I,
   logCapture: h,
   manualItems: x,
   manualDefaultPath: m,
@@ -1997,71 +1998,71 @@ function Nt({
   environmentsMd: k,
   triggerOffset: W
 }) {
-  var De, Ae;
-  const [b, I] = w(null), [E, y] = w(null), [T, g] = w(!1), S = ue(!1), [c, O] = w("record"), L = z && z.length > 0, P = x && x.length > 0, j = !!k && k.trim().length > 0, [Q, U] = w(""), [ie, te] = w(""), [A, v] = w(""), [F, f] = w(!1), [G, _] = w(!1), [C, B] = w(!1), [a, M] = w(!1), [q, Z] = w(!1), [J, X] = w([]), [d, N] = w(null), [ee, se] = w([]), [ge, Se] = w(!1), $e = ue(null);
+  var Ae, je;
+  const [b, z] = w(null), [N, y] = w(null), [B, u] = w(!1), S = ue(!1), [c, P] = w("record"), L = I && I.length > 0, H = x && x.length > 0, j = !!k && k.trim().length > 0, [K, Q] = w(""), [ie, te] = w(""), [A, v] = w(""), [F, f] = w(!1), [J, _] = w(!1), [C, R] = w(!1), [a, M] = w(!1), [V, Y] = w(!1), [G, X] = w([]), [d, E] = w(null), [ee, se] = w([]), [ge, $e] = w(!1), ze = ue(null);
   ne(() => {
-    i && Le(i);
+    i && We(i);
   }, [i]);
-  const { notes: Te, createNote: ze, updateStatus: _e, refresh: ve, error: Ce } = Xe(r), Ie = ue(Ce);
-  Ie.current = Ce;
-  const o = K(async () => {
+  const { notes: _e, createNote: Ce, updateStatus: Ne, refresh: ve, error: Ie } = tt(r), Fe = ue(Ie);
+  Fe.current = Ie;
+  const o = Z(async () => {
     var de;
-    const H = typeof window < "u" && ((de = window.matchMedia) == null ? void 0 : de.call(window, "(max-width: 768px)").matches);
-    if (!window.documentPictureInPicture || H) {
-      window.documentPictureInPicture || console.warn("Document Picture-in-Picture API is not supported"), g(!0);
+    const q = typeof window < "u" && ((de = window.matchMedia) == null ? void 0 : de.call(window, "(max-width: 768px)").matches);
+    if (!window.documentPictureInPicture || q) {
+      window.documentPictureInPicture || console.warn("Document Picture-in-Picture API is not supported"), u(!0);
       return;
     }
     if (!S.current) {
       S.current = !0;
       try {
         const re = await window.documentPictureInPicture.requestWindow({
-          width: u.width,
-          height: u.height
+          width: g.width,
+          height: g.height
         }), ce = re.document.createElement("link");
-        ce.rel = "stylesheet", ce.href = bt, re.document.head.appendChild(ce);
+        ce.rel = "stylesheet", ce.href = St, re.document.head.appendChild(ce);
         const we = re.document.createElement("style");
-        we.textContent = Et(), re.document.head.appendChild(we);
-        const Y = re.document.createElement("div");
-        Y.id = "debug-panel-root", re.document.body.appendChild(Y), I(re), y(Y), g(!0), re.addEventListener("pagehide", () => {
-          I(null), y(null), g(!1), p == null || p();
+        we.textContent = At(), re.document.head.appendChild(we);
+        const U = re.document.createElement("div");
+        U.id = "debug-panel-root", re.document.body.appendChild(U), z(re), y(U), u(!0), re.addEventListener("pagehide", () => {
+          z(null), y(null), u(!1), p == null || p();
         });
       } catch (re) {
-        console.error("Failed to open PiP window:", re), g(!0);
+        console.error("Failed to open PiP window:", re), u(!0);
       } finally {
         S.current = !1;
       }
     }
-  }, [u.width, u.height, p]), $ = K(() => {
-    b ? b.close() : (g(!1), p == null || p());
-  }, [b, p]), V = ue(b);
-  V.current = b, ne(() => () => {
-    var H;
-    (H = V.current) == null || H.close();
+  }, [g.width, g.height, p]), $ = Z(() => {
+    b ? b.close() : (u(!1), p == null || p());
+  }, [b, p]), O = ue(b);
+  O.current = b, ne(() => () => {
+    var q;
+    (q = O.current) == null || q.close();
   }, []), ne(() => {
     if (typeof document > "u" || document.getElementById("twuw-debug-panel-styles")) return;
-    const H = document.createElement("style");
-    H.id = "twuw-debug-panel-styles", H.textContent = it(), document.head.appendChild(H);
+    const q = document.createElement("style");
+    q.id = "twuw-debug-panel-styles", q.textContent = at(), document.head.appendChild(q);
   }, []);
-  const oe = K(() => {
-    U(""), te(""), v(""), X([]), _(!1), B(!1), M(!1), Z(!1), N(null);
-  }, []), Ee = K(async () => {
+  const oe = Z(() => {
+    Q(""), te(""), v(""), X([]), _(!1), R(!1), M(!1), Y(!1), E(null);
+  }, []), Ee = Z(async () => {
     var we;
-    if (!Q.trim()) {
-      N({ type: "error", text: "内容は必須です" });
+    if (!K.trim()) {
+      E({ type: "error", text: "内容は必須です" });
       return;
     }
-    f(!0), N(null);
-    const de = ((h == null ? void 0 : h.getNetworkLogs()) ?? []).map((Y) => {
+    f(!0), E(null);
+    const de = ((h == null ? void 0 : h.getNetworkLogs()) ?? []).map((U) => {
       const xe = {
-        timestamp: Y.timestamp,
-        method: Y.method,
-        url: Y.url,
-        status: Y.status
-      }, je = ["POST", "PUT", "DELETE", "PATCH"].includes(Y.method);
-      return je && (Y.requestBody !== void 0 && (xe.requestBody = Y.requestBody), Y.responseBody !== void 0 && (xe.responseBody = Y.responseBody)), !je && C && Y.responseBody !== void 0 && (xe.responseBody = Y.responseBody), a && Y.duration != null && (xe.duration = Y.duration), q && (Y.requestHeaders && (xe.requestHeaders = Y.requestHeaders), Y.responseHeaders && (xe.responseHeaders = Y.responseHeaders)), xe;
+        timestamp: U.timestamp,
+        method: U.method,
+        url: U.url,
+        status: U.status
+      }, Oe = ["POST", "PUT", "DELETE", "PATCH"].includes(U.method);
+      return Oe && (U.requestBody !== void 0 && (xe.requestBody = U.requestBody), U.responseBody !== void 0 && (xe.responseBody = U.responseBody)), !Oe && C && U.responseBody !== void 0 && (xe.responseBody = U.responseBody), a && U.duration != null && (xe.duration = U.duration), V && (U.requestHeaders && (xe.requestHeaders = U.requestHeaders), U.responseHeaders && (xe.responseHeaders = U.responseHeaders)), xe;
     }), re = {
-      content: Q.trim(),
-      userLog: ie ? ft(ie) : void 0,
+      content: K.trim(),
+      userLog: ie ? kt(ie) : void 0,
       severity: A || void 0,
       testCaseIds: ee.length > 0 ? ee : void 0,
       consoleLogs: h == null ? void 0 : h.getConsoleLogs(),
@@ -2072,31 +2073,31 @@ function Nt({
         url: window.location.href,
         timestamp: (/* @__PURE__ */ new Date()).toISOString()
       } : void 0
-    }, ce = await ze(re);
+    }, ce = await Ce(re);
     if (ce) {
-      if (J.length > 0)
+      if (G.length > 0)
         try {
-          for (const Y of J)
-            await ae.uploadAttachment(r, ce.id, Y);
-        } catch (Y) {
-          console.warn("Failed to upload some attachments:", Y), N({ type: "success", text: "保存しました（一部画像のアップロードに失敗）" }), f(!1);
+          for (const U of G)
+            await ae.uploadAttachment(r, ce.id, U);
+        } catch (U) {
+          console.warn("Failed to upload some attachments:", U), E({ type: "success", text: "保存しました（一部画像のアップロードに失敗）" }), f(!1);
           return;
         }
-      N({ type: "success", text: "保存しました" }), t == null || t(ce), setTimeout(() => {
+      E({ type: "success", text: "保存しました" }), t == null || t(ce), setTimeout(() => {
         oe();
       }, 1500);
     } else
-      N({ type: "error", text: ((we = Ie.current) == null ? void 0 : we.message) || "保存に失敗しました" });
+      E({ type: "error", text: ((we = Fe.current) == null ? void 0 : we.message) || "保存に失敗しました" });
     f(!1);
-  }, [Q, ie, A, ee, J, C, a, q, ze, t, oe, h, r]), rt = K(async () => {
-    var H;
-    Se(!0);
+  }, [K, ie, A, ee, G, C, a, V, Ce, t, oe, h, r]), ct = Z(async () => {
+    var q;
+    $e(!0);
     try {
-      c === "manage" ? ve() : c === "test" && await ((H = $e.current) == null ? void 0 : H.refresh());
+      c === "manage" ? ve() : c === "test" && await ((q = ze.current) == null ? void 0 : q.refresh());
     } finally {
-      Se(!1);
+      $e(!1);
     }
-  }, [c, ve]), Me = /* @__PURE__ */ n("div", { className: "debug-panel", children: [
+  }, [c, ve]), De = /* @__PURE__ */ n("div", { className: "debug-panel", children: [
     /* @__PURE__ */ n("header", { className: "debug-header", children: [
       /* @__PURE__ */ n("div", { className: "debug-header-left", children: [
         /* @__PURE__ */ e("span", { className: "debug-icon", children: "edit_note" }),
@@ -2108,7 +2109,7 @@ function Nt({
           "button",
           {
             className: "debug-refresh-btn",
-            onClick: rt,
+            onClick: ct,
             disabled: ge,
             title: "データを更新",
             children: /* @__PURE__ */ e(
@@ -2133,7 +2134,7 @@ function Nt({
         {
           className: `debug-tab ${c === "record" ? "active" : ""}`,
           onClick: () => {
-            O("record"), N(null);
+            P("record"), E(null);
           },
           children: "記録"
         }
@@ -2142,7 +2143,7 @@ function Nt({
         "button",
         {
           className: `debug-tab ${c === "manage" ? "active" : ""}`,
-          onClick: () => O("manage"),
+          onClick: () => P("manage"),
           children: "管理"
         }
       ),
@@ -2150,15 +2151,15 @@ function Nt({
         "button",
         {
           className: `debug-tab ${c === "test" ? "active" : ""}`,
-          onClick: () => O("test"),
+          onClick: () => P("test"),
           children: "テスト"
         }
       ),
-      P && /* @__PURE__ */ e(
+      H && /* @__PURE__ */ e(
         "button",
         {
           className: `debug-tab ${c === "manual" ? "active" : ""}`,
-          onClick: () => O("manual"),
+          onClick: () => P("manual"),
           children: "マニュアル"
         }
       ),
@@ -2166,7 +2167,7 @@ function Nt({
         "button",
         {
           className: `debug-tab ${c === "env" ? "active" : ""}`,
-          onClick: () => O("env"),
+          onClick: () => P("env"),
           children: "環境"
         }
       )
@@ -2193,7 +2194,7 @@ function Nt({
               /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "14px" }, children: "science" }),
               /* @__PURE__ */ n("span", { children: [
                 "実行中: ",
-                ee.map((H) => `#${H}`).join(", ")
+                ee.map((q) => `#${q}`).join(", ")
               ] }),
               /* @__PURE__ */ e(
                 "button",
@@ -2223,7 +2224,7 @@ function Nt({
             {
               id: "debug-severity",
               value: A,
-              onChange: (H) => v(H.target.value),
+              onChange: (q) => v(q.target.value),
               children: [
                 /* @__PURE__ */ e("option", { value: "", children: "未設定" }),
                 /* @__PURE__ */ e("option", { value: "critical", children: "Critical" }),
@@ -2240,8 +2241,8 @@ function Nt({
             "textarea",
             {
               id: "debug-content",
-              value: Q,
-              onChange: (H) => U(H.target.value),
+              value: K,
+              onChange: (q) => Q(q.target.value),
               placeholder: "詳細な説明",
               rows: 4,
               maxLength: 4e3
@@ -2255,7 +2256,7 @@ function Nt({
             {
               id: "debug-log",
               value: ie,
-              onChange: (H) => te(H.target.value),
+              onChange: (q) => te(q.target.value),
               placeholder: "状況や気づいたことを自由に記入",
               rows: 3,
               maxLength: 2e4
@@ -2264,35 +2265,35 @@ function Nt({
           /* @__PURE__ */ e("span", { className: "debug-hint", children: "機密情報は自動でマスクされます" })
         ] }),
         /* @__PURE__ */ e(
-          et,
+          nt,
           {
-            files: J,
-            onAdd: (H) => X((de) => [...de, ...H]),
-            onRemove: (H) => X((de) => de.filter((re, ce) => ce !== H)),
+            files: G,
+            onAdd: (q) => X((de) => [...de, ...q]),
+            onRemove: (q) => X((de) => de.filter((re, ce) => ce !== q)),
             disabled: F,
-            pipDocument: ((De = V.current) == null ? void 0 : De.document) ?? null
+            pipDocument: ((Ae = O.current) == null ? void 0 : Ae.document) ?? null
           }
         ),
         /* @__PURE__ */ e("div", { className: "debug-toggle", children: /* @__PURE__ */ n(
           "button",
           {
             type: "button",
-            onClick: () => _(!G),
+            onClick: () => _(!J),
             className: "debug-toggle-btn",
             children: [
-              /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: G ? "expand_less" : "expand_more" }),
+              /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: J ? "expand_less" : "expand_more" }),
               "添付オプション"
             ]
           }
         ) }),
-        G && /* @__PURE__ */ n("div", { className: "debug-attach-options", children: [
+        J && /* @__PURE__ */ n("div", { className: "debug-attach-options", children: [
           /* @__PURE__ */ n("label", { className: "debug-attach-option", children: [
             /* @__PURE__ */ e(
               "input",
               {
                 type: "checkbox",
                 checked: C,
-                onChange: (H) => B(H.target.checked)
+                onChange: (q) => R(q.target.checked)
               }
             ),
             "GETレスポンスを含める"
@@ -2303,7 +2304,7 @@ function Nt({
               {
                 type: "checkbox",
                 checked: a,
-                onChange: (H) => M(H.target.checked)
+                onChange: (q) => M(q.target.checked)
               }
             ),
             "通信時間を含める"
@@ -2313,17 +2314,17 @@ function Nt({
               "input",
               {
                 type: "checkbox",
-                checked: q,
-                onChange: (H) => Z(H.target.checked)
+                checked: V,
+                onChange: (q) => Y(q.target.checked)
               }
             ),
             "ヘッダーを含める"
           ] })
         ] })
       ] }),
-      c === "manage" && /* @__PURE__ */ e(vt, { notes: Te, updateStatus: _e }),
-      c === "manual" && P && /* @__PURE__ */ e(
-        kt,
+      c === "manage" && /* @__PURE__ */ e(Ct, { notes: _e, updateStatus: Ne }),
+      c === "manual" && H && /* @__PURE__ */ e(
+        Ft,
         {
           items: x,
           defaultPath: m,
@@ -2331,12 +2332,12 @@ function Nt({
           onAppNavigate: l
         }
       ),
-      c === "env" && j && /* @__PURE__ */ e(Ft, { md: k, pipDocument: ((Ae = V.current) == null ? void 0 : Ae.document) ?? null }),
+      c === "env" && j && /* @__PURE__ */ e(Et, { md: k, pipDocument: ((je = O.current) == null ? void 0 : je.document) ?? null }),
       c === "test" && L && /* @__PURE__ */ e(
-        wt,
+        It,
         {
-          ref: $e,
-          testCases: z,
+          ref: ze,
+          testCases: I,
           env: r,
           logCapture: h,
           onNotesRefresh: ve,
@@ -2360,7 +2361,7 @@ function Nt({
       ] }) : "保存" })
     ] })
   ] });
-  return E ? ht(Me, E) : T ? /* @__PURE__ */ e("div", { style: He.overlay, children: /* @__PURE__ */ e("div", { style: He.panel, children: Me }) }) : /* @__PURE__ */ e("button", { onClick: o, style: nt(W), "aria-label": "デバッグノートを開く", children: /* @__PURE__ */ n("span", { style: { fontSize: "13px", fontWeight: 600, lineHeight: 1.2, textAlign: "center" }, children: [
+  return N ? wt(De, N) : B ? /* @__PURE__ */ e("div", { style: qe.overlay, children: /* @__PURE__ */ e("div", { style: qe.panel, children: De }) }) : /* @__PURE__ */ e("button", { onClick: o, style: rt(W), "aria-label": "デバッグノートを開く", children: /* @__PURE__ */ n("span", { style: { fontSize: "13px", fontWeight: 600, lineHeight: 1.2, textAlign: "center" }, children: [
     "バグ",
     /* @__PURE__ */ e("br", {}),
     "記録"
@@ -2387,7 +2388,7 @@ function le({ size: i = 16, color: r }) {
     /* @__PURE__ */ e("style", { children: "@keyframes debug-notes-spin { to { transform: rotate(360deg); } }" })
   ] });
 }
-function R({ name: i, size: r = 20, color: t }) {
+function T({ name: i, size: r = 20, color: t }) {
   return /* @__PURE__ */ e(
     "span",
     {
@@ -2402,7 +2403,7 @@ function R({ name: i, size: r = 20, color: t }) {
     }
   );
 }
-const Lt = {
+const Ot = {
   passed: "#22c55e",
   passedBg: "#f0fdf4",
   fail: "#ef4444",
@@ -2411,7 +2412,7 @@ const Lt = {
   retestBg: "#fffbeb",
   untested: "#e5e7eb",
   untestedBg: "#f9fafb"
-}, Wt = {
+}, Pt = {
   passed: "#4ade80",
   passedBg: "#064e3b",
   fail: "#f87171",
@@ -2421,8 +2422,8 @@ const Lt = {
   untested: "#475569",
   untestedBg: "#1e293b"
 };
-function Mt({ domains: i, colors: r, isDarkMode: t }) {
-  const p = t ? Wt : Lt;
+function Ht({ domains: i, colors: r, isDarkMode: t }) {
+  const p = t ? Pt : Ot;
   return i.length === 0 ? /* @__PURE__ */ e("div", { style: {
     padding: "40px",
     textAlign: "center",
@@ -2439,14 +2440,14 @@ function Mt({ domains: i, colors: r, isDarkMode: t }) {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
       gap: "16px"
-    }, children: i.map((u) => /* @__PURE__ */ e(
-      Dt,
+    }, children: i.map((g) => /* @__PURE__ */ e(
+      qt,
       {
-        domain: u,
+        domain: g,
         colors: r,
         tc: p
       },
-      u.domain
+      g.domain
     )) }),
     /* @__PURE__ */ n("div", { style: {
       display: "flex",
@@ -2494,7 +2495,7 @@ function Mt({ domains: i, colors: r, isDarkMode: t }) {
     ] })
   ] });
 }
-function Dt({ domain: i, colors: r, tc: t }) {
+function qt({ domain: i, colors: r, tc: t }) {
   return /* @__PURE__ */ n("div", { style: {
     background: r.bg,
     border: `1px solid ${r.border}`,
@@ -2522,7 +2523,7 @@ function Dt({ domain: i, colors: r, tc: t }) {
       ] })
     ] }),
     /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "10px" }, children: i.capabilities.map((p) => /* @__PURE__ */ e(
-      At,
+      Vt,
       {
         cap: p,
         colors: r,
@@ -2532,11 +2533,11 @@ function Dt({ domain: i, colors: r, tc: t }) {
     )) })
   ] });
 }
-function At({ cap: i, colors: r, tc: t }) {
-  const p = i.status === "fail" ? t.fail : i.status === "retest" ? t.retest : i.status === "passed" ? t.passed : t.untested, u = i.status === "fail" ? t.failBg : i.status === "retest" ? t.retestBg : i.status === "passed" ? t.passedBg : t.untestedBg;
+function Vt({ cap: i, colors: r, tc: t }) {
+  const p = i.status === "fail" ? t.fail : i.status === "retest" ? t.retest : i.status === "passed" ? t.passed : t.untested, g = i.status === "fail" ? t.failBg : i.status === "retest" ? t.retestBg : i.status === "passed" ? t.passedBg : t.untestedBg;
   return /* @__PURE__ */ n("div", { style: {
     borderLeft: `4px solid ${p}`,
-    background: u,
+    background: g,
     borderRadius: "0 8px 8px 0",
     padding: "10px 12px"
   }, children: [
@@ -2578,41 +2579,41 @@ function At({ cap: i, colors: r, tc: t }) {
     ] })
   ] });
 }
-const jt = {
+const Jt = {
   passed: "#22c55e",
   fail: "#ef4444",
   retest: "#f59e0b",
   untested: "#9ca3af"
-}, Ot = {
+}, Gt = {
   passed: "#4ade80",
   fail: "#f87171",
   retest: "#fbbf24",
   untested: "#64748b"
 };
-function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
-  const u = t ? Ot : jt, [z, h] = w(/* @__PURE__ */ new Set()), [x, m] = w(/* @__PURE__ */ new Set());
+function Zt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
+  const g = t ? Gt : Jt, [I, h] = w(/* @__PURE__ */ new Set()), [x, m] = w(/* @__PURE__ */ new Set());
   ne(() => {
     h((y) => {
-      const T = new Set(y);
-      return i.forEach((g) => T.add(g.domain)), T;
+      const B = new Set(y);
+      return i.forEach((u) => B.add(u.domain)), B;
     });
   }, [i]);
   const [D, l] = w("all"), [k, W] = w(!1), b = (y) => {
-    h((T) => {
-      const g = new Set(T);
-      return g.has(y) ? g.delete(y) : g.add(y), g;
+    h((B) => {
+      const u = new Set(B);
+      return u.has(y) ? u.delete(y) : u.add(y), u;
     });
-  }, I = (y) => {
-    m((T) => {
-      const g = new Set(T);
-      return g.has(y) ? g.delete(y) : g.add(y), g;
+  }, z = (y) => {
+    m((B) => {
+      const u = new Set(B);
+      return u.has(y) ? u.delete(y) : u.add(y), u;
     });
-  }, E = ye(() => i.map((y) => {
-    const T = y.capabilities.filter((g) => {
-      const S = g.passed === g.total && g.total > 0, c = g.failed > 0 || g.openIssues > 0, O = g.passed < g.total;
-      return !(D === "passed" && !S || D === "fail" && !c || D === "incomplete" && !O || k && S && g.openIssues === 0);
+  }, N = ye(() => i.map((y) => {
+    const B = y.capabilities.filter((u) => {
+      const S = u.passed === u.total && u.total > 0, c = u.failed > 0 || u.openIssues > 0, P = u.passed < u.total;
+      return !(D === "passed" && !S || D === "fail" && !c || D === "incomplete" && !P || k && S && u.openIssues === 0);
     });
-    return T.length === 0 ? null : { ...y, capabilities: T };
+    return B.length === 0 ? null : { ...y, capabilities: B };
   }).filter((y) => y !== null), [i, D, k]);
   return i.length === 0 ? null : /* @__PURE__ */ n("div", { children: [
     /* @__PURE__ */ e("h3", { style: {
@@ -2675,8 +2676,8 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
       borderRadius: "12px",
       overflow: "hidden"
     }, children: [
-      E.map((y, T) => {
-        const g = z.has(y.domain), S = y.capabilities.reduce((L, P) => L + P.total, 0), c = y.capabilities.reduce((L, P) => L + P.passed, 0), O = S > 0 ? Math.round(c / S * 100) : 0;
+      N.map((y, B) => {
+        const u = I.has(y.domain), S = y.capabilities.reduce((L, H) => L + H.total, 0), c = y.capabilities.reduce((L, H) => L + H.passed, 0), P = S > 0 ? Math.round(c / S * 100) : 0;
         return /* @__PURE__ */ n("div", { children: [
           /* @__PURE__ */ n(
             "div",
@@ -2689,12 +2690,12 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
                 background: r.bgSecondary,
                 cursor: "pointer",
                 borderBottom: `1px solid ${r.border}`,
-                borderTop: T > 0 ? `1px solid ${r.border}` : "none",
+                borderTop: B > 0 ? `1px solid ${r.border}` : "none",
                 gap: "8px",
                 userSelect: "none"
               },
               children: [
-                /* @__PURE__ */ e("span", { style: { fontSize: "12px", color: r.textMuted, width: "16px" }, children: g ? "▼" : "▶" }),
+                /* @__PURE__ */ e("span", { style: { fontSize: "12px", color: r.textMuted, width: "16px" }, children: u ? "▼" : "▶" }),
                 /* @__PURE__ */ e("span", { style: {
                   fontWeight: 600,
                   fontSize: "14px",
@@ -2710,19 +2711,19 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
                   "/",
                   S,
                   " ",
-                  O,
+                  P,
                   "%"
                 ] })
               ]
             }
           ),
-          g && y.capabilities.map((L) => {
-            const P = `${y.domain}/${L.capability}`, j = x.has(P), Q = L.passed === L.total && L.total > 0, U = L.cases.some((f) => f.last === "fail" && f.openIssues > 0), ie = L.cases.some((f) => f.last === "fail" && f.openIssues === 0), te = !U && ie, A = U, v = Q ? "●" : A ? "▲" : te ? "◆" : "○", F = Q ? u.passed : A ? u.fail : te ? u.retest : u.untested;
+          u && y.capabilities.map((L) => {
+            const H = `${y.domain}/${L.capability}`, j = x.has(H), K = L.passed === L.total && L.total > 0, Q = L.cases.some((f) => f.last === "fail" && f.openIssues > 0), ie = L.cases.some((f) => f.last === "fail" && f.openIssues === 0), te = !Q && ie, A = Q, v = K ? "●" : A ? "▲" : te ? "◆" : "○", F = K ? g.passed : A ? g.fail : te ? g.retest : g.untested;
             return /* @__PURE__ */ n("div", { children: [
               /* @__PURE__ */ n(
                 "div",
                 {
-                  onClick: () => I(P),
+                  onClick: () => z(H),
                   style: {
                     display: "flex",
                     alignItems: "center",
@@ -2750,27 +2751,27 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
                       "/",
                       L.total
                     ] }),
-                    Q && /* @__PURE__ */ e("span", { style: {
+                    K && /* @__PURE__ */ e("span", { style: {
                       fontSize: "11px",
-                      color: u.passed,
+                      color: g.passed,
                       fontWeight: 600
                     }, children: "passed" }),
                     A && /* @__PURE__ */ e("span", { style: {
                       fontSize: "11px",
-                      color: u.fail,
+                      color: g.fail,
                       fontWeight: 600
                     }, children: "fail" }),
                     te && /* @__PURE__ */ e("span", { style: {
                       fontSize: "11px",
-                      color: u.retest,
+                      color: g.retest,
                       fontWeight: 600
                     }, children: "retest" }),
                     L.openIssues > 0 && /* @__PURE__ */ n("span", { style: {
                       fontSize: "11px",
                       padding: "2px 8px",
                       borderRadius: "10px",
-                      background: `${u.fail}18`,
-                      color: u.fail,
+                      background: `${g.fail}18`,
+                      color: g.fail,
                       fontWeight: 600
                     }, children: [
                       L.openIssues,
@@ -2780,20 +2781,20 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
                 }
               ),
               j && L.cases.map((f) => /* @__PURE__ */ e(
-                Ht,
+                Kt,
                 {
                   c: f,
-                  tc: u,
+                  tc: g,
                   colors: r,
                   onNavigateToNote: p
                 },
                 f.caseId
               ))
-            ] }, P);
+            ] }, H);
           })
         ] }, y.domain);
       }),
-      E.length === 0 && /* @__PURE__ */ e("div", { style: {
+      N.length === 0 && /* @__PURE__ */ e("div", { style: {
         padding: "24px",
         textAlign: "center",
         color: r.textMuted,
@@ -2802,8 +2803,8 @@ function Pt({ tree: i, colors: r, isDarkMode: t, onNavigateToNote: p }) {
     ] })
   ] });
 }
-function Ht({ c: i, tc: r, colors: t, onNavigateToNote: p }) {
-  const u = i.last === "fail" && i.openIssues === 0, z = i.last === "pass" ? "●" : u ? "◆" : i.last === "fail" ? "▲" : "○", h = i.last === "pass" ? r.passed : u ? r.retest : i.last === "fail" ? r.fail : r.untested;
+function Kt({ c: i, tc: r, colors: t, onNavigateToNote: p }) {
+  const g = i.last === "fail" && i.openIssues === 0, I = i.last === "pass" ? "●" : g ? "◆" : i.last === "fail" ? "▲" : "○", h = i.last === "pass" ? r.passed : g ? r.retest : i.last === "fail" ? r.fail : r.untested;
   return /* @__PURE__ */ n("div", { style: {
     display: "flex",
     alignItems: "center",
@@ -2813,7 +2814,7 @@ function Ht({ c: i, tc: r, colors: t, onNavigateToNote: p }) {
     gap: "8px",
     fontSize: "13px"
   }, children: [
-    /* @__PURE__ */ e("span", { style: { color: h, fontSize: "12px", width: "16px" }, children: z }),
+    /* @__PURE__ */ e("span", { style: { color: h, fontSize: "12px", width: "16px" }, children: I }),
     /* @__PURE__ */ e("span", { style: { color: t.text, flex: 1 }, children: i.title }),
     /* @__PURE__ */ e("span", { style: {
       fontSize: "11px",
@@ -2843,55 +2844,55 @@ function Ht({ c: i, tc: r, colors: t, onNavigateToNote: p }) {
     )
   ] });
 }
-const qt = 3e4;
-function Vt({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey: u }) {
-  const [z, h] = w([]), [x, m] = w(!0), [D, l] = w(null), k = ue(0);
+const Qt = 3e4;
+function Ut({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey: g }) {
+  const [I, h] = w([]), [x, m] = w(!0), [D, l] = w(null), k = ue(0);
   ne(() => {
     let b = !1;
-    const I = ++k.current, E = async () => {
+    const z = ++k.current, N = async () => {
       try {
-        const T = await ae.getTestTree(i);
-        !b && k.current === I && (h(T), l(null));
-      } catch (T) {
-        !b && k.current === I && l(T instanceof Error ? T.message : "Failed to fetch test tree");
+        const B = await ae.getTestTree(i);
+        !b && k.current === z && (h(B), l(null));
+      } catch (B) {
+        !b && k.current === z && l(B instanceof Error ? B.message : "Failed to fetch test tree");
       } finally {
-        !b && k.current === I && m(!1);
+        !b && k.current === z && m(!1);
       }
     };
-    m(!0), E();
-    const y = setInterval(E, qt);
+    m(!0), N();
+    const y = setInterval(N, Qt);
     return () => {
       b = !0, clearInterval(y);
     };
-  }, [i, u]);
-  const W = ye(() => z.map((b) => {
-    let I = 0, E = 0, y = 0, T = !1;
-    const g = b.capabilities.map((c) => {
-      const O = c.total - c.passed - c.failed;
-      I += c.total, E += c.passed, y += c.failed, (c.failed > 0 || c.openIssues > 0) && (T = !0);
-      const L = c.passed === c.total && c.total > 0, P = c.cases.some((U) => U.last === "fail" && U.openIssues > 0), j = c.cases.some((U) => U.last === "fail" && U.openIssues === 0), Q = L ? "passed" : P ? "fail" : j ? "retest" : "incomplete";
+  }, [i, g]);
+  const W = ye(() => I.map((b) => {
+    let z = 0, N = 0, y = 0, B = !1;
+    const u = b.capabilities.map((c) => {
+      const P = c.total - c.passed - c.failed;
+      z += c.total, N += c.passed, y += c.failed, (c.failed > 0 || c.openIssues > 0) && (B = !0);
+      const L = c.passed === c.total && c.total > 0, H = c.cases.some((Q) => Q.last === "fail" && Q.openIssues > 0), j = c.cases.some((Q) => Q.last === "fail" && Q.openIssues === 0), K = L ? "passed" : H ? "fail" : j ? "retest" : "incomplete";
       return {
         capability: c.capability,
         total: c.total,
         passed: c.passed,
         failed: c.failed,
-        untested: O < 0 ? 0 : O,
+        untested: P < 0 ? 0 : P,
         openIssues: c.openIssues,
-        status: Q,
+        status: K,
         cases: c.cases
       };
-    }), S = I - E - y;
+    }), S = z - N - y;
     return {
       domain: b.domain,
-      total: I,
-      passed: E,
+      total: z,
+      passed: N,
       failed: y,
       untested: S < 0 ? 0 : S,
-      hasIssues: T,
-      capabilities: g
+      hasIssues: B,
+      capabilities: u
     };
-  }), [z]);
-  return x && z.length === 0 ? /* @__PURE__ */ n("div", { style: {
+  }), [I]);
+  return x && I.length === 0 ? /* @__PURE__ */ n("div", { style: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -2902,7 +2903,7 @@ function Vt({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey:
   }, children: [
     /* @__PURE__ */ e(le, { size: 24, color: r.primary }),
     /* @__PURE__ */ e("span", { style: { fontSize: "14px" }, children: "テストデータを読み込み中..." })
-  ] }) : D && z.length === 0 ? /* @__PURE__ */ e("div", { style: {
+  ] }) : D && I.length === 0 ? /* @__PURE__ */ e("div", { style: {
     padding: "24px",
     background: r.errorBg,
     color: r.error,
@@ -2915,7 +2916,7 @@ function Vt({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey:
     flex: 1
   }, children: /* @__PURE__ */ n("div", { style: { maxWidth: "1200px" }, children: [
     /* @__PURE__ */ e(
-      Mt,
+      Ht,
       {
         domains: W,
         colors: r,
@@ -2923,9 +2924,9 @@ function Vt({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey:
       }
     ),
     /* @__PURE__ */ e(
-      Pt,
+      Zt,
       {
-        tree: z,
+        tree: I,
         colors: r,
         isDarkMode: t,
         onNavigateToNote: p
@@ -2933,28 +2934,54 @@ function Vt({ env: i, colors: r, isDarkMode: t, onNavigateToNote: p, refreshKey:
     )
   ] }) });
 }
-const Fe = {
+const ot = "Asia/Tokyo";
+function st(i) {
+  return i ? /[Zz]$/.test(i) || /[+-]\d{2}:?\d{2}$/.test(i) ? new Date(i) : /* @__PURE__ */ new Date(i.replace(" ", "T") + "Z") : /* @__PURE__ */ new Date(NaN);
+}
+function lt(i) {
+  const r = st(i);
+  return isNaN(r.getTime()) ? "-" : r.toLocaleString("ja-JP", {
+    timeZone: ot,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+function dt(i) {
+  const r = st(i);
+  return isNaN(r.getTime()) ? "-" : r.toLocaleString("ja-JP", {
+    timeZone: ot,
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: !1
+  });
+}
+const Te = {
   bug: { label: "不具合", icon: "bug_report" },
   question: { label: "質問", icon: "help" },
   request: { label: "要望", icon: "lightbulb" },
   share: { label: "共有", icon: "share" },
   other: { label: "その他", icon: "more_horiz" }
-}, Gt = {
+}, Yt = {
   bug: "#EF4444",
   question: "#3B82F6",
   request: "#10B981",
   share: "#6B7280",
   other: "#8B5CF6"
-}, Ne = {
+}, Le = {
   app: "アプリ",
   manual: "マニュアル"
-}, qe = [
+}, Ve = [
   { value: "open", label: "Open" },
   { value: "in_progress", label: "対応中" },
   { value: "closed", label: "完了" }
 ];
-function Ve(i) {
-  const r = Gt[i] ?? "#6B7280";
+function Je(i) {
+  const r = Yt[i] ?? "#6B7280";
   return {
     fontSize: "11px",
     padding: "4px 10px",
@@ -2992,10 +3019,10 @@ function Ge(i, r) {
     gap: "4px"
   };
 }
-function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: u }) {
-  var Z, J, X;
+function Xt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: g }) {
+  var Y, G, X;
   const {
-    feedbacks: z,
+    feedbacks: I,
     total: h,
     page: x,
     limit: m,
@@ -3004,66 +3031,66 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
     filters: k,
     customTags: W,
     setFilters: b,
-    setPage: I,
-    updateStatus: E,
+    setPage: z,
+    updateStatus: N,
     remove: y,
-    refresh: T
-  } = xt({ apiBaseUrl: i, adminKey: r }), [g, S] = w(null), [c, O] = w(null), [L, P] = w(!1), [j, Q] = w(null), [U, ie] = w(null), te = ue(0), A = ue(u);
+    refresh: B
+  } = vt({ apiBaseUrl: i, adminKey: r }), [u, S] = w(null), [c, P] = w(null), [L, H] = w(!1), [j, K] = w(null), [Q, ie] = w(null), te = ue(0), A = ue(g);
   ne(() => {
-    u !== A.current && (A.current = u, T());
-  }, [u, T]);
-  const v = Math.max(1, Math.ceil(h / m)), F = K(async (d) => {
-    if (g === d) return;
-    S(d), P(!0), O(null);
-    const N = ++te.current;
+    g !== A.current && (A.current = g, B());
+  }, [g, B]);
+  const v = Math.max(1, Math.ceil(h / m)), F = Z(async (d) => {
+    if (u === d) return;
+    S(d), H(!0), P(null);
+    const E = ++te.current;
     try {
-      const ee = await dt({ apiBaseUrl: i, adminKey: r, id: d });
-      if (te.current !== N) return;
-      O(ee);
+      const ee = await ht({ apiBaseUrl: i, adminKey: r, id: d });
+      if (te.current !== E) return;
+      P(ee);
     } catch {
-      if (te.current !== N) return;
-      O(null);
+      if (te.current !== E) return;
+      P(null);
     }
-    te.current === N && P(!1);
-  }, [g, i, r]), f = K(async (d, N) => {
-    await E(d, N) && (c == null ? void 0 : c.id) === d && O((se) => se ? { ...se, status: N } : null);
-  }, [E, c == null ? void 0 : c.id]), G = K(async (d) => {
+    te.current === E && H(!1);
+  }, [u, i, r]), f = Z(async (d, E) => {
+    await N(d, E) && (c == null ? void 0 : c.id) === d && P((se) => se ? { ...se, status: E } : null);
+  }, [N, c == null ? void 0 : c.id]), J = Z(async (d) => {
     if (!confirm("このフィードバックを削除しますか？")) return;
-    await y(d) && g === d && (S(null), O(null));
-  }, [y, g]), _ = K(async (d, N) => {
+    await y(d) && u === d && (S(null), P(null));
+  }, [y, u]), _ = Z(async (d, E) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await ct({ apiBaseUrl: i, adminKey: r, feedbackId: d, attachmentId: N }), O((ee) => {
+        await ft({ apiBaseUrl: i, adminKey: r, feedbackId: d, attachmentId: E }), P((ee) => {
           var se;
           return !ee || ee.id !== d ? ee : {
             ...ee,
-            attachments: (se = ee.attachments) == null ? void 0 : se.filter((ge) => ge.id !== N)
+            attachments: (se = ee.attachments) == null ? void 0 : se.filter((ge) => ge.id !== E)
           };
         });
       } catch (ee) {
         console.error("Failed to delete attachment:", ee);
       }
-  }, [i, r]), C = K((d) => {
+  }, [i, r]), C = Z((d) => {
     try {
-      const N = new URL(i);
-      return `${N.origin}${N.pathname.replace(/\/$/, "")}/attachments/${d}`;
+      const E = new URL(i);
+      return `${E.origin}${E.pathname.replace(/\/$/, "")}/attachments/${d}`;
     } catch {
       return `${i}/attachments/${d}`;
     }
-  }, [i]), B = K(async (d) => {
+  }, [i]), R = Z(async (d) => {
     ie(d);
     try {
-      await pt({ apiBaseUrl: i, adminKey: r, format: d });
-    } catch (N) {
-      console.error("Export failed:", N);
+      await bt({ apiBaseUrl: i, adminKey: r, format: d });
+    } catch (E) {
+      console.error("Export failed:", E);
     } finally {
       ie(null);
     }
   }, [i, r]), a = {
-    open: z.filter((d) => d.status === "open").length,
-    inProgress: z.filter((d) => d.status === "in_progress").length,
-    closed: z.filter((d) => d.status === "closed").length
-  }, M = p ? "#0D1117" : "#1E293B", q = p ? "#21262D" : "#2D3748";
+    open: I.filter((d) => d.status === "open").length,
+    inProgress: I.filter((d) => d.status === "in_progress").length,
+    closed: I.filter((d) => d.status === "closed").length
+  }, M = p ? "#0D1117" : "#1E293B", V = p ? "#21262D" : "#2D3748";
   return /* @__PURE__ */ n("div", { style: { display: "flex", flex: 1, overflow: "hidden" }, children: [
     /* @__PURE__ */ n("aside", { style: {
       width: "380px",
@@ -3097,7 +3124,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
             },
             children: [
               /* @__PURE__ */ e("option", { value: "", children: "全ステータス" }),
-              qe.map((d) => /* @__PURE__ */ e("option", { value: d.value, children: d.label }, d.value))
+              Ve.map((d) => /* @__PURE__ */ e("option", { value: d.value, children: d.label }, d.value))
             ]
           }
         ),
@@ -3186,12 +3213,12 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           margin: "8px",
           fontSize: "13px"
         }, children: l.message }),
-        !D && z.length === 0 && /* @__PURE__ */ n("div", { style: { padding: "40px", textAlign: "center", color: t.textMuted }, children: [
-          /* @__PURE__ */ e(R, { name: "inbox", size: 40 }),
+        !D && I.length === 0 && /* @__PURE__ */ n("div", { style: { padding: "40px", textAlign: "center", color: t.textMuted }, children: [
+          /* @__PURE__ */ e(T, { name: "inbox", size: 40 }),
           /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "フィードバックがありません" })
         ] }),
-        z.map((d) => {
-          const N = Fe[d.kind] ?? { label: d.kind, icon: "help" }, ee = g === d.id;
+        I.map((d) => {
+          const E = Te[d.kind] ?? { label: d.kind, icon: "help" }, ee = u === d.id;
           return /* @__PURE__ */ n(
             "div",
             {
@@ -3212,9 +3239,9 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                     "#",
                     d.id
                   ] }),
-                  /* @__PURE__ */ n("span", { style: Ve(d.kind), children: [
-                    /* @__PURE__ */ e(R, { name: N.icon, size: 12 }),
-                    N.label
+                  /* @__PURE__ */ n("span", { style: Je(d.kind), children: [
+                    /* @__PURE__ */ e(T, { name: E.icon, size: 12 }),
+                    E.label
                   ] }),
                   /* @__PURE__ */ e("span", { style: Ge(d.status, t), children: d.status === "open" ? "Open" : d.status === "in_progress" ? "対応中" : "完了" }),
                   d.target && /* @__PURE__ */ e("span", { style: {
@@ -3224,7 +3251,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                     background: t.bgTertiary,
                     color: t.textSecondary,
                     fontWeight: 500
-                  }, children: Ne[d.target] ?? d.target }),
+                  }, children: Le[d.target] ?? d.target }),
                   d.customTag && /* @__PURE__ */ e("span", { style: {
                     fontSize: "11px",
                     padding: "4px 8px",
@@ -3252,7 +3279,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                   fontSize: "12px",
                   color: t.textMuted
                 }, children: [
-                  /* @__PURE__ */ e("span", { children: Kt(d.createdAt) }),
+                  /* @__PURE__ */ e("span", { children: en(d.createdAt) }),
                   d.pageUrl && /* @__PURE__ */ n(me, { children: [
                     /* @__PURE__ */ e("span", { style: { margin: "0 2px" }, children: "·" }),
                     /* @__PURE__ */ n("span", { style: {
@@ -3269,7 +3296,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                       whiteSpace: "nowrap",
                       maxWidth: "180px"
                     }, children: [
-                      /* @__PURE__ */ e(R, { name: "link", size: 12 }),
+                      /* @__PURE__ */ e(T, { name: "link", size: 12 }),
                       d.pageUrl
                     ] })
                   ] }),
@@ -3282,7 +3309,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                       fontSize: "11px",
                       color: t.textMuted
                     }, children: [
-                      /* @__PURE__ */ e(R, { name: "image", size: 12 }),
+                      /* @__PURE__ */ e(T, { name: "image", size: 12 }),
                       d.attachmentCount
                     ] })
                   ] })
@@ -3304,7 +3331,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
         /* @__PURE__ */ e(
           "button",
           {
-            onClick: () => I(x - 1),
+            onClick: () => z(x - 1),
             disabled: x <= 1,
             style: {
               padding: "6px 12px",
@@ -3316,7 +3343,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
               fontSize: "13px",
               boxShadow: `0 1px 3px ${t.border}`
             },
-            children: /* @__PURE__ */ e(R, { name: "chevron_left", size: 16 })
+            children: /* @__PURE__ */ e(T, { name: "chevron_left", size: 16 })
           }
         ),
         /* @__PURE__ */ n("span", { style: { fontSize: "13px", color: t.textSecondary }, children: [
@@ -3327,7 +3354,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
         /* @__PURE__ */ e(
           "button",
           {
-            onClick: () => I(x + 1),
+            onClick: () => z(x + 1),
             disabled: x >= v,
             style: {
               padding: "6px 12px",
@@ -3339,7 +3366,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
               fontSize: "13px",
               boxShadow: `0 1px 3px ${t.border}`
             },
-            children: /* @__PURE__ */ e(R, { name: "chevron_right", size: 16 })
+            children: /* @__PURE__ */ e(T, { name: "chevron_right", size: 16 })
           }
         )
       ] }),
@@ -3353,22 +3380,22 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
         color: t.textMuted
       }, children: [
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(R, { name: "description", size: 16 }),
+          /* @__PURE__ */ e(T, { name: "description", size: 16 }),
           h,
           " 件"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(R, { name: "error", size: 16, color: t.warning }),
+          /* @__PURE__ */ e(T, { name: "error", size: 16, color: t.warning }),
           a.open,
           " Open"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(R, { name: "pending", size: 16, color: t.primary }),
+          /* @__PURE__ */ e(T, { name: "pending", size: 16, color: t.primary }),
           a.inProgress,
           " 対応中"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(R, { name: "check_circle", size: 16, color: t.success }),
+          /* @__PURE__ */ e(T, { name: "check_circle", size: 16, color: t.success }),
           a.closed,
           " 完了"
         ] })
@@ -3380,17 +3407,17 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
       padding: "32px",
       background: t.bg
     }, children: [
-      g && L && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: t.textMuted }, children: [
+      u && L && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: t.textMuted }, children: [
         /* @__PURE__ */ e(le, { size: 32, color: t.primary }),
         /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "読み込み中..." })
       ] }),
-      g && !L && c && /* @__PURE__ */ n("div", { style: { maxWidth: "800px" }, children: [
+      u && !L && c && /* @__PURE__ */ n("div", { style: { maxWidth: "800px" }, children: [
         /* @__PURE__ */ n("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }, children: [
           /* @__PURE__ */ n("div", { style: { flex: 1 }, children: [
             /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", flexWrap: "wrap" }, children: [
-              /* @__PURE__ */ n("span", { style: Ve(c.kind), children: [
-                /* @__PURE__ */ e(R, { name: ((Z = Fe[c.kind]) == null ? void 0 : Z.icon) ?? "help", size: 14 }),
-                ((J = Fe[c.kind]) == null ? void 0 : J.label) ?? c.kind
+              /* @__PURE__ */ n("span", { style: Je(c.kind), children: [
+                /* @__PURE__ */ e(T, { name: ((Y = Te[c.kind]) == null ? void 0 : Y.icon) ?? "help", size: 14 }),
+                ((G = Te[c.kind]) == null ? void 0 : G.label) ?? c.kind
               ] }),
               /* @__PURE__ */ e("span", { style: Ge(c.status, t), children: c.status === "open" ? "Open" : c.status === "in_progress" ? "対応中" : "完了" }),
               c.target && /* @__PURE__ */ e("span", { style: {
@@ -3400,7 +3427,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                 background: t.bgTertiary,
                 color: t.textSecondary,
                 fontWeight: 500
-              }, children: Ne[c.target] ?? c.target }),
+              }, children: Le[c.target] ?? c.target }),
               c.customTag && /* @__PURE__ */ e("span", { style: {
                 fontSize: "11px",
                 padding: "4px 10px",
@@ -3439,13 +3466,13 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                   fontWeight: 500,
                   cursor: "pointer"
                 },
-                children: qe.map((d) => /* @__PURE__ */ e("option", { value: d.value, children: d.label }, d.value))
+                children: Ve.map((d) => /* @__PURE__ */ e("option", { value: d.value, children: d.label }, d.value))
               }
             ),
             /* @__PURE__ */ n(
               "button",
               {
-                onClick: () => G(c.id),
+                onClick: () => J(c.id),
                 style: {
                   padding: "10px 16px",
                   background: t.errorBg,
@@ -3460,7 +3487,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                   gap: "6px"
                 },
                 children: [
-                  /* @__PURE__ */ e(R, { name: "delete", size: 16 }),
+                  /* @__PURE__ */ e(T, { name: "delete", size: 16 }),
                   "削除"
                 ]
               }
@@ -3473,9 +3500,9 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           gap: "16px",
           marginBottom: "32px"
         }, children: [
-          /* @__PURE__ */ e(he, { icon: "category", label: "種別", value: ((X = Fe[c.kind]) == null ? void 0 : X.label) ?? c.kind, colors: t }),
-          /* @__PURE__ */ e(he, { icon: "ads_click", label: "対象", value: c.target ? Ne[c.target] ?? c.target : "-", colors: t }),
-          /* @__PURE__ */ e(he, { icon: "schedule", label: "日時", value: Qt(c.createdAt), colors: t }),
+          /* @__PURE__ */ e(he, { icon: "category", label: "種別", value: ((X = Te[c.kind]) == null ? void 0 : X.label) ?? c.kind, colors: t }),
+          /* @__PURE__ */ e(he, { icon: "ads_click", label: "対象", value: c.target ? Le[c.target] ?? c.target : "-", colors: t }),
+          /* @__PURE__ */ e(he, { icon: "schedule", label: "日時", value: tn(c.createdAt), colors: t }),
           c.pageUrl && /* @__PURE__ */ e(he, { icon: "link", label: "URL", value: c.pageUrl, isLink: !0, colors: t }),
           c.userType && /* @__PURE__ */ e(he, { icon: "person", label: "ユーザー", value: c.userType, colors: t }),
           c.appVersion && /* @__PURE__ */ e(he, { icon: "inventory_2", label: "バージョン", value: c.appVersion, colors: t })
@@ -3489,10 +3516,10 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "12px"
-        }, children: Object.entries(c.environment).map(([d, N]) => /* @__PURE__ */ e(he, { icon: "info", label: d, value: String(N), colors: t }, d)) }) }),
-        c.consoleLogs && c.consoleLogs.length > 0 && /* @__PURE__ */ e(ke, { icon: "terminal", title: `コンソールログ (${c.consoleLogs.length}件)`, colors: t, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: M }, children: c.consoleLogs.map((d, N) => /* @__PURE__ */ n("div", { style: {
+        }, children: Object.entries(c.environment).map(([d, E]) => /* @__PURE__ */ e(he, { icon: "info", label: d, value: String(E), colors: t }, d)) }) }),
+        c.consoleLogs && c.consoleLogs.length > 0 && /* @__PURE__ */ e(ke, { icon: "terminal", title: `コンソールログ (${c.consoleLogs.length}件)`, colors: t, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: M }, children: c.consoleLogs.map((d, E) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
-          borderBottom: `1px solid ${q}`,
+          borderBottom: `1px solid ${V}`,
           fontSize: "12px",
           fontFamily: '"Fira Code", "SF Mono", Consolas, monospace',
           display: "flex",
@@ -3511,10 +3538,10 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
             marginTop: "1px"
           }, children: d.level }),
           /* @__PURE__ */ e("span", { style: { color: "#E2E8F0", lineHeight: 1.5, wordBreak: "break-all" }, children: d.message })
-        ] }, N)) }) }),
-        c.networkLogs && c.networkLogs.length > 0 && /* @__PURE__ */ e(ke, { icon: "wifi", title: `ネットワークログ (${c.networkLogs.length}件)`, colors: t, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: M }, children: c.networkLogs.map((d, N) => /* @__PURE__ */ n("div", { style: {
+        ] }, E)) }) }),
+        c.networkLogs && c.networkLogs.length > 0 && /* @__PURE__ */ e(ke, { icon: "wifi", title: `ネットワークログ (${c.networkLogs.length}件)`, colors: t, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: M }, children: c.networkLogs.map((d, E) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
-          borderBottom: `1px solid ${q}`,
+          borderBottom: `1px solid ${V}`,
           fontSize: "12px",
           fontFamily: '"Fira Code", "SF Mono", Consolas, monospace',
           display: "flex",
@@ -3525,7 +3552,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           /* @__PURE__ */ e("span", { style: { color: d.status >= 400 ? "#F87171" : "#34D399", fontWeight: 600, flexShrink: 0 }, children: d.status }),
           /* @__PURE__ */ e("span", { style: { color: "#E2E8F0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: d.url }),
           /* @__PURE__ */ e("span", { style: { color: "#64748B", flexShrink: 0 }, children: d.duration != null ? `${d.duration}ms` : "-" })
-        ] }, N)) }) }),
+        ] }, E)) }) }),
         c.attachments && c.attachments.length > 0 && /* @__PURE__ */ e(ke, { icon: "image", title: `添付画像 (${c.attachments.length}件)`, colors: t, children: /* @__PURE__ */ e("div", { style: {
           display: "flex",
           gap: "12px",
@@ -3550,7 +3577,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                 cursor: "pointer",
                 display: "block"
               },
-              onClick: () => Q(C(d.filename))
+              onClick: () => K(C(d.filename))
             }
           ),
           /* @__PURE__ */ e(
@@ -3574,7 +3601,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
                 padding: 0
               },
               title: "画像を削除",
-              children: /* @__PURE__ */ e(R, { name: "close", size: 14 })
+              children: /* @__PURE__ */ e(T, { name: "close", size: 14 })
             }
           ),
           /* @__PURE__ */ e("div", { style: {
@@ -3589,7 +3616,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
         j && /* @__PURE__ */ e(
           "div",
           {
-            onClick: () => Q(null),
+            onClick: () => K(null),
             style: {
               position: "fixed",
               top: 0,
@@ -3619,11 +3646,11 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           }
         )
       ] }),
-      g && !L && !c && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: t.textMuted }, children: [
-        /* @__PURE__ */ e(R, { name: "error_outline", size: 48 }),
+      u && !L && !c && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: t.textMuted }, children: [
+        /* @__PURE__ */ e(T, { name: "error_outline", size: 48 }),
         /* @__PURE__ */ e("div", { style: { marginTop: "12px", fontSize: "16px" }, children: "詳細の取得に失敗しました" })
       ] }),
-      !g && /* @__PURE__ */ n("div", { style: {
+      !u && /* @__PURE__ */ n("div", { style: {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -3650,7 +3677,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
             justifyContent: "center",
             gap: "8px"
           }, children: [
-            /* @__PURE__ */ e(R, { name: "analytics", size: 18 }),
+            /* @__PURE__ */ e(T, { name: "analytics", size: 18 }),
             "フィードバック概要"
           ] }),
           /* @__PURE__ */ n("div", { style: {
@@ -3685,26 +3712,26 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           }, children: ["json", "csv", "sqlite"].map((d) => /* @__PURE__ */ n(
             "button",
             {
-              onClick: () => B(d),
-              disabled: U !== null,
+              onClick: () => R(d),
+              disabled: Q !== null,
               style: {
                 padding: "8px 14px",
                 background: t.bg,
                 border: "none",
                 borderRadius: "10px",
-                cursor: U !== null ? "not-allowed" : "pointer",
+                cursor: Q !== null ? "not-allowed" : "pointer",
                 color: t.text,
                 fontWeight: 500,
                 fontSize: "12px",
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
-                opacity: U !== null && U !== d ? 0.5 : 1,
+                opacity: Q !== null && Q !== d ? 0.5 : 1,
                 boxShadow: `0 1px 3px ${t.border}`,
                 transition: "all 0.2s"
               },
               children: [
-                U === d ? /* @__PURE__ */ e(le, { size: 14, color: t.text }) : /* @__PURE__ */ e(R, { name: "download", size: 16 }),
+                Q === d ? /* @__PURE__ */ e(le, { size: 14, color: t.text }) : /* @__PURE__ */ e(T, { name: "download", size: 16 }),
                 d.toUpperCase()
               ]
             },
@@ -3712,7 +3739,7 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
           )) })
         ] }),
         /* @__PURE__ */ n("div", { style: { textAlign: "center" }, children: [
-          /* @__PURE__ */ e(R, { name: "arrow_back", size: 48 }),
+          /* @__PURE__ */ e(T, { name: "arrow_back", size: 48 }),
           /* @__PURE__ */ e("div", { style: { fontSize: "16px", fontWeight: 500, marginTop: "12px" }, children: "フィードバックを選択してください" }),
           /* @__PURE__ */ e("div", { style: { fontSize: "13px", marginTop: "6px" }, children: "左のリストから選択すると詳細が表示されます" })
         ] })
@@ -3720,27 +3747,27 @@ function Jt({ apiBaseUrl: i, adminKey: r, colors: t, isDarkMode: p, refreshKey: 
     ] })
   ] });
 }
-function he({ icon: i, label: r, value: t, isLink: p, colors: u }) {
+function he({ icon: i, label: r, value: t, isLink: p, colors: g }) {
   return /* @__PURE__ */ n("div", { style: {
     padding: "16px",
-    background: u.bgSecondary,
+    background: g.bgSecondary,
     borderRadius: "12px"
   }, children: [
     /* @__PURE__ */ n("div", { style: {
       fontSize: "12px",
-      color: u.textMuted,
+      color: g.textMuted,
       marginBottom: "6px",
       display: "flex",
       alignItems: "center",
       gap: "6px"
     }, children: [
-      /* @__PURE__ */ e(R, { name: i, size: 16 }),
+      /* @__PURE__ */ e(T, { name: i, size: 16 }),
       r
     ] }),
     /* @__PURE__ */ e("div", { style: {
       fontSize: "14px",
       fontWeight: 500,
-      color: p ? u.link : u.text,
+      color: p ? g.link : g.text,
       fontFamily: p ? '"Fira Code", monospace' : "inherit",
       wordBreak: "break-all"
     }, children: t })
@@ -3757,26 +3784,19 @@ function ke({ icon: i, title: r, children: t, colors: p }) {
       alignItems: "center",
       gap: "8px"
     }, children: [
-      /* @__PURE__ */ e(R, { name: i, size: 18 }),
+      /* @__PURE__ */ e(T, { name: i, size: 18 }),
       r
     ] }),
     t
   ] });
 }
-function Kt(i) {
-  const r = new Date(i), t = r.getMonth() + 1, p = r.getDate(), u = r.getHours().toString().padStart(2, "0"), z = r.getMinutes().toString().padStart(2, "0");
-  return `${t}/${p} ${u}:${z}`;
+function en(i) {
+  return dt(i);
 }
-function Qt(i) {
-  return new Date(i).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+function tn(i) {
+  return lt(i);
 }
-const Ut = {
+const nn = {
   primary: "#6366F1",
   primaryLight: "#EEF2FF",
   primaryDark: "#4F46E5",
@@ -3800,7 +3820,7 @@ const Ut = {
   medium: "#F59E0B",
   low: "#3B82F6",
   link: "#6366F1"
-}, Yt = {
+}, rn = {
   primary: "#818CF8",
   primaryLight: "#1E1B4B",
   primaryDark: "#A5B4FC",
@@ -3824,26 +3844,26 @@ const Ut = {
   medium: "#FBBF24",
   low: "#60A5FA",
   link: "#818CF8"
-}, Zt = 3e4;
-function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdminKey: p }) {
-  const [u, z] = w(""), [h, x] = w(""), [m, D] = w(""), [l, k] = w(null), [W, b] = w(() => typeof window < "u" ? window.matchMedia("(prefers-color-scheme: dark)").matches : !1), [I, E] = w(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 768px)").matches);
+}, an = 3e4;
+function bn({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdminKey: p }) {
+  const [g, I] = w(""), [h, x] = w(""), [m, D] = w(""), [l, k] = w(null), [W, b] = w(() => typeof window < "u" ? window.matchMedia("(prefers-color-scheme: dark)").matches : !1), [z, N] = w(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 768px)").matches);
   ne(() => {
     if (typeof window > "u") return;
-    const o = window.matchMedia("(max-width: 768px)"), $ = (V) => E(V.matches);
+    const o = window.matchMedia("(max-width: 768px)"), $ = (O) => N(O.matches);
     return o.addEventListener("change", $), () => o.removeEventListener("change", $);
   }, []);
-  const [y, T] = w(!0), [g, S] = w(null), [c, O] = w("notes"), L = !!(t && p), [P, j] = w(null), [Q, U] = w(0), [ie, te] = w(null), [A, v] = w(null), [F, f] = w(""), [G, _] = w(""), [C, B] = w(!1), a = W ? Yt : Ut;
+  const [y, B] = w(!0), [u, S] = w(null), [c, P] = w("notes"), L = !!(t && p), [H, j] = w(null), [K, Q] = w(0), [ie, te] = w(null), [A, v] = w(null), [F, f] = w(""), [J, _] = w(""), [C, R] = w(!1), a = W ? rn : nn;
   ne(() => {
-    i && Le(i);
+    i && We(i);
   }, [i]), ne(() => {
     if (typeof window > "u") return;
-    const o = window.matchMedia("(prefers-color-scheme: dark)"), $ = (V) => b(V.matches);
+    const o = window.matchMedia("(prefers-color-scheme: dark)"), $ = (O) => b(O.matches);
     return o.addEventListener("change", $), () => o.removeEventListener("change", $);
   }, []);
-  const { notes: M, loading: q, error: Z, updateStatus: J, updateSeverity: X, deleteNote: d, refresh: N } = Xe(r);
+  const { notes: M, loading: V, error: Y, updateStatus: G, updateSeverity: X, deleteNote: d, refresh: E } = tt(r);
   ne(() => {
-    !q && g === "refresh" && S(null);
-  }, [q, g]), ne(() => {
+    !V && u === "refresh" && S(null);
+  }, [V, u]), ne(() => {
     if (l) {
       const o = M.find(($) => $.id === l.id);
       k(o || null);
@@ -3851,45 +3871,45 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
   }, [M]), ne(() => {
     if (!y) return;
     const o = setInterval(() => {
-      N();
-    }, Zt);
+      E();
+    }, an);
     return () => clearInterval(o);
-  }, [y, N]);
-  const ee = K((o) => {
-    const V = `${i || ut()}/export/${o}?env=${r}`;
-    window.open(V, "_blank");
-  }, [i, r]), se = K((o) => {
-    j(o), z("open"), O("notes");
+  }, [y, E]);
+  const ee = Z((o) => {
+    const O = `${i || mt()}/export/${o}?env=${r}`;
+    window.open(O, "_blank");
+  }, [i, r]), se = Z((o) => {
+    j(o), I("open"), P("notes");
   }, []), ge = ye(() => M.filter((o) => {
-    if (u && o.status !== u || h && (o.source || "manual") !== h || P != null && !(o.test_case_ids ?? (o.test_case_id ? [o.test_case_id] : [])).includes(P))
+    if (g && o.status !== g || h && (o.source || "manual") !== h || H != null && !(o.test_case_ids ?? (o.test_case_id ? [o.test_case_id] : [])).includes(H))
       return !1;
     if (m) {
       const $ = m.match(/^#([1-9]\d*)$/);
       if ($) {
         if (o.id !== Number($[1])) return !1;
       } else {
-        const V = m.toLowerCase();
-        if (!o.title.toLowerCase().includes(V) && !o.content.toLowerCase().includes(V)) return !1;
+        const O = m.toLowerCase();
+        if (!o.title.toLowerCase().includes(O) && !o.content.toLowerCase().includes(O)) return !1;
       }
     }
     return !0;
-  }), [M, u, h, P, m]), Se = K((o, $) => {
-    $ === "fixed" || $ === "resolved" || $ === "rejected" ? (v({ id: o, status: $ }), f("")) : (async () => {
+  }), [M, g, h, H, m]), $e = Z((o, $) => {
+    $ === "fixed" || $ === "resolved" || $ === "rejected" || $ === "closed" ? (v({ id: o, status: $ }), f("")) : (async () => {
       S(`status-${o}`);
       try {
-        await J(o, $), (l == null ? void 0 : l.id) === o && k((V) => V ? { ...V, status: $ } : null);
+        await G(o, $), (l == null ? void 0 : l.id) === o && k((O) => O ? { ...O, status: $ } : null);
       } finally {
         S(null);
       }
     })();
-  }, [J, l == null ? void 0 : l.id]), $e = K(async () => {
+  }, [G, l == null ? void 0 : l.id]), ze = Z(async () => {
     if (!A) return;
     const { id: o, status: $ } = A;
     if (!(($ === "fixed" || $ === "rejected") && F.trim() === "")) {
       S(`status-${o}`);
       try {
-        const V = F.trim() ? { comment: F.trim() } : void 0;
-        if (await J(o, $, V), (l == null ? void 0 : l.id) === o && k((oe) => oe ? { ...oe, status: $ } : null), v(null), f(""), (l == null ? void 0 : l.id) === o)
+        const O = F.trim() ? { comment: F.trim() } : void 0;
+        if (await G(o, $, O), (l == null ? void 0 : l.id) === o && k((oe) => oe ? { ...oe, status: $ } : null), v(null), f(""), (l == null ? void 0 : l.id) === o)
           try {
             const oe = await ae.getNote(r, o);
             k(oe);
@@ -3899,21 +3919,21 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
         S(null);
       }
     }
-  }, [A, F, J, l == null ? void 0 : l.id, r]), Te = K(async (o, $) => {
+  }, [A, F, G, l == null ? void 0 : l.id, r]), _e = Z(async (o, $) => {
     S(`severity-${o}`);
     try {
-      await X(o, $), (l == null ? void 0 : l.id) === o && k((V) => V ? { ...V, severity: $ } : null);
+      await X(o, $), (l == null ? void 0 : l.id) === o && k((O) => O ? { ...O, severity: $ } : null);
     } finally {
       S(null);
     }
-  }, [X, l == null ? void 0 : l.id]), ze = K(async (o) => {
+  }, [X, l == null ? void 0 : l.id]), Ce = Z(async (o) => {
     k(o);
     try {
       const $ = await ae.getNote(r, o.id);
       k($);
     } catch {
     }
-  }, [r]), _e = K(async (o) => {
+  }, [r]), Ne = Z(async (o) => {
     if (confirm("このノートを削除しますか？")) {
       S(`delete-${o}`);
       try {
@@ -3922,24 +3942,24 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
         S(null);
       }
     }
-  }, [d, l == null ? void 0 : l.id]), ve = K(async (o, $) => {
+  }, [d, l == null ? void 0 : l.id]), ve = Z(async (o, $) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await ae.deleteAttachment(r, o, $), k((V) => {
+        await ae.deleteAttachment(r, o, $), k((O) => {
           var oe;
-          return !V || V.id !== o ? V : {
-            ...V,
-            attachments: (oe = V.attachments) == null ? void 0 : oe.filter((Ee) => Ee.id !== $)
+          return !O || O.id !== o ? O : {
+            ...O,
+            attachments: (oe = O.attachments) == null ? void 0 : oe.filter((Ee) => Ee.id !== $)
           };
         });
-      } catch (V) {
-        console.error("Failed to delete attachment:", V);
+      } catch (O) {
+        console.error("Failed to delete attachment:", O);
       }
-  }, [r]), Ce = K(async () => {
-    if (!(!l || G.trim() === "")) {
-      B(!0);
+  }, [r]), Ie = Z(async () => {
+    if (!(!l || J.trim() === "")) {
+      R(!0);
       try {
-        const o = await ae.addActivity(r, l.id, { content: G.trim() });
+        const o = await ae.addActivity(r, l.id, { content: J.trim() });
         k(($) => $ && {
           ...$,
           activities: [...$.activities || [], o]
@@ -3947,10 +3967,10 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
       } catch (o) {
         console.error("Failed to add comment:", o);
       } finally {
-        B(!1);
+        R(!1);
       }
     }
-  }, [l, G, r]), Ie = (o) => {
+  }, [l, J, r]), Fe = (o) => {
     if (!o) return [];
     try {
       const $ = JSON.parse(o);
@@ -3960,7 +3980,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
 `).filter(($) => $.trim());
     }
   };
-  return /* @__PURE__ */ n("div", { style: en(a), children: [
+  return /* @__PURE__ */ n("div", { style: on(a), children: [
     /* @__PURE__ */ e(
       "link",
       {
@@ -3969,12 +3989,12 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
       }
     ),
     /* @__PURE__ */ n("header", { style: {
-      ...tn(a),
-      padding: I ? "12px 16px" : "16px 24px",
+      ...sn(a),
+      padding: z ? "12px 16px" : "16px 24px",
       flexWrap: "wrap",
       gap: "8px"
     }, children: [
-      /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: I ? "8px" : "16px", flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: z ? "8px" : "16px", flexWrap: "wrap" }, children: [
         /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: "12px" }, children: [
           /* @__PURE__ */ e("div", { style: {
             width: "40px",
@@ -3985,7 +4005,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             alignItems: "center",
             justifyContent: "center",
             color: "#FFF"
-          }, children: /* @__PURE__ */ e(R, { name: "bug_report", size: 24, color: "#FFF" }) }),
+          }, children: /* @__PURE__ */ e(T, { name: "bug_report", size: 24, color: "#FFF" }) }),
           /* @__PURE__ */ n("div", { children: [
             /* @__PURE__ */ e("h1", { style: {
               fontSize: "18px",
@@ -4037,7 +4057,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             {
               type: "checkbox",
               checked: y,
-              onChange: (o) => T(o.target.checked),
+              onChange: (o) => B(o.target.checked),
               style: { display: "none" }
             }
           )
@@ -4062,7 +4082,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             },
             title: "JSON エクスポート",
             children: [
-              /* @__PURE__ */ e(R, { name: "download", size: 16 }),
+              /* @__PURE__ */ e(T, { name: "download", size: 16 }),
               "JSON"
             ]
           }
@@ -4087,7 +4107,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             },
             title: "SQLite エクスポート",
             children: [
-              /* @__PURE__ */ e(R, { name: "download", size: 16 }),
+              /* @__PURE__ */ e(T, { name: "download", size: 16 }),
               "SQLite"
             ]
           }
@@ -4110,22 +4130,22 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               color: a.text
             },
             title: W ? "ライトモード" : "ダークモード",
-            children: /* @__PURE__ */ e(R, { name: W ? "light_mode" : "dark_mode", size: 20 })
+            children: /* @__PURE__ */ e(T, { name: W ? "light_mode" : "dark_mode", size: 20 })
           }
         ),
         /* @__PURE__ */ n(
           "button",
           {
             onClick: () => {
-              S("refresh"), N(), U((o) => o + 1);
+              S("refresh"), E(), Q((o) => o + 1);
             },
-            disabled: g !== null,
+            disabled: u !== null,
             style: {
               padding: "10px 20px",
               background: a.primary,
               border: "none",
               borderRadius: "10px",
-              cursor: g !== null ? "not-allowed" : "pointer",
+              cursor: u !== null ? "not-allowed" : "pointer",
               color: "#FFF",
               fontWeight: 600,
               fontSize: "13px",
@@ -4133,10 +4153,10 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              opacity: g !== null ? 0.6 : 1
+              opacity: u !== null ? 0.6 : 1
             },
             children: [
-              g === "refresh" ? /* @__PURE__ */ e(le, { size: 18, color: "#FFF" }) : /* @__PURE__ */ e(R, { name: "refresh", size: 18, color: "#FFF" }),
+              u === "refresh" ? /* @__PURE__ */ e(le, { size: 18, color: "#FFF" }) : /* @__PURE__ */ e(T, { name: "refresh", size: 18, color: "#FFF" }),
               "更新"
             ]
           }
@@ -4157,7 +4177,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
       "button",
       {
         onClick: () => {
-          O(o), o === "test-status" && j(null);
+          P(o), o === "test-status" && j(null);
         },
         style: {
           padding: "12px 20px",
@@ -4175,42 +4195,42 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
       o
     )) }),
     c === "test-status" ? /* @__PURE__ */ e(
-      Vt,
+      Ut,
       {
         env: r,
         colors: a,
         isDarkMode: W,
         onNavigateToNote: se,
-        refreshKey: Q
+        refreshKey: K
       }
     ) : c === "feedback" && L ? /* @__PURE__ */ e(
-      Jt,
+      Xt,
       {
         apiBaseUrl: t,
         adminKey: p,
         colors: a,
         isDarkMode: W,
-        refreshKey: Q
+        refreshKey: K
       }
     ) : /* @__PURE__ */ n("div", { style: {
       display: "flex",
-      flexDirection: I ? "column" : "row",
+      flexDirection: z ? "column" : "row",
       flex: 1,
       overflow: "hidden"
     }, children: [
       /* @__PURE__ */ n("aside", { style: {
-        width: I ? "100%" : "380px",
-        flex: I ? "1 1 auto" : "0 0 auto",
+        width: z ? "100%" : "380px",
+        flex: z ? "1 1 auto" : "0 0 auto",
         minHeight: 0,
-        borderRight: I ? "none" : `1px solid ${a.border}`,
-        borderBottom: I ? `1px solid ${a.border}` : "none",
-        display: I && l ? "none" : "flex",
+        borderRight: z ? "none" : `1px solid ${a.border}`,
+        borderBottom: z ? `1px solid ${a.border}` : "none",
+        display: z && l ? "none" : "flex",
         flexDirection: "column",
         background: a.bgSecondary,
         overflow: "hidden"
       }, children: [
         /* @__PURE__ */ n("div", { style: {
-          padding: I ? "12px" : "16px",
+          padding: z ? "12px" : "16px",
           display: "flex",
           gap: "8px",
           flexWrap: "wrap",
@@ -4220,8 +4240,8 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             "select",
             {
               "data-testid": "status-filter",
-              value: u,
-              onChange: (o) => z(o.target.value),
+              value: g,
+              onChange: (o) => I(o.target.value),
               style: {
                 padding: "10px 14px",
                 border: "none",
@@ -4238,6 +4258,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                 /* @__PURE__ */ e("option", { value: "open", children: "Open" }),
                 /* @__PURE__ */ e("option", { value: "fixed", children: "Fixed" }),
                 /* @__PURE__ */ e("option", { value: "resolved", children: "Resolved" }),
+                /* @__PURE__ */ e("option", { value: "closed", children: "クローズ" }),
                 /* @__PURE__ */ e("option", { value: "rejected", children: "Rejected" })
               ]
             }
@@ -4294,10 +4315,10 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               top: "50%",
               transform: "translateY(-50%)",
               color: a.textMuted
-            }, children: /* @__PURE__ */ e(R, { name: "search", size: 18 }) })
+            }, children: /* @__PURE__ */ e(T, { name: "search", size: 18 }) })
           ] })
         ] }),
-        P != null && /* @__PURE__ */ e("div", { style: {
+        H != null && /* @__PURE__ */ e("div", { style: {
           padding: "8px 16px",
           borderBottom: `1px solid ${a.border}`,
           display: "flex",
@@ -4315,7 +4336,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
           gap: "6px"
         }, children: [
           "テストケース #",
-          P,
+          H,
           /* @__PURE__ */ e(
             "button",
             {
@@ -4338,28 +4359,28 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
           overflow: "auto",
           padding: "12px"
         }, children: [
-          q && /* @__PURE__ */ n("div", { style: {
+          V && /* @__PURE__ */ n("div", { style: {
             padding: "40px",
             textAlign: "center",
             color: a.textMuted
           }, children: [
-            /* @__PURE__ */ e(R, { name: "hourglass_empty", size: 32 }),
+            /* @__PURE__ */ e(T, { name: "hourglass_empty", size: 32 }),
             /* @__PURE__ */ e("div", { style: { marginTop: "8px" }, children: "読み込み中..." })
           ] }),
-          Z && /* @__PURE__ */ e("div", { style: {
+          Y && /* @__PURE__ */ e("div", { style: {
             padding: "16px",
             background: a.errorBg,
             color: a.error,
             borderRadius: "12px",
             margin: "8px",
             fontSize: "13px"
-          }, children: Z.message }),
-          !q && ge.length === 0 && /* @__PURE__ */ n("div", { style: {
+          }, children: Y.message }),
+          !V && ge.length === 0 && /* @__PURE__ */ n("div", { style: {
             padding: "40px",
             textAlign: "center",
             color: a.textMuted
           }, children: [
-            /* @__PURE__ */ e(R, { name: "inbox", size: 40 }),
+            /* @__PURE__ */ e(T, { name: "inbox", size: 40 }),
             /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "ノートがありません" })
           ] }),
           ge.map((o) => /* @__PURE__ */ n(
@@ -4375,7 +4396,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                 boxShadow: (l == null ? void 0 : l.id) === o.id ? `0 4px 12px ${a.primary}30` : `0 1px 3px ${a.border}`,
                 transition: "all 0.2s"
               },
-              onClick: () => ze(o),
+              onClick: () => Ce(o),
               children: [
                 /* @__PURE__ */ n("div", { style: {
                   display: "flex",
@@ -4391,13 +4412,13 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                     "#",
                     o.id
                   ] }),
-                  /* @__PURE__ */ n("span", { style: Ye(o.severity, a), children: [
-                    /* @__PURE__ */ e(R, { name: Ue(o.severity), size: 14 }),
+                  /* @__PURE__ */ n("span", { style: Xe(o.severity, a), children: [
+                    /* @__PURE__ */ e(T, { name: Ye(o.severity), size: 14 }),
                     /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: o.severity || "none" })
                   ] }),
                   /* @__PURE__ */ n("span", { style: Re(o.status, a), children: [
-                    /* @__PURE__ */ e(R, { name: Qe(o.status), size: 14 }),
-                    /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: o.status })
+                    /* @__PURE__ */ e(T, { name: Ue(o.status), size: 14 }),
+                    /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: Se(o.status) })
                   ] }),
                   o.source === "test" && /* @__PURE__ */ e("span", { style: {
                     fontSize: "11px",
@@ -4418,7 +4439,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                     alignItems: "center",
                     gap: "3px"
                   }, children: [
-                    /* @__PURE__ */ e(R, { name: "image", size: 12 }),
+                    /* @__PURE__ */ e(T, { name: "image", size: 12 }),
                     o.attachment_count
                   ] })
                 ] }),
@@ -4428,7 +4449,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                   marginBottom: "8px",
                   color: a.text,
                   lineHeight: 1.4
-                }, children: Je(o.content) }),
+                }, children: Ze(o.content) }),
                 /* @__PURE__ */ n("div", { style: {
                   display: "flex",
                   alignItems: "center",
@@ -4446,7 +4467,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                     fontFamily: "monospace",
                     fontSize: "11px"
                   }, children: [
-                    /* @__PURE__ */ e(R, { name: "link", size: 12 }),
+                    /* @__PURE__ */ e(T, { name: "link", size: 12 }),
                     o.route || "/"
                   ] }),
                   /* @__PURE__ */ e("span", { style: { margin: "0 2px" }, children: "·" }),
@@ -4464,7 +4485,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                   alignItems: "flex-start",
                   gap: "6px"
                 }, children: [
-                  /* @__PURE__ */ e(R, { name: "chat_bubble_outline", size: 14 }),
+                  /* @__PURE__ */ e(T, { name: "chat_bubble_outline", size: 14 }),
                   /* @__PURE__ */ e("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: o.latest_comment.length > 60 ? o.latest_comment.slice(0, 60) + "..." : o.latest_comment })
                 ] })
               ]
@@ -4482,27 +4503,32 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
           color: a.textMuted
         }, children: [
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(R, { name: "description", size: 16 }),
+            /* @__PURE__ */ e(T, { name: "description", size: 16 }),
             M.length,
             " 件"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(R, { name: "error", size: 16, color: a.error }),
+            /* @__PURE__ */ e(T, { name: "error", size: 16, color: a.error }),
             M.filter((o) => o.status === "open").length,
             " Open"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(R, { name: "build", size: 16, color: a.warning }),
+            /* @__PURE__ */ e(T, { name: "build", size: 16, color: a.warning }),
             M.filter((o) => o.status === "fixed").length,
             " Fixed"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(R, { name: "check_circle", size: 16, color: a.success }),
+            /* @__PURE__ */ e(T, { name: "check_circle", size: 16, color: a.success }),
             M.filter((o) => o.status === "resolved").length,
             " Resolved"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(R, { name: "undo", size: 16, color: a.error }),
+            /* @__PURE__ */ e(T, { name: "cancel", size: 16, color: a.textMuted }),
+            M.filter((o) => o.status === "closed").length,
+            " クローズ"
+          ] }),
+          /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
+            /* @__PURE__ */ e(T, { name: "undo", size: 16, color: a.error }),
             M.filter((o) => o.status === "rejected").length,
             " Rejected"
           ] })
@@ -4511,11 +4537,11 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
       /* @__PURE__ */ e("main", { style: {
         flex: 1,
         overflow: "auto",
-        padding: I ? "16px" : "32px",
+        padding: z ? "16px" : "32px",
         background: a.bg,
-        display: I && !l ? "none" : "block"
+        display: z && !l ? "none" : "block"
       }, children: l ? /* @__PURE__ */ n("div", { style: { maxWidth: "800px" }, children: [
-        I && /* @__PURE__ */ n(
+        z && /* @__PURE__ */ n(
           "button",
           {
             onClick: () => k(null),
@@ -4534,7 +4560,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               cursor: "pointer"
             },
             children: [
-              /* @__PURE__ */ e(R, { name: "arrow_back", size: 16, color: a.textSecondary }),
+              /* @__PURE__ */ e(T, { name: "arrow_back", size: 16, color: a.textSecondary }),
               "一覧へ戻る"
             ]
           }
@@ -4543,7 +4569,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: I ? "20px" : "32px",
+          marginBottom: z ? "20px" : "32px",
           flexWrap: "wrap",
           gap: "12px"
         }, children: [
@@ -4554,13 +4580,13 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               gap: "12px",
               marginBottom: "12px"
             }, children: [
-              /* @__PURE__ */ n("span", { style: Ye(l.severity, a), children: [
-                /* @__PURE__ */ e(R, { name: Ue(l.severity), size: 14 }),
+              /* @__PURE__ */ n("span", { style: Xe(l.severity, a), children: [
+                /* @__PURE__ */ e(T, { name: Ye(l.severity), size: 14 }),
                 /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: l.severity || "none" })
               ] }),
               /* @__PURE__ */ n("span", { style: Re(l.status, a), children: [
-                /* @__PURE__ */ e(R, { name: Qe(l.status), size: 14 }),
-                /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: l.status })
+                /* @__PURE__ */ e(T, { name: Ue(l.status), size: 14 }),
+                /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: Se(l.status) })
               ] }),
               l.source === "test" && /* @__PURE__ */ e("span", { style: {
                 fontSize: "11px",
@@ -4578,7 +4604,7 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
               color: a.text,
               lineHeight: 1.3,
               letterSpacing: "-0.025em"
-            }, children: Je(l.content) })
+            }, children: Ze(l.content) })
           ] }),
           /* @__PURE__ */ n("div", { style: { display: "flex", gap: "10px", alignItems: "center" }, children: [
             /* @__PURE__ */ n(
@@ -4588,9 +4614,9 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                 value: l.severity || "",
                 onChange: (o) => {
                   const $ = o.target.value;
-                  Te(l.id, $ || null);
+                  _e(l.id, $ || null);
                 },
-                disabled: g !== null,
+                disabled: u !== null,
                 style: {
                   padding: "10px 16px",
                   border: "none",
@@ -4599,8 +4625,8 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                   color: a.text,
                   fontSize: "13px",
                   fontWeight: 500,
-                  cursor: g !== null ? "not-allowed" : "pointer",
-                  opacity: g !== null ? 0.6 : 1
+                  cursor: u !== null ? "not-allowed" : "pointer",
+                  opacity: u !== null ? 0.6 : 1
                 },
                 children: [
                   /* @__PURE__ */ e("option", { value: "", children: "未設定" }),
@@ -4611,14 +4637,14 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                 ]
               }
             ),
-            g === `severity-${l.id}` && /* @__PURE__ */ e(le, { size: 16, color: a.primary }),
+            u === `severity-${l.id}` && /* @__PURE__ */ e(le, { size: 16, color: a.primary }),
             /* @__PURE__ */ n(
               "select",
               {
                 "data-testid": "status-select",
                 value: l.status,
-                onChange: (o) => Se(l.id, o.target.value),
-                disabled: g !== null,
+                onChange: (o) => $e(l.id, o.target.value),
+                disabled: u !== null,
                 style: {
                   padding: "10px 16px",
                   border: "none",
@@ -4627,39 +4653,40 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
                   color: a.text,
                   fontSize: "13px",
                   fontWeight: 500,
-                  cursor: g !== null ? "not-allowed" : "pointer",
-                  opacity: g !== null ? 0.6 : 1
+                  cursor: u !== null ? "not-allowed" : "pointer",
+                  opacity: u !== null ? 0.6 : 1
                 },
                 children: [
                   /* @__PURE__ */ e("option", { value: "open", children: "Open" }),
                   /* @__PURE__ */ e("option", { value: "fixed", children: "Fixed" }),
                   /* @__PURE__ */ e("option", { value: "resolved", children: "Resolved" }),
+                  /* @__PURE__ */ e("option", { value: "closed", children: "クローズ" }),
                   /* @__PURE__ */ e("option", { value: "rejected", children: "Rejected" })
                 ]
               }
             ),
-            g === `status-${l.id}` && /* @__PURE__ */ e(le, { size: 16, color: a.primary }),
+            u === `status-${l.id}` && /* @__PURE__ */ e(le, { size: 16, color: a.primary }),
             /* @__PURE__ */ n(
               "button",
               {
-                onClick: () => _e(l.id),
-                disabled: g !== null,
+                onClick: () => Ne(l.id),
+                disabled: u !== null,
                 style: {
                   padding: "10px 16px",
                   background: a.errorBg,
                   border: "none",
                   borderRadius: "10px",
                   color: a.error,
-                  cursor: g !== null ? "not-allowed" : "pointer",
+                  cursor: u !== null ? "not-allowed" : "pointer",
                   fontWeight: 500,
                   fontSize: "13px",
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  opacity: g !== null ? 0.6 : 1
+                  opacity: u !== null ? 0.6 : 1
                 },
                 children: [
-                  g === `delete-${l.id}` ? /* @__PURE__ */ e(le, { size: 16, color: a.error }) : /* @__PURE__ */ e(R, { name: "delete", size: 16 }),
+                  u === `delete-${l.id}` ? /* @__PURE__ */ e(le, { size: 16, color: a.error }) : /* @__PURE__ */ e(T, { name: "delete", size: 16 }),
                   "削除"
                 ]
               }
@@ -4696,41 +4723,76 @@ function un({ apiBaseUrl: i, env: r = "dev", feedbackApiBaseUrl: t, feedbackAdmi
             {
               icon: "schedule",
               label: "作成日時",
-              value: Xt(l.created_at),
+              value: Qe(l.created_at),
               colors: a
             }
           ),
           l.test_cases && l.test_cases.length > 0 && /* @__PURE__ */ n("div", { style: {
             gridColumn: "1 / -1",
             display: "flex",
-            flexWrap: "wrap",
-            gap: "6px",
-            alignItems: "center"
+            flexDirection: "column",
+            gap: "8px"
           }, children: [
-            /* @__PURE__ */ e(R, { name: "science", size: 16, color: a.link }),
-            l.test_cases.map((o, $) => /* @__PURE__ */ e(
-              "span",
-              {
-                style: {
-                  fontSize: "12px",
-                  padding: "4px 10px",
-                  borderRadius: "8px",
-                  background: `${a.link}15`,
-                  color: a.link,
-                  fontFamily: "monospace",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px"
+            /* @__PURE__ */ n("div", { style: {
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: a.textSecondary
+            }, children: [
+              /* @__PURE__ */ e(T, { name: "science", size: 16, color: a.link }),
+              "元のテストケース"
+            ] }),
+            l.test_cases.map((o, $) => {
+              const O = [o.domain, o.capability].filter(Boolean);
+              return /* @__PURE__ */ n(
+                "div",
+                {
+                  onClick: () => j(o.id),
+                  title: "クリックでこのテストケースのノートを絞り込み",
+                  style: {
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    border: `1px solid ${a.border}`,
+                    background: a.bgSecondary,
+                    cursor: "pointer"
+                  },
+                  children: [
+                    /* @__PURE__ */ n("div", { style: {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      flexWrap: "wrap"
+                    }, children: [
+                      /* @__PURE__ */ e("span", { style: {
+                        fontSize: "11px",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        background: `${a.link}15`,
+                        color: a.link,
+                        fontFamily: "monospace",
+                        fontWeight: 600
+                      }, children: o.case_key || `#${o.id}` }),
+                      O.length > 0 && /* @__PURE__ */ e("span", { style: {
+                        fontSize: "11px",
+                        color: a.textMuted
+                      }, children: O.join(" / ") })
+                    ] }),
+                    /* @__PURE__ */ e("div", { style: {
+                      fontSize: "13px",
+                      color: a.text,
+                      fontWeight: 500,
+                      lineHeight: 1.4
+                    }, children: o.title || "(タイトル未設定)" })
+                  ]
                 },
-                title: o.case_key ? `${o.domain} / ${o.capability}
-${o.title}` : `#${o.id}`,
-                onClick: () => j(o.id),
-                children: o.case_key || `#${o.id}`
-              },
-              $
-            ))
+                $
+              );
+            })
           ] })
         ] }),
         /* @__PURE__ */ e(pe, { icon: "notes", title: "内容", colors: a, children: /* @__PURE__ */ e("div", { style: {
@@ -4792,7 +4854,7 @@ ${o.title}` : `#${o.id}`,
                   fontSize: "11px",
                   flexShrink: 0
                 },
-                children: /* @__PURE__ */ e(R, { name: "delete", size: 14, color: "#fff" })
+                children: /* @__PURE__ */ e(T, { name: "delete", size: 14, color: "#fff" })
               }
             )
           ] })
@@ -4801,7 +4863,7 @@ ${o.title}` : `#${o.id}`,
           margin: 0,
           paddingLeft: "20px",
           color: a.text
-        }, children: Ie(l.steps).map((o, $) => /* @__PURE__ */ e("li", { style: {
+        }, children: Fe(l.steps).map((o, $) => /* @__PURE__ */ e("li", { style: {
           padding: "8px 0",
           borderBottom: `1px solid ${a.borderLight}`
         }, children: o }, $)) }) }),
@@ -4824,7 +4886,7 @@ ${o.title}` : `#${o.id}`,
           /* @__PURE__ */ e(fe, { icon: "public", label: "URL", value: l.environment.url || "", isLink: !0, colors: a }),
           /* @__PURE__ */ e(fe, { icon: "aspect_ratio", label: "Viewport", value: l.environment.viewport || "", colors: a }),
           /* @__PURE__ */ e(fe, { icon: "computer", label: "User Agent", value: l.environment.userAgent || "", colors: a }),
-          /* @__PURE__ */ e(fe, { icon: "schedule", label: "記録日時", value: l.environment.timestamp || "", colors: a })
+          /* @__PURE__ */ e(fe, { icon: "schedule", label: "記録日時", value: Qe(l.environment.timestamp || ""), colors: a })
         ] }) }),
         l.console_log && l.console_log.length > 0 && /* @__PURE__ */ e(pe, { icon: "terminal", title: `コンソールログ (${l.console_log.length}件)`, colors: a, children: /* @__PURE__ */ e("div", { style: {
           borderRadius: "12px",
@@ -4876,13 +4938,13 @@ ${o.title}` : `#${o.id}`,
                   ...Re(o.old_status, a),
                   fontSize: "10px",
                   padding: "2px 6px"
-                }, children: o.old_status }),
+                }, children: Se(o.old_status) }),
                 /* @__PURE__ */ e("span", { style: { margin: "0 6px", color: a.textMuted }, children: " → " }),
                 /* @__PURE__ */ e("span", { style: {
                   ...Re(o.new_status, a),
                   fontSize: "10px",
                   padding: "2px 6px"
-                }, children: o.new_status })
+                }, children: Se(o.new_status) })
               ] }) : null,
               o.content && /* @__PURE__ */ e("div", { style: {
                 fontSize: "13px",
@@ -4911,7 +4973,7 @@ ${o.title}` : `#${o.id}`,
             /* @__PURE__ */ e(
               "textarea",
               {
-                value: G,
+                value: J,
                 onChange: (o) => _(o.target.value),
                 placeholder: "コメントを追加...",
                 style: {
@@ -4933,15 +4995,15 @@ ${o.title}` : `#${o.id}`,
             /* @__PURE__ */ n(
               "button",
               {
-                onClick: Ce,
-                disabled: C || G.trim() === "",
+                onClick: Ie,
+                disabled: C || J.trim() === "",
                 style: {
                   padding: "10px 16px",
-                  background: C || G.trim() === "" ? a.bgTertiary : a.primary,
+                  background: C || J.trim() === "" ? a.bgTertiary : a.primary,
                   border: "none",
                   borderRadius: "10px",
-                  color: C || G.trim() === "" ? a.textMuted : "#FFF",
-                  cursor: C || G.trim() === "" ? "not-allowed" : "pointer",
+                  color: C || J.trim() === "" ? a.textMuted : "#FFF",
+                  cursor: C || J.trim() === "" ? "not-allowed" : "pointer",
                   fontWeight: 600,
                   fontSize: "13px",
                   display: "flex",
@@ -4950,7 +5012,7 @@ ${o.title}` : `#${o.id}`,
                   flexShrink: 0
                 },
                 children: [
-                  C ? /* @__PURE__ */ e(le, { size: 14, color: a.textMuted }) : /* @__PURE__ */ e(R, { name: "send", size: 16 }),
+                  C ? /* @__PURE__ */ e(le, { size: 14, color: a.textMuted }) : /* @__PURE__ */ e(T, { name: "send", size: 16 }),
                   "送信"
                 ]
               }
@@ -5001,7 +5063,7 @@ ${o.title}` : `#${o.id}`,
         height: "100%",
         color: a.textMuted
       }, children: [
-        /* @__PURE__ */ e(R, { name: "arrow_back", size: 64 }),
+        /* @__PURE__ */ e(T, { name: "arrow_back", size: 64 }),
         /* @__PURE__ */ e("div", { style: { fontSize: "18px", fontWeight: 500, marginTop: "16px" }, children: "ノートを選択してください" }),
         /* @__PURE__ */ e("div", { style: { fontSize: "14px", marginTop: "8px" }, children: "左のリストからノートを選択すると詳細が表示されます" })
       ] }) })
@@ -5041,9 +5103,9 @@ ${o.title}` : `#${o.id}`,
                 alignItems: "center",
                 gap: "8px"
               }, children: [
-                /* @__PURE__ */ e(R, { name: "edit_note", size: 20 }),
+                /* @__PURE__ */ e(T, { name: "edit_note", size: 20 }),
                 "ステータスを「",
-                A.status,
+                Se(A.status),
                 "」に変更"
               ] }),
               /* @__PURE__ */ e(
@@ -5098,8 +5160,8 @@ ${o.title}` : `#${o.id}`,
                 /* @__PURE__ */ n(
                   "button",
                   {
-                    onClick: $e,
-                    disabled: g !== null || (A.status === "fixed" || A.status === "rejected") && F.trim() === "",
+                    onClick: ze,
+                    disabled: u !== null || (A.status === "fixed" || A.status === "rejected") && F.trim() === "",
                     style: {
                       padding: "10px 20px",
                       background: (A.status === "fixed" || A.status === "rejected") && F.trim() === "" ? a.bgTertiary : a.primary,
@@ -5114,7 +5176,7 @@ ${o.title}` : `#${o.id}`,
                       gap: "6px"
                     },
                     children: [
-                      g ? /* @__PURE__ */ e(le, { size: 14, color: "#FFF" }) : /* @__PURE__ */ e(R, { name: "check", size: 16 }),
+                      u ? /* @__PURE__ */ e(le, { size: 14, color: "#FFF" }) : /* @__PURE__ */ e(T, { name: "check", size: 16 }),
                       "変更"
                     ]
                   }
@@ -5174,7 +5236,7 @@ ${o.title}` : `#${o.id}`,
                 alignItems: "center",
                 justifyContent: "center"
               },
-              children: /* @__PURE__ */ e(R, { name: "close", size: 24, color: "#fff" })
+              children: /* @__PURE__ */ e(T, { name: "close", size: 24, color: "#fff" })
             }
           )
         ]
@@ -5188,27 +5250,27 @@ ${o.title}` : `#${o.id}`,
       ` })
   ] });
 }
-function fe({ icon: i, label: r, value: t, isLink: p, colors: u }) {
+function fe({ icon: i, label: r, value: t, isLink: p, colors: g }) {
   return /* @__PURE__ */ n("div", { style: {
     padding: "16px",
-    background: u.bgSecondary,
+    background: g.bgSecondary,
     borderRadius: "12px"
   }, children: [
     /* @__PURE__ */ n("div", { style: {
       fontSize: "12px",
-      color: u.textMuted,
+      color: g.textMuted,
       marginBottom: "6px",
       display: "flex",
       alignItems: "center",
       gap: "6px"
     }, children: [
-      /* @__PURE__ */ e(R, { name: i, size: 16 }),
+      /* @__PURE__ */ e(T, { name: i, size: 16 }),
       r
     ] }),
     /* @__PURE__ */ e("div", { style: {
       fontSize: "14px",
       fontWeight: 500,
-      color: p ? u.link : u.text,
+      color: p ? g.link : g.text,
       fontFamily: p ? '"Fira Code", monospace' : "inherit",
       wordBreak: "break-all"
     }, children: t })
@@ -5225,31 +5287,24 @@ function pe({ icon: i, title: r, children: t, colors: p }) {
       alignItems: "center",
       gap: "8px"
     }, children: [
-      /* @__PURE__ */ e(R, { name: i, size: 18 }),
+      /* @__PURE__ */ e(T, { name: i, size: 18 }),
       r
     ] }),
     t
   ] });
 }
-function Je(i, r = 60) {
+function Ze(i, r = 60) {
   const t = i.split(`
 `)[0];
   return t.length > r ? t.slice(0, r) + "..." : t;
 }
 function Ke(i) {
-  const r = new Date(i), t = r.getMonth() + 1, p = r.getDate(), u = r.getHours().toString().padStart(2, "0"), z = r.getMinutes().toString().padStart(2, "0");
-  return `${t}/${p} ${u}:${z}`;
-}
-function Xt(i) {
-  return new Date(i).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  return dt(i);
 }
 function Qe(i) {
+  return lt(i);
+}
+function Ue(i) {
   switch (i) {
     case "open":
       return "error";
@@ -5259,9 +5314,14 @@ function Qe(i) {
       return "check_circle";
     case "rejected":
       return "undo";
+    case "closed":
+      return "cancel";
   }
 }
-function Ue(i) {
+function Se(i) {
+  return i === "closed" ? "クローズ" : i ?? "";
+}
+function Ye(i) {
   switch (i) {
     case "critical":
       return "error";
@@ -5275,7 +5335,7 @@ function Ue(i) {
       return "remove";
   }
 }
-function Ye(i, r) {
+function Xe(i, r) {
   const t = i ? r[i] : r.textMuted;
   return {
     fontSize: "11px",
@@ -5305,6 +5365,9 @@ function Re(i, r) {
     case "rejected":
       t = r.errorBg, p = r.error;
       break;
+    case "closed":
+      t = r.bgTertiary, p = r.textMuted;
+      break;
   }
   return {
     fontSize: "11px",
@@ -5319,7 +5382,7 @@ function Re(i, r) {
     alignItems: "center"
   };
 }
-function en(i) {
+function on(i) {
   return {
     display: "flex",
     flexDirection: "column",
@@ -5330,7 +5393,7 @@ function en(i) {
     background: i.bg
   };
 }
-function tn(i) {
+function sn(i) {
   return {
     display: "flex",
     justifyContent: "space-between",
@@ -5340,13 +5403,13 @@ function tn(i) {
     background: i.bg
   };
 }
-function gn({
+function mn({
   apiBaseUrl: i,
   env: r = "dev",
   testCases: t,
   manualItems: p,
-  manualDefaultPath: u,
-  onManualNavigate: z,
+  manualDefaultPath: g,
+  onManualNavigate: I,
   onManualAppNavigate: h,
   environmentsMd: x,
   onSave: m,
@@ -5356,37 +5419,37 @@ function gn({
   adminRoutePath: W = "/__admin",
   triggerOffset: b
 }) {
-  const { isDebugMode: I } = lt();
+  const { isDebugMode: z } = xt();
   ne(() => {
-    i && Le(i);
+    i && We(i);
   }, [i]);
-  const E = ye(() => k || !i ? null : mt(
+  const N = ye(() => k || !i ? null : $t(
     l ?? { console: !0, network: ["/api/**"] }
-  ), [i, k]), [y, T] = w(() => typeof window > "u" ? !1 : window.location.pathname === W);
+  ), [i, k]), [y, B] = w(() => typeof window > "u" ? !1 : window.location.pathname === W);
   return ne(() => {
     if (typeof window > "u") return;
-    const S = () => T(window.location.pathname === W);
+    const S = () => B(window.location.pathname === W);
     S(), window.addEventListener("popstate", S), window.addEventListener("hashchange", S);
-    const c = window.history.pushState, O = window.history.replaceState;
+    const c = window.history.pushState, P = window.history.replaceState;
     return window.history.pushState = function(...L) {
-      const P = c.apply(this, L);
-      return S(), P;
+      const H = c.apply(this, L);
+      return S(), H;
     }, window.history.replaceState = function(...L) {
-      const P = O.apply(this, L);
-      return S(), P;
+      const H = P.apply(this, L);
+      return S(), H;
     }, () => {
-      window.removeEventListener("popstate", S), window.removeEventListener("hashchange", S), window.history.pushState = c, window.history.replaceState = O;
+      window.removeEventListener("popstate", S), window.removeEventListener("hashchange", S), window.history.pushState = c, window.history.replaceState = P;
     };
-  }, [W]), !i || !(I || y) ? null : /* @__PURE__ */ e(
-    Nt,
+  }, [W]), !i || !(z || y) ? null : /* @__PURE__ */ e(
+    jt,
     {
       apiBaseUrl: i,
       env: r,
       testCases: t,
-      logCapture: E ?? void 0,
+      logCapture: N ?? void 0,
       manualItems: p,
-      manualDefaultPath: u,
-      onManualNavigate: z,
+      manualDefaultPath: g,
+      onManualNavigate: I,
       onManualAppNavigate: h,
       environmentsMd: x,
       onSave: m,
@@ -5396,8 +5459,8 @@ function gn({
   );
 }
 export {
-  un as D,
-  Nt as a,
-  gn as b,
-  St as p
+  bn as D,
+  jt as a,
+  mn as b,
+  Tt as p
 };

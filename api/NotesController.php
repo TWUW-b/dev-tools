@@ -249,7 +249,7 @@ class NotesController
     public function updateStatus(int $id, array $input): array
     {
         $status = $input['status'] ?? null;
-        if (!in_array($status, ['open', 'resolved', 'rejected', 'fixed'], true)) {
+        if (!in_array($status, ['open', 'resolved', 'rejected', 'fixed', 'closed'], true)) {
             return ['success' => false, 'error' => 'Invalid status'];
         }
 
@@ -435,13 +435,14 @@ class NotesController
             [$env]
         );
 
+        // DB は UTC 保存。エクスポートは JST(+09:00) に変換して出力する。
         $data = [
-            'exportedAt' => date('c'),
+            'exportedAt' => Database::toJstIso(gmdate('Y-m-d H:i:s')),
             'env' => $env,
             'version' => '1.0.0',
-            'notes' => $notes,
-            'testCases' => $testCases,
-            'testRuns' => $testRuns,
+            'notes' => Database::rowsToJst($notes),
+            'testCases' => Database::rowsToJst($testCases),
+            'testRuns' => Database::rowsToJst($testRuns),
         ];
 
         header('Content-Type: application/json; charset=utf-8');

@@ -9,6 +9,47 @@ class Database
 {
     private PDO $pdo;
 
+    /**
+     * DB(SQLite) は created_at 等を "YYYY-MM-DD HH:MM:SS" 形式の UTC で保存する
+     * (CURRENT_TIMESTAMP, タイムゾーン表記なし)。エクスポート(JSON/CSV)はフロントの
+     * 表示変換を経由しないため、ここで UTC → JST(+09:00) の ISO8601 に変換する。
+     *
+     * @return string|null TZ 付き ISO8601 (例: 2026-05-29T18:00:00+09:00) / 入力が空なら null
+     */
+    public static function toJstIso(?string $utc): ?string
+    {
+        if ($utc === null || $utc === '') {
+            return $utc;
+        }
+        try {
+            $hasTz = preg_match('/[Zz]$|[+-]\d{2}:?\d{2}$/', $utc) === 1;
+            $dt = new DateTime($utc, $hasTz ? null : new DateTimeZone('UTC'));
+            $dt->setTimezone(new DateTimeZone('Asia/Tokyo'));
+            return $dt->format('c');
+        } catch (Exception $e) {
+            return $utc;
+        }
+    }
+
+    /**
+     * 行配列の指定フィールド(created_at 等)を JST ISO8601 に変換して返す。
+     *
+     * @param array $rows   連想配列の行リスト
+     * @param array $fields 変換対象キー
+     */
+    public static function rowsToJst(array $rows, array $fields = ['created_at', 'updated_at', 'deleted_at', 'archived_at']): array
+    {
+        foreach ($rows as &$row) {
+            foreach ($fields as $f) {
+                if (array_key_exists($f, $row)) {
+                    $row[$f] = self::toJstIso($row[$f]);
+                }
+            }
+        }
+        unset($row);
+        return $rows;
+    }
+
     public function __construct(string $dbPath)
     {
         // ディレクトリが存在しない場合は作成

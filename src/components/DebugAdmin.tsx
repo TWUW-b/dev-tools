@@ -5,6 +5,7 @@ import type { DebugAdminProps, Note, NoteActivity, NoteAttachment, Status, Sever
 import { Icon, Spinner } from './shared';
 import { TestStatusTab } from './admin/TestStatusTab';
 import { FeedbackTab } from './admin/FeedbackTab';
+import { formatJstDateTime, formatJstShort } from '../utils/datetime';
 
 // ライトモード カラー定義
 const LIGHT_COLORS = {
@@ -188,7 +189,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
 
   // ステータス更新（コメント付き）
   const handleStatusChange = useCallback((id: number, status: Status) => {
-    if (status === 'fixed' || status === 'resolved' || status === 'rejected') {
+    if (status === 'fixed' || status === 'resolved' || status === 'rejected' || status === 'closed') {
       setPendingStatusChange({ id, status });
       setCommentText('');
     } else {
@@ -596,6 +597,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
               <option value="open">Open</option>
               <option value="fixed">Fixed</option>
               <option value="resolved">Resolved</option>
+              <option value="closed">クローズ</option>
               <option value="rejected">Rejected</option>
             </select>
             <select
@@ -760,7 +762,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                   </span>
                   <span style={getStatusBadge(note.status, colors)}>
                     <Icon name={getStatusIcon(note.status)} size={14} />
-                    <span style={{ marginLeft: '4px' }}>{note.status}</span>
+                    <span style={{ marginLeft: '4px' }}>{statusLabel(note.status)}</span>
                   </span>
                   {note.source === 'test' && (
                     <span style={{
@@ -869,6 +871,10 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
               {notes.filter(n => n.status === 'resolved').length} Resolved
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Icon name="cancel" size={16} color={colors.textMuted} />
+              {notes.filter(n => n.status === 'closed').length} クローズ
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Icon name="undo" size={16} color={colors.error} />
               {notes.filter(n => n.status === 'rejected').length} Rejected
             </span>
@@ -930,7 +936,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                     </span>
                     <span style={getStatusBadge(selectedNote.status, colors)}>
                       <Icon name={getStatusIcon(selectedNote.status)} size={14} />
-                      <span style={{ marginLeft: '4px' }}>{selectedNote.status}</span>
+                      <span style={{ marginLeft: '4px' }}>{statusLabel(selectedNote.status)}</span>
                     </span>
                     {selectedNote.source === 'test' && (
                       <span style={{
@@ -1000,6 +1006,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                     <option value="open">Open</option>
                     <option value="fixed">Fixed</option>
                     <option value="resolved">Resolved</option>
+                    <option value="closed">クローズ</option>
                     <option value="rejected">Rejected</option>
                   </select>
                   {loadingAction === `status-${selectedNote.id}` && <Spinner size={16} color={colors.primary} />}
@@ -1060,35 +1067,75 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                   <div style={{
                     gridColumn: '1 / -1',
                     display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    alignItems: 'center',
+                    flexDirection: 'column',
+                    gap: '8px',
                   }}>
-                    <Icon name="science" size={16} color={colors.link} />
-                    {selectedNote.test_cases.map((tc, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: '12px',
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          background: `${colors.link}15`,
-                          color: colors.link,
-                          fontFamily: 'monospace',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                        title={tc.case_key
-                          ? `${tc.domain} / ${tc.capability}\n${tc.title}`
-                          : `#${tc.id}`}
-                        onClick={() => setTestCaseIdFilter(tc.id)}
-                      >
-                        {tc.case_key || `#${tc.id}`}
-                      </span>
-                    ))}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: colors.textSecondary,
+                    }}>
+                      <Icon name="science" size={16} color={colors.link} />
+                      元のテストケース
+                    </div>
+                    {selectedNote.test_cases.map((tc, i) => {
+                      const pathParts = [tc.domain, tc.capability].filter(Boolean) as string[];
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => setTestCaseIdFilter(tc.id)}
+                          title="クリックでこのテストケースのノートを絞り込み"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            border: `1px solid ${colors.border}`,
+                            background: colors.bgSecondary,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap',
+                          }}>
+                            <span style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: `${colors.link}15`,
+                              color: colors.link,
+                              fontFamily: 'monospace',
+                              fontWeight: 600,
+                            }}>
+                              {tc.case_key || `#${tc.id}`}
+                            </span>
+                            {pathParts.length > 0 && (
+                              <span style={{
+                                fontSize: '11px',
+                                color: colors.textMuted,
+                              }}>
+                                {pathParts.join(' / ')}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{
+                            fontSize: '13px',
+                            color: colors.text,
+                            fontWeight: 500,
+                            lineHeight: 1.4,
+                          }}>
+                            {tc.title || '(タイトル未設定)'}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1212,7 +1259,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                     <MetaCard icon="public" label="URL" value={(selectedNote.environment as EnvironmentInfo).url || ''} isLink colors={colors} />
                     <MetaCard icon="aspect_ratio" label="Viewport" value={(selectedNote.environment as EnvironmentInfo).viewport || ''} colors={colors} />
                     <MetaCard icon="computer" label="User Agent" value={(selectedNote.environment as EnvironmentInfo).userAgent || ''} colors={colors} />
-                    <MetaCard icon="schedule" label="記録日時" value={(selectedNote.environment as EnvironmentInfo).timestamp || ''} colors={colors} />
+                    <MetaCard icon="schedule" label="記録日時" value={formatDateTime((selectedNote.environment as EnvironmentInfo).timestamp || '')} colors={colors} />
                   </div>
                 </Section>
               )}
@@ -1282,13 +1329,13 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
                                 ...getStatusBadge(act.old_status as Status, colors),
                                 fontSize: '10px',
                                 padding: '2px 6px',
-                              }}>{act.old_status}</span>
+                              }}>{statusLabel(act.old_status)}</span>
                               <span style={{ margin: '0 6px', color: colors.textMuted }}> → </span>
                               <span style={{
                                 ...getStatusBadge(act.new_status as Status, colors),
                                 fontSize: '10px',
                                 padding: '2px 6px',
-                              }}>{act.new_status}</span>
+                              }}>{statusLabel(act.new_status)}</span>
                             </div>
                           ) : null}
                           {act.content && (
@@ -1465,7 +1512,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
               gap: '8px',
             }}>
               <Icon name="edit_note" size={20} />
-              ステータスを「{pendingStatusChange.status}」に変更
+              ステータスを「{statusLabel(pendingStatusChange.status)}」に変更
             </h3>
             <textarea
               value={commentText}
@@ -1677,24 +1724,13 @@ function getContentPreview(content: string, maxLength = 60): string {
   return firstLine.length > maxLength ? firstLine.slice(0, maxLength) + '...' : firstLine;
 }
 
+// DB は UTC 保存。表示は JST に変換する（datetime ユーティリティに委譲）。
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
+  return formatJstShort(dateStr);
 }
 
 function formatDateTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatJstDateTime(dateStr);
 }
 
 function getStatusIcon(status: Status): string {
@@ -1703,7 +1739,13 @@ function getStatusIcon(status: Status): string {
     case 'fixed': return 'build';
     case 'resolved': return 'check_circle';
     case 'rejected': return 'undo';
+    case 'closed': return 'cancel';
   }
+}
+
+/** status の表示ラベル。closed のみ日本語「クローズ」、他は値そのまま */
+function statusLabel(s: Status | null): string {
+  return s === 'closed' ? 'クローズ' : (s ?? '');
 }
 
 function getSeverityIcon(severity: Severity | null): string {
@@ -1752,6 +1794,10 @@ function getStatusBadge(status: Status, colors: typeof LIGHT_COLORS): React.CSSP
     case 'rejected':
       bg = colors.errorBg;
       fg = colors.error;
+      break;
+    case 'closed':
+      bg = colors.bgTertiary;
+      fg = colors.textMuted;
       break;
   }
 

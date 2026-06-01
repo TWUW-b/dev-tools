@@ -303,3 +303,67 @@ test("PATCH same status → 200 no-op, no activity recorded", async () => {
 
   await deleteNote(id);
 });
+
+// ─── closed status（質問だった/テストケース誤り → 完了扱い、コメント任意） ───
+
+describe("Status change to closed", () => {
+  test("PATCH status=closed without comment → 200 (comment optional like resolved)", async () => {
+    const { id } = await createNote();
+
+    const res = await api(`/notes/${id}/status`, {
+      method: "PATCH",
+      json: { status: "closed" },
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
+
+    await deleteNote(id);
+  });
+
+  test("PATCH status=closed records status_change activity", async () => {
+    const { id } = await createNote();
+
+    await api(`/notes/${id}/status`, {
+      method: "PATCH",
+      json: { status: "closed", comment: "これは質問でした" },
+    });
+
+    const res = await api(`/notes/${id}/activities`);
+    const body = await res.json();
+    expect(body.activities).toHaveLength(1);
+    expect(body.activities[0].action).toBe("status_change");
+    expect(body.activities[0].old_status).toBe("open");
+    expect(body.activities[0].new_status).toBe("closed");
+    expect(body.activities[0].content).toBe("これは質問でした");
+
+    await deleteNote(id);
+  });
+
+  test("PATCH status=invalid → 400", async () => {
+    const { id } = await createNote();
+
+    const res = await api(`/notes/${id}/status`, {
+      method: "PATCH",
+      json: { status: "not_a_status" },
+    });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("Invalid status");
+
+    await deleteNote(id);
+  });
+
+  test("every valid status incl. closed → 200", async () => {
+    const { id } = await createNote();
+
+    for (const status of ["fixed", "resolved", "rejected", "closed", "open"]) {
+      const needsComment = status === "fixed" || status === "rejected";
+      const res = await api(`/notes/${id}/status`, {
+        method: "PATCH",
+        json: needsComment ? { status, comment: "理由コメント" } : { status },
+      });
+      expect(res.status).toBe(200);
+    }
+
+    await deleteNote(id);
+  });
+});

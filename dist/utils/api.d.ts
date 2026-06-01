@@ -85,6 +85,8 @@ export declare const api: {
     submitTestRuns(env: Environment, runs: TestRunInput[], failNote?: {
         content: string;
         severity?: Severity;
+        route?: string;
+        screenName?: string;
         consoleLogs?: import("../types").ConsoleLogEntry[];
         networkLogs?: import("../types").NetworkLogEntry[];
         environment?: import("../types").EnvironmentInfo;

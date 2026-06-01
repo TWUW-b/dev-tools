@@ -272,14 +272,28 @@ export const api = {
   async submitTestRuns(env: Environment, runs: TestRunInput[], failNote?: {
     content: string;
     severity?: Severity;
+    route?: string;
+    screenName?: string;
     consoleLogs?: import('../types').ConsoleLogEntry[];
     networkLogs?: import('../types').NetworkLogEntry[];
     environment?: import('../types').EnvironmentInfo;
   }): Promise<TestRunResponse> {
+    // バグ報告ノートにも通常ノート (createNote) と同様、現在ページの route / screen_name を付与する。
+    // これが無いとバックエンドが空文字で保存し、管理画面で「/」「(不明)」固定表示になる。
+    const notePayload = failNote
+      ? {
+          ...failNote,
+          route: failNote.route || (typeof window !== 'undefined'
+            ? window.location.pathname + window.location.search + window.location.hash
+            : ''),
+          screen_name: failNote.screenName || (typeof document !== 'undefined' ? document.title : ''),
+        }
+      : undefined;
+
     const response = await dbgFetch(`${apiBaseUrl}/test-runs?env=${env}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ runs, failNote }),
+      body: JSON.stringify({ runs, failNote: notePayload }),
     });
 
     const data = await parseResponse<{ success: boolean; results: TestRunResponse['results']; capability: TestRunResponse['capability']; error?: string }>(response);

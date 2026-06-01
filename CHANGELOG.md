@@ -2,6 +2,25 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.13] - 2026-06-01
+
+### Added
+
+- **ステータス `closed`（クローズ）** を追加
+  - 登録内容が質問だった / テストケース自体の誤りだった場合に使う完了系ステータス
+  - `resolved` 同様にコメント任意。一覧フィルタ・ステータス変更・統計に対応
+- **ノート詳細でテストケースの階層情報を直接表示**
+  - 紐付くテストケースの Domain / Capability / Title（+ case_key）を hover 依存せず読める形に改善
+- 日時表示・エクスポートユーティリティ `src/utils/datetime.ts` を追加
+
+### Fixed
+
+- **テスト失敗報告ノートの「ページURL」「ページタイトル」が `/`・`(不明)` 固定になる不具合を修正**
+  - `submitTestRuns` の failNote に現在ページの route / screen_name を付与
+  - `TestController` → `NotesController::create` へ route / screenName（camelCase）を転送
+- **保存日時が UTC のまま表示されていた問題を JST 表示に修正**
+  - DB は UTC 保存のまま、フロント表示（DebugAdmin / FeedbackTab）と JSON/CSV エクスポートを JST(+09:00) に変換
+
 ## [1.2.12] - 2026-05-28
 
 ### Fixed

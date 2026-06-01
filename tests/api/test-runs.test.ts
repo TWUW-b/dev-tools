@@ -53,6 +53,28 @@ describe("Test Runs", () => {
     expect(body.results[0].noteId).toBeDefined();
   });
 
+  test("failNote persists route / screen_name (no '/' / empty fallback)", async () => {
+    const res = await api("/test-runs", {
+      method: "POST",
+      json: {
+        runs: [{ caseId, result: "fail" }],
+        failNote: {
+          content: "PiP open while reporting",
+          severity: "high",
+          route: "/orders/123?tab=pip",
+          screen_name: "Order Detail",
+        },
+      },
+    });
+    expect(res.status).toBe(200);
+    const noteId = (await res.json()).results[0].noteId;
+    expect(noteId).toBeGreaterThan(0);
+
+    const detail = await (await api(`/notes/${noteId}`)).json();
+    expect(detail.note.route).toBe("/orders/123?tab=pip");
+    expect(detail.note.screen_name).toBe("Order Detail");
+  });
+
   test("POST /test-runs (fail + individual note) → 200 with noteId", async () => {
     const res = await api("/test-runs", {
       method: "POST",

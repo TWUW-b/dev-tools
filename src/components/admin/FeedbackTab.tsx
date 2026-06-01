@@ -3,6 +3,7 @@ import { useFeedbackAdmin } from '../../hooks/useFeedbackAdmin';
 import { getFeedbackDetail, deleteFeedbackAttachment, exportFeedbacks } from '../../utils/feedbackApi';
 import type { Feedback, FeedbackKind, FeedbackStatus, FeedbackTarget, ConsoleLogEntry, NetworkLogEntry, NoteAttachment } from '../../types';
 import { Icon, Spinner } from '../shared';
+import { formatJstDateTime, formatJstShort } from '../../utils/datetime';
 
 interface Colors {
   bg: string;
@@ -970,22 +971,11 @@ function Section({ icon, title, children, colors }: {
   );
 }
 
+// DB は UTC 保存。表示は JST に変換する（datetime ユーティリティに委譲）。
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
+  return formatJstShort(dateStr);
 }
 
 function formatDateTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatJstDateTime(dateStr);
 }

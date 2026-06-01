@@ -371,6 +371,9 @@ class TestController
                         'severity' => $failNote['severity'] ?? null,
                         'source' => 'test',
                         'testCaseIds' => $failCaseIds,
+                        'route' => $failNote['route'] ?? '',
+                        // NotesController::create は screen_name を camelCase 'screenName' で読む
+                        'screenName' => $failNote['screen_name'] ?? '',
                         'consoleLogs' => $failNote['consoleLogs'] ?? null,
                         'networkLogs' => $failNote['networkLogs'] ?? null,
                         'environment' => $failNote['environment'] ?? null,

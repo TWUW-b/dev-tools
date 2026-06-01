@@ -392,12 +392,15 @@ class FeedbackController
 
         $formatted = array_map(function ($row) use ($attachmentMap) {
             $data = $this->formatRow($row, true);
+            // DB は UTC 保存。エクスポートは JST(+09:00) に変換して出力する。
+            $data['createdAt'] = Database::toJstIso($data['createdAt'] ?? null);
+            $data['updatedAt'] = Database::toJstIso($data['updatedAt'] ?? null);
             $data['attachments'] = $attachmentMap[$row['id']] ?? [];
             return $data;
         }, $feedbacks);
 
         $data = [
-            'exportedAt' => date('c'),
+            'exportedAt' => Database::toJstIso(gmdate('Y-m-d H:i:s')),
             'version' => '1.0.0',
             'total' => count($formatted),
             'feedbacks' => $formatted,
@@ -443,8 +446,8 @@ class FeedbackController
                 $row['user_type'] ?? '',
                 $row['app_version'] ?? '',
                 $row['attachment_count'] ?? 0,
-                $row['created_at'],
-                $row['updated_at'],
+                Database::toJstIso($row['created_at']),
+                Database::toJstIso($row['updated_at']),
             ]);
         }
 

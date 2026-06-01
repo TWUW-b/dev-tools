@@ -35,7 +35,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
     setLoadingAction(`status-${id}`);
     try {
       await updateStatus(id, status);
-      if (status === 'resolved') {
+      if (status === 'resolved' || status === 'closed') {
         setCheckedItems(prev => {
           const next = { ...prev };
           delete next[id];
@@ -65,7 +65,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
       {/* ステータスフィルタ */}
       <div className="debug-manage-toolbar">
         <div className="debug-status-filter">
-          {(['open', 'fixed', 'resolved', 'rejected'] as Status[]).map(s => (
+          {(['open', 'fixed', 'resolved', 'closed', 'rejected'] as Status[]).map(s => (
             <button
               key={s}
               data-testid={`status-chip-${s}`}
@@ -79,7 +79,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
                 });
               }}
             >
-              {s}
+              {s === 'closed' ? 'クローズ' : s}
             </button>
           ))}
           <span className="debug-filter-count">{activeNotes.length}件</span>
@@ -127,6 +127,7 @@ export function ManageTab({ notes, updateStatus }: ManageTabProps) {
                   <option value="open">open</option>
                   <option value="fixed">fixed</option>
                   <option value="resolved">resolved</option>
+                  <option value="closed">クローズ</option>
                   <option value="rejected">rejected</option>
                 </select>
               </div>

@@ -2,11 +2,11 @@ let c = "/__debug/api";
 function p(e) {
   c = e.replace(/\/$/, "");
 }
-function $() {
+function m() {
   return c;
 }
 let w = null;
-function b(e) {
+function $(e) {
   w = e;
 }
 async function y() {
@@ -30,7 +30,7 @@ function d(e, t) {
   const s = e.message;
   return typeof s == "string" && s.length > 0 ? s : t;
 }
-async function o(e, t) {
+async function r(e, t) {
   const a = await y(), s = {
     ...t || {},
     headers: {
@@ -52,7 +52,7 @@ async function i(e) {
     throw new Error(d(a, `HTTP ${e.status}`));
   return a;
 }
-const m = {
+const b = {
   /**
    * ノート一覧を取得
    */
@@ -62,7 +62,7 @@ const m = {
       status: e.status || "",
       q: e.q || "",
       includeDeleted: e.includeDeleted ? "1" : "0"
-    }), a = await o(`${c}/notes?${t}`, {
+    }), a = await r(`${c}/notes?${t}`, {
       signal: e.signal
     }), s = await i(a);
     if (!s.success)
@@ -73,7 +73,7 @@ const m = {
    * ノート詳細を取得
    */
   async getNote(e, t) {
-    const a = await o(`${c}/notes/${t}?env=${e}`), s = await i(a);
+    const a = await r(`${c}/notes/${t}?env=${e}`), s = await i(a);
     if (!s.success || !s.note)
       throw new Error(s.error || "Failed to fetch note");
     return s.note;
@@ -82,7 +82,7 @@ const m = {
    * ノートを作成
    */
   async createNote(e, t) {
-    const a = await o(`${c}/notes?env=${e}`, {
+    const a = await r(`${c}/notes?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -108,19 +108,19 @@ const m = {
    * ノートのステータスを更新
    */
   async updateStatus(e, t, a, s) {
-    const n = await o(`${c}/notes/${t}/status?env=${e}`, {
+    const n = await r(`${c}/notes/${t}/status?env=${e}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: a, ...s })
-    }), r = await i(n);
-    if (!r.success)
-      throw new Error(r.error || "Failed to update status");
+    }), o = await i(n);
+    if (!o.success)
+      throw new Error(o.error || "Failed to update status");
   },
   /**
    * ノートの重要度を更新
    */
   async updateSeverity(e, t, a) {
-    const s = await o(`${c}/notes/${t}/severity?env=${e}`, {
+    const s = await r(`${c}/notes/${t}/severity?env=${e}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ severity: a })
@@ -132,7 +132,7 @@ const m = {
    * ノートを削除（論理削除）
    */
   async deleteNote(e, t) {
-    const a = await o(`${c}/notes/${t}?env=${e}`, {
+    const a = await r(`${c}/notes/${t}?env=${e}`, {
       method: "DELETE"
     }), s = await i(a);
     if (!s.success)
@@ -142,7 +142,7 @@ const m = {
    * テストケースインポート
    */
   async importTestCases(e) {
-    const t = await o(`${c}/test-cases/import`, {
+    const t = await r(`${c}/test-cases/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cases: e })
@@ -155,7 +155,7 @@ const m = {
    * テストツリー取得
    */
   async getTestTree(e) {
-    const t = await o(`${c}/test-cases/tree?env=${e}`), a = await i(t);
+    const t = await r(`${c}/test-cases/tree?env=${e}`), a = await i(t);
     if (!a.success)
       throw new Error(a.error || "Failed to fetch test tree");
     return a.data;
@@ -164,16 +164,20 @@ const m = {
    * テスト実行結果一括送信
    */
   async submitTestRuns(e, t, a) {
-    const s = await o(`${c}/test-runs?env=${e}`, {
+    const s = a ? {
+      ...a,
+      route: a.route || (typeof window < "u" ? window.location.pathname + window.location.search + window.location.hash : ""),
+      screen_name: a.screenName || (typeof document < "u" ? document.title : "")
+    } : void 0, n = await r(`${c}/test-runs?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ runs: t, failNote: a })
-    }), n = await i(s);
-    if (!n.success)
-      throw new Error(n.error || "Failed to submit test runs");
+      body: JSON.stringify({ runs: t, failNote: s })
+    }), o = await i(n);
+    if (!o.success)
+      throw new Error(o.error || "Failed to submit test runs");
     return {
-      results: n.results,
-      capability: n.capability
+      results: o.results,
+      capability: o.capability
     };
   },
   /**
@@ -182,19 +186,19 @@ const m = {
   async uploadAttachment(e, t, a) {
     const s = new FormData();
     s.append("file", a);
-    const n = await o(`${c}/notes/${t}/attachments?env=${e}`, {
+    const n = await r(`${c}/notes/${t}/attachments?env=${e}`, {
       method: "POST",
       body: s
-    }), r = await i(n);
-    if (!r.success || !r.attachment)
-      throw new Error(r.error || "Failed to upload attachment");
-    return r.attachment;
+    }), o = await i(n);
+    if (!o.success || !o.attachment)
+      throw new Error(o.error || "Failed to upload attachment");
+    return o.attachment;
   },
   /**
    * 添付一覧取得
    */
   async getAttachments(e, t) {
-    const a = await o(`${c}/notes/${t}/attachments?env=${e}`), s = await i(a);
+    const a = await r(`${c}/notes/${t}/attachments?env=${e}`), s = await i(a);
     if (!s.success)
       throw new Error(s.error || "Failed to fetch attachments");
     return s.attachments;
@@ -203,7 +207,7 @@ const m = {
    * 添付削除
    */
   async deleteAttachment(e, t, a) {
-    const s = await o(`${c}/notes/${t}/attachments/${a}?env=${e}`, {
+    const s = await r(`${c}/notes/${t}/attachments/${a}?env=${e}`, {
       method: "DELETE"
     }), n = await i(s);
     if (!n.success)
@@ -213,7 +217,7 @@ const m = {
    * アクティビティ一覧取得
    */
   async getActivities(e, t) {
-    const a = await o(`${c}/notes/${t}/activities?env=${e}`), s = await i(a);
+    const a = await r(`${c}/notes/${t}/activities?env=${e}`), s = await i(a);
     if (!s.success)
       throw new Error(s.error || "Failed to fetch activities");
     return s.activities;
@@ -222,7 +226,7 @@ const m = {
    * コメント追加
    */
   async addActivity(e, t, a) {
-    const s = await o(`${c}/notes/${t}/activities?env=${e}`, {
+    const s = await r(`${c}/notes/${t}/activities?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(a)
@@ -247,27 +251,27 @@ function l(e) {
   return t.origin + t.pathname.replace(/\/$/, "");
 }
 async function g({ apiBaseUrl: e, body: t, signal: a }) {
-  const s = l(e), r = await (await o(`${s}/feedbacks`, {
+  const s = l(e), o = await (await r(`${s}/feedbacks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(t),
     signal: a
   })).json();
-  if (!r.success)
-    throw new Error(d(r, "Failed to submit feedback"));
-  return r.data;
+  if (!o.success)
+    throw new Error(d(o, "Failed to submit feedback"));
+  return o.data;
 }
 async function E(e) {
-  const t = l(e.apiBaseUrl), a = new URLSearchParams(e.query ?? {}).toString(), s = `${t}/feedbacks${a ? "?" + a : ""}`, r = await (await o(s, {
+  const t = l(e.apiBaseUrl), a = new URLSearchParams(e.query ?? {}).toString(), s = `${t}/feedbacks${a ? "?" + a : ""}`, o = await (await r(s, {
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
-  if (!r.success)
-    throw new Error(d(r, "Failed to fetch feedbacks"));
-  return r;
+  if (!o.success)
+    throw new Error(d(o, "Failed to fetch feedbacks"));
+  return o;
 }
 async function v(e) {
-  const t = l(e.apiBaseUrl), s = await (await o(`${t}/feedbacks/${e.id}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}`, {
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
@@ -276,7 +280,7 @@ async function v(e) {
   return s.data;
 }
 async function k(e) {
-  const t = l(e.apiBaseUrl), s = await (await o(`${t}/feedbacks/${e.id}/status`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -290,7 +294,7 @@ async function k(e) {
   return s.data;
 }
 async function F(e) {
-  const t = l(e.apiBaseUrl), s = await (await o(`${t}/feedbacks/${e.id}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}`, {
     method: "DELETE",
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
@@ -301,7 +305,7 @@ async function F(e) {
 async function T(e) {
   const t = l(e.apiBaseUrl), a = new FormData();
   a.append("file", e.file);
-  const n = await (await o(`${t}/feedbacks/${e.feedbackId}/attachments`, {
+  const n = await (await r(`${t}/feedbacks/${e.feedbackId}/attachments`, {
     method: "POST",
     body: a
   })).json();
@@ -310,7 +314,7 @@ async function T(e) {
   return n.attachment;
 }
 async function j(e) {
-  const t = l(e.apiBaseUrl), s = await (await o(`${t}/feedbacks/${e.feedbackId}/attachments/${e.attachmentId}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.feedbackId}/attachments/${e.attachmentId}`, {
     method: "DELETE",
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
@@ -320,25 +324,25 @@ async function j(e) {
 }
 async function A(e) {
   var h, f;
-  const a = `${l(e.apiBaseUrl)}/feedbacks/export/${e.format}`, s = await o(a, {
+  const a = `${l(e.apiBaseUrl)}/feedbacks/export/${e.format}`, s = await r(a, {
     headers: { "X-Admin-Key": e.adminKey }
   });
   if (!s.ok)
     throw new Error(`Export failed: ${s.status}`);
-  const n = await s.blob(), r = ((f = (h = s.headers.get("Content-Disposition")) == null ? void 0 : h.match(/filename="?([^"]+)"?/)) == null ? void 0 : f[1]) ?? `feedbacks-export.${e.format}`, u = document.createElement("a");
-  u.href = URL.createObjectURL(n), u.download = r, document.body.appendChild(u), u.click(), document.body.removeChild(u), URL.revokeObjectURL(u.href);
+  const n = await s.blob(), o = ((f = (h = s.headers.get("Content-Disposition")) == null ? void 0 : h.match(/filename="?([^"]+)"?/)) == null ? void 0 : f[1]) ?? `feedbacks-export.${e.format}`, u = document.createElement("a");
+  u.href = URL.createObjectURL(n), u.download = o, document.body.appendChild(u), u.click(), document.body.removeChild(u), URL.revokeObjectURL(u.href);
 }
 export {
   p as a,
-  m as b,
+  b,
   T as c,
   F as d,
   v as e,
   j as f,
   E as g,
   A as h,
-  $ as i,
+  m as i,
   g as p,
-  b as s,
+  $ as s,
   k as u
 };
