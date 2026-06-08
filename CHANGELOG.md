@@ -2,6 +2,15 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.14] - 2026-06-08
+
+### Fixed
+
+- **管理画面で自動更新中に詳細画面の添付画像が消える不具合を修正**
+  - notes 一覧の同期処理が、自動更新（`refresh`）のたびに `selectedNote` を一覧データで全置換していた
+  - 一覧 API は `attachments`（画像本体）を返さないため、詳細（`getNote`）で取得済みの添付が消えていた
+  - 同期時に詳細専用フィールド（attachments / activities / console_log / network_log / environment）を前回値から温存するマージに変更
+
 ## [1.2.13] - 2026-06-01
 
 ### Added

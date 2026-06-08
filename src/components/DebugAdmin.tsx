@@ -134,7 +134,20 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
     if (selectedNote) {
       const updated = notes.find(n => n.id === selectedNote.id);
       if (updated) {
-        setSelectedNote(updated);
+        // 一覧 API(index) は attachments/activities/console_log/network_log/environment を
+        // 返さない。自動更新で updated を丸ごと上書きすると詳細(getNote)で取得済みの
+        // これらが消え、詳細画面の画像が消える。詳細専用フィールドは前回値を温存する。
+        setSelectedNote(prev => {
+          if (!prev) return updated;
+          return {
+            ...updated,
+            attachments: updated.attachments ?? prev.attachments,
+            activities: updated.activities ?? prev.activities,
+            console_log: updated.console_log ?? prev.console_log,
+            network_log: updated.network_log ?? prev.network_log,
+            environment: updated.environment ?? prev.environment,
+          };
+        });
       } else {
         setSelectedNote(null);
       }

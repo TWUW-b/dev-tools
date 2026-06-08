@@ -49,3 +49,6 @@ docs/migration.md
 docs/operation/
 docs/completed/feedback-export.md
 docs/fixed/debug-mode-localstorage.md
+
+# PM server (pm-server) ローカルメタデータ
+.pm/
