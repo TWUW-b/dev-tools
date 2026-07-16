@@ -1,11 +1,11 @@
 import { jsxs as n, jsx as e, Fragment as me } from "react/jsx-runtime";
 import { useState as k, useMemo as ye, useCallback as Z, forwardRef as pt, useRef as ue, useEffect as ne, useImperativeHandle as ut, createContext as gt, useContext as et } from "react";
-import { a as tt, u as xt } from "./useDebugMode-CXzrrGEB.js";
-import { b as ae, a as We, e as ht, f as ft, h as bt, i as mt } from "./feedbackApi-BAMqIntC.js";
-import { d as yt, a as vt } from "./useFeedbackAdminMode-DrN_wClc.js";
+import { a as tt, u as xt } from "./useDebugMode-IjhrC_NU.js";
+import { c as ae, b as We, f as ht, h as ft, i as bt, j as mt } from "./feedbackApi-D4n_7_zn.js";
+import { d as yt, a as vt } from "./useFeedbackAdminMode-vEJc7eMn.js";
 import { createPortal as wt } from "react-dom";
 import { m as kt } from "./feedbackLogCapture-DUBfVREg.js";
-import { I as nt, D as s, h as Be, b as St } from "./FeedbackAdmin-CsYAOlba.js";
+import { I as nt, D as s, h as Be, b as St } from "./FeedbackAdmin-Psn6na1H.js";
 import { c as $t } from "./logCapture-Bkuy8MSd.js";
 function zt(i) {
   return i.split(`
@@ -5323,6 +5323,8 @@ function Ue(i) {
       return "undo";
     case "closed":
       return "cancel";
+    case "in_progress":
+      return "pending";
   }
 }
 function Se(i) {
@@ -5374,6 +5376,9 @@ function Re(i, r) {
       break;
     case "closed":
       t = r.bgTertiary, p = r.textMuted;
+      break;
+    case "in_progress":
+      t = `${r.accent}15`, p = r.accent;
       break;
   }
   return {

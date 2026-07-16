@@ -1,5 +1,13 @@
 const BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8081";
 const ENV = "test";
+const ADMIN_KEY = process.env.API_ADMIN_KEY ?? "dev-admin-key-change-in-production";
+
+// notes 系は X-Admin-Key 必須（api/index.php の方針A / @TWUWB-002）。
+// /notes パスへ自動付与し、既存の多数の呼び出しを一括で認証済みにする。
+// 鍵無し/誤鍵を検証したいテストは options.headers で上書きできる（下記スプレッド順）。
+function notesAdminHeader(path: string): Record<string, string> {
+  return path.startsWith("/notes") ? { "X-Admin-Key": ADMIN_KEY } : {};
+}
 
 export async function api(
   path: string,
@@ -13,6 +21,7 @@ export async function api(
     ...rest,
     headers: {
       "Content-Type": "application/json",
+      ...notesAdminHeader(path),
       ...rest.headers,
     },
     ...(json !== undefined && { body: JSON.stringify(json) }),
@@ -34,6 +43,9 @@ export async function apiUpload(
   return fetch(url, {
     method: "POST",
     body: formData,
-    headers: options?.headers,
+    headers: {
+      ...notesAdminHeader(path),
+      ...options?.headers,
+    },
   });
 }

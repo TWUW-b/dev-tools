@@ -145,6 +145,19 @@ describe("Notes validation errors", () => {
     expect((await res.json()).error).toContain("Invalid status");
   });
 
+  test("PATCH /notes/:id/status → 200 with in_progress (M1)", async () => {
+    const { id } = await createNote();
+    cleanupIds.push(id);
+    const res = await api(`/notes/${id}/status`, {
+      method: "PATCH",
+      json: { status: "in_progress" },
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
+    const note = await (await api(`/notes/${id}`)).json();
+    expect(note.note.status).toBe("in_progress");
+  });
+
   test("PATCH /notes/:id/severity → 400 with invalid severity", async () => {
     const { id } = await createNote();
     cleanupIds.push(id);

@@ -1,5 +1,5 @@
 import { useState as f, useEffect as I, useCallback as g } from "react";
-import { b as w } from "./feedbackApi-BAMqIntC.js";
+import { c as w } from "./feedbackApi-D4n_7_zn.js";
 function T(n = "dev") {
   const [l, u] = f([]), [b, o] = f(!1), [h, a] = f(null), [E, i] = f(0);
   I(() => {

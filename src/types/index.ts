@@ -1,8 +1,8 @@
 /** 重要度 */
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-/** ステータス（open → fixed → resolved の順。遷移制約なし。closed は完了扱い） */
-export type Status = 'open' | 'resolved' | 'rejected' | 'fixed' | 'closed';
+/** ステータス（open → in_progress → fixed の主系。resolved/rejected/closed も可。遷移制約なし） */
+export type Status = 'open' | 'in_progress' | 'resolved' | 'rejected' | 'fixed' | 'closed';
 
 /** 環境 */
 export type Environment = 'dev' | 'test';

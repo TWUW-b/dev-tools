@@ -1753,6 +1753,7 @@ function getStatusIcon(status: Status): string {
     case 'resolved': return 'check_circle';
     case 'rejected': return 'undo';
     case 'closed': return 'cancel';
+    case 'in_progress': return 'pending';
   }
 }
 
@@ -1811,6 +1812,10 @@ function getStatusBadge(status: Status, colors: typeof LIGHT_COLORS): React.CSSP
     case 'closed':
       bg = colors.bgTertiary;
       fg = colors.textMuted;
+      break;
+    case 'in_progress':
+      bg = `${colors.accent}15`;
+      fg = colors.accent;
       break;
   }
 

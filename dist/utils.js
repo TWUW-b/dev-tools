@@ -1,11 +1,11 @@
-import { b as p, d, i as b, e as g, g as h, p as k, s as F, a as x, u as D } from "./chunks/feedbackApi-BAMqIntC.js";
+import { c as p, d, j as b, f as g, g as h, p as k, s as F, b as x, u as D } from "./chunks/feedbackApi-D4n_7_zn.js";
 import { c as A, m as C } from "./chunks/feedbackLogCapture-DUBfVREg.js";
 import { c as B } from "./chunks/logCapture-Bkuy8MSd.js";
-function f(n) {
-  const c = n.split(`
+function f(c) {
+  const n = c.split(`
 `), i = [];
   let r = "", a = "", s = !1, o = !1;
-  for (const l of c) {
+  for (const l of n) {
     const e = l.trim();
     if (e === "---" && !o) {
       s ? (s = !1, o = !0) : s = !0;

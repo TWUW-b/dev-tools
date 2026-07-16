@@ -21,6 +21,19 @@ export declare function setAuthTokenProvider(provider: AuthTokenProvider | null)
 /**
  * 設定済み provider から Authorization ヘッダを構築する。失敗時は空オブジェクトを返す。
  */
+/** Debug Admin Key Provider（notes/debug API を X-Admin-Key で保護する場合に登録） */
+export type DebugAdminKeyProvider = () => Promise<string | null | undefined> | string | null | undefined;
+/**
+ * Debug API 用の X-Admin-Key（または鍵を返すプロバイダ）を登録する。
+ * 登録すると notes 等の debug API 呼び出しに `X-Admin-Key` ヘッダが自動付与される。
+ * v1.2.15+ で notes API が X-Admin-Key 必須になったため、notes / DebugAdmin パネルを
+ * 使う場合はこの設定が必要（未設定だと notes API が 401 になる）。null で解除。
+ */
+export declare function setDebugAdminKey(keyOrProvider: string | DebugAdminKeyProvider | null): void;
+/**
+ * 設定済み provider から認証ヘッダを構築する。失敗時は該当ヘッダを省いて継続する。
+ * authTokenProvider → `Authorization: Bearer`、debugAdminKeyProvider → `X-Admin-Key`。
+ */
 export declare function buildAuthHeaders(): Promise<Record<string, string>>;
 /**
  * バックエンドのエラーレスポンスからメッセージ文字列を抽出する。

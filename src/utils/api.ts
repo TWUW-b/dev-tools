@@ -37,17 +37,52 @@ export function setAuthTokenProvider(provider: AuthTokenProvider | null): void {
 /**
  * 設定済み provider から Authorization ヘッダを構築する。失敗時は空オブジェクトを返す。
  */
-export async function buildAuthHeaders(): Promise<Record<string, string>> {
-  if (!authTokenProvider) return {};
-  try {
-    const token = await authTokenProvider();
-    if (typeof token === 'string' && token.length > 0) {
-      return { Authorization: `Bearer ${token}` };
-    }
-  } catch {
-    // プロバイダ失敗時はヘッダ無しで継続
+/** Debug Admin Key Provider（notes/debug API を X-Admin-Key で保護する場合に登録） */
+export type DebugAdminKeyProvider = () => Promise<string | null | undefined> | string | null | undefined;
+
+let debugAdminKeyProvider: DebugAdminKeyProvider | null = null;
+
+/**
+ * Debug API 用の X-Admin-Key（または鍵を返すプロバイダ）を登録する。
+ * 登録すると notes 等の debug API 呼び出しに `X-Admin-Key` ヘッダが自動付与される。
+ * v1.2.15+ で notes API が X-Admin-Key 必須になったため、notes / DebugAdmin パネルを
+ * 使う場合はこの設定が必要（未設定だと notes API が 401 になる）。null で解除。
+ */
+export function setDebugAdminKey(keyOrProvider: string | DebugAdminKeyProvider | null): void {
+  if (keyOrProvider == null) {
+    debugAdminKeyProvider = null;
+    return;
   }
-  return {};
+  debugAdminKeyProvider = typeof keyOrProvider === 'function' ? keyOrProvider : () => keyOrProvider;
+}
+
+/**
+ * 設定済み provider から認証ヘッダを構築する。失敗時は該当ヘッダを省いて継続する。
+ * authTokenProvider → `Authorization: Bearer`、debugAdminKeyProvider → `X-Admin-Key`。
+ */
+export async function buildAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  if (authTokenProvider) {
+    try {
+      const token = await authTokenProvider();
+      if (typeof token === 'string' && token.length > 0) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // プロバイダ失敗時はヘッダ無しで継続
+    }
+  }
+  if (debugAdminKeyProvider) {
+    try {
+      const key = await debugAdminKeyProvider();
+      if (typeof key === 'string' && key.length > 0) {
+        headers['X-Admin-Key'] = key;
+      }
+    } catch {
+      // プロバイダ失敗時はヘッダ無しで継続
+    }
+  }
+  return headers;
 }
 
 /**

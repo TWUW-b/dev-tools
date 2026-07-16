@@ -121,6 +121,14 @@ function requireFeedbackAdmin(array $config): void
 // ルーティング
 
 try {
+    // notes 系は全ルート管理者認証必須（feedback と同じ X-Admin-Key 共有シークレット）。
+    // 参照実装の無認証 read を封鎖する（方針A / @TWUWB-002）。バイナリ配信の
+    // /attachments/{filename} は <img> 直参照でヘッダを付けられないため対象外
+    // （ファイル名はランダム hex）。
+    if (preg_match('#^/notes(/|$)#', $relativePath)) {
+        requireFeedbackAdmin($config);
+    }
+
     // GET /notes
     if ($method === 'GET' && preg_match('#^/notes/?$#', $relativePath)) {
         $result = $controller->index([

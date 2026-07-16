@@ -249,7 +249,7 @@ class NotesController
     public function updateStatus(int $id, array $input): array
     {
         $status = $input['status'] ?? null;
-        if (!in_array($status, ['open', 'resolved', 'rejected', 'fixed', 'closed'], true)) {
+        if (!in_array($status, ['open', 'in_progress', 'resolved', 'rejected', 'fixed', 'closed'], true)) {
             return ['success' => false, 'error' => 'Invalid status'];
         }
 
