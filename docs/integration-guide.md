@@ -224,6 +224,29 @@ function AppContent() {
 
 ログ設定を変えたい場合は `logCaptureConfig` prop を渡すか、`disableLogCapture` で無効化可能。
 
+### notes API 認証（v1.2.15+・必須）
+
+v1.2.15 から **notes API（`/notes` 系）は `X-Admin-Key` 必須**になりました（それ以前は無認証）。
+DevTools の record タブや DebugAdmin の notes 機能を使う場合、アプリ初期化時に一度
+`setDebugAdminKey()` を呼び、notes 呼び出しへ `X-Admin-Key` を自動付与してください。
+**未設定だと notes API が 401 になります**。
+
+```typescript
+import { setDebugAdminKey } from '@twuw-b/dev-tools';
+
+// feedbackAdminKey と同じ鍵（VITE_DEBUG_ADMIN_KEY）でよい。モジュール初期化時に一度呼ぶ。
+setDebugAdminKey(feedbackAdminKey);
+
+// 鍵を後から解決したい場合はプロバイダ（同期/非同期どちらも可）:
+// setDebugAdminKey(() => getAdminKey());
+```
+
+補足:
+- `DebugAdmin` の `feedbackAdminKey` prop は **feedback** 用の鍵送出にのみ使われます。
+  notes には別途この `setDebugAdminKey()` が必要です（同じ鍵で構いません）。
+- 鍵を渡す先はブラウザに露出するため、`/__debug` は Basic 認証やネットワーク制限と
+  併用し、鍵は本番用と分けてください。
+
 ### 環境情報タブ（任意）
 
 `environmentsMd` に Markdown 文字列を渡すと PiP に「環境」タブが追加され、
