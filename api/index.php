@@ -24,7 +24,7 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if ($origin !== '' && in_array($origin, $config['allowed_origins'] ?? [], true)) {
     header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, X-Admin-Key');
+    header('Access-Control-Allow-Headers: Content-Type, X-Admin-Key, Authorization');
 }
 
 // OPTIONS リクエスト（プリフライト）
@@ -61,6 +61,7 @@ if ($method === 'GET' && preg_match('#^/openapi\.yaml/?$#', $relativePath)) {
 }
 
 // 依存ファイル読み込み
+require_once __DIR__ . '/FirebaseAuth.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/NotesController.php';
 require_once __DIR__ . '/TestController.php';
@@ -101,31 +102,61 @@ $uploadDir = $config['upload_dir'] ?? __DIR__ . '/data/attachments';
 $feedbackController = new FeedbackController($db, $uploadDir);
 $attachmentController = new AttachmentController($db, $uploadDir);
 
-// Feedback 管理者認証
+// Feedback / notes 管理者認証。
+// 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」のいずれかで許可（方式A・OR受理）。
+// 後方互換: firebase_project_id 未設定なら従来どおり X-Admin-Key のみで判定する。
 function requireFeedbackAdmin(array $config): void
 {
+    // 方式1: X-Admin-Key（共有シークレット）。長さ非依存比較。
     $adminKey = $config['feedback_admin_key'] ?? null;
-    if ($adminKey === null || $adminKey === '') {
+    $keyConfigured = is_string($adminKey) && $adminKey !== '';
+    if ($keyConfigured) {
+        $provided = (string) ($_SERVER['HTTP_X_ADMIN_KEY'] ?? '');
+        if ($provided !== '' && hash_equals($adminKey, $provided)) {
+            return;
+        }
+    }
+
+    // 方式2: Firebase IDトークン（Authorization: Bearer）。firebase_project_id 設定時のみ。
+    $projectId = $config['firebase_project_id'] ?? null;
+    $fbConfigured = is_string($projectId) && $projectId !== '';
+    if ($fbConfigured) {
+        $authz = dtGetAuthorizationHeader();
+        if ($authz !== '' && preg_match('/^Bearer\s+(.+)$/i', $authz, $m)) {
+            $certsUrl = $config['firebase_certs_url'] ?? DT_FIREBASE_CERTS_URL_DEFAULT;
+            if (dtVerifyFirebaseIdToken(trim($m[1]), $projectId, (string) $certsUrl)) {
+                return;
+            }
+        }
+    }
+
+    // どちらの方式も設定されていない → 設定不備（無防備に開かないよう 500）。
+    if (!$keyConfigured && !$fbConfigured) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Admin key not configured']);
+        echo json_encode(['success' => false, 'error' => 'Auth not configured (feedback_admin_key or firebase_project_id required)']);
         exit;
     }
-    $provided = $_SERVER['HTTP_X_ADMIN_KEY'] ?? '';
-    if (!hash_equals($adminKey, $provided)) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-        exit;
-    }
+
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
 }
 
 // ルーティング
 
 try {
-    // notes 系は全ルート管理者認証必須（feedback と同じ X-Admin-Key 共有シークレット）。
-    // 参照実装の無認証 read を封鎖する（方針A / @TWUWB-002）。バイナリ配信の
-    // /attachments/{filename} は <img> 直参照でヘッダを付けられないため対象外
-    // （ファイル名はランダム hex）。
-    if (preg_match('#^/notes(/|$)#', $relativePath)) {
+    // notes データを読む/書く/吐く全ルートを管理者認証必須にする（方針A / @TWUWB-002）。
+    // 参照実装の無認証 read/write を封鎖する。ガード対象:
+    //   /notes*        … ノート CRUD
+    //   /export/json   … SELECT * FROM notes 全件（無認証 read 窃取 = レビュー critical）
+    //   /export/sqlite … DB ファイル丸ごと（feedbacks も同一 DB のため含む）
+    //   /test-runs*    … submitRuns が failNote 経由で notes へ INSERT するため、無認証だと
+    //                    POST /notes ガードを迂回して notes を注入できる（レビュー high）
+    //   /test-cases*   … 上記注入の踏み台(case_id 生成)＋テストデータの無認証改竄/削除の封鎖
+    // バイナリ配信 /attachments/{filename} は <img> 直参照でヘッダ付与不可のため対象外
+    // （ファイル名は 128bit ランダムで列挙不能）。フロントは setDebugAdminKey で全 debug
+    // 呼び出しに X-Admin-Key を送るため、パネル/TestFlow は影響なし。CLI 取り込みは要鍵。
+    if (preg_match('#^/(notes|export|test-runs|test-cases)(/|$)#', $relativePath)) {
         requireFeedbackAdmin($config);
     }
 

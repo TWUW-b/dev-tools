@@ -27,4 +27,11 @@ return [
 
     // Feedback 管理者APIキー（必須。bin2hex(random_bytes(32)) で生成）
     'feedback_admin_key' => 'CHANGE_ME_BEFORE_DEPLOY',
+
+    // Firebase 認証（任意）。設定すると notes/feedback 管理は
+    // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」で許可される。
+    // 各アプリの Firebase プロジェクト ID を入れる。null なら X-Admin-Key のみ（後方互換）。
+    'firebase_project_id' => null,
+    // 公開鍵取得元（通常は既定のまま。テスト/自己ホスト用に差し替え可）:
+    // 'firebase_certs_url' => 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com',
 ];

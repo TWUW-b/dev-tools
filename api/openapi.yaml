@@ -9,7 +9,7 @@ info:
 
     | デプロイ | パス | 用途 | 認証 |
     |---------|------|------|------|
-    | Debug Notes API | `/__debug/api` | ノート・テスト・フィードバック全機能 | `X-Admin-Key`（Notes 全操作・Feedback 管理操作） |
+    | Debug Notes API | `/__debug/api` | ノート・テスト・フィードバック全機能 | `X-Admin-Key` または Firebase IDトークン(Bearer)（Notes 全操作・Feedback 管理操作。OR受理・v1.2.16+） |
     | Feedback API | `/__manual/api` | フィードバック機能のみ | `X-Admin-Key`（管理操作） |
 
     ## 共通仕様
@@ -1460,6 +1460,13 @@ components:
       type: apiKey
       in: header
       name: X-Admin-Key
+    FirebaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Firebase ID トークン。config の firebase_project_id 設定時、notes/feedback 管理は
+        AdminKey か FirebaseBearer のどちらかで許可される（OR 受理・v1.2.16+）。
 
   parameters:
     env:

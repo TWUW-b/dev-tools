@@ -2,6 +2,40 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.2.16] - 2026-07-17
+
+### Security
+
+- **notes/feedback 管理 API に Firebase IDトークン認証を追加（X-Admin-Key との OR 受理）**
+  - `config.php` の `firebase_project_id` 設定時、`Authorization: Bearer <Firebase IDトークン>`
+    または `X-Admin-Key` のどちらかで許可（`api/FirebaseAuth.php`。RS256 固定・Google 公開鍵で
+    署名検証・aud/iss/exp/iat/sub 検証）。未設定なら従来どおり X-Admin-Key のみ（後方互換）。
+    フロントは `setDebugAdminKey` で送出。
+- **[重要] 無認証データ窃取の修正**: `GET /export/json`（全ノート）と `GET /export/sqlite`
+  （DB 丸ごと＝feedbacks 含む）が **1.2.15 以前は無認証**で全データ取得できた。管理者認証を必須化。
+- **notes への無認証注入の修正**: `POST /test-runs` が fail note 経由で notes テーブルへ
+  無認証 INSERT でき、`POST /notes` ガードを迂回できた。`/test-runs`・`/test-cases` も認証必須に。
+- 公開鍵キャッシュを共有 `/tmp` からアプリ専有ディレクトリへ移し、所有者/権限を検証
+  （共有ホスティングでのキャッシュ汚染 CWE-377 対策）。
+
+### 破壊的変更
+
+- `/notes`・`/test-cases`・`/test-runs`・`/export` は管理者認証（X-Admin-Key または Firebase）必須。
+  DevTools/DebugAdmin パネルは `setDebugAdminKey` で自動対応。**CLI のテストケース取り込み等は
+  X-Admin-Key の送出が必要**。
+
+## [1.2.15] - 2026-07-16
+
+### Security
+
+- **notes API を X-Admin-Key 認証必須化**（参照実装の無認証 read を封鎖）。`GET /notes` 等の
+  全 notes ルートに管理者認証を要求。フロントに `setDebugAdminKey()` を追加し notes 呼び出しへ
+  `X-Admin-Key` を自動付与。
+
+### Added
+
+- notes ステータスに **`in_progress`** を追加。
+
 ## [1.2.14] - 2026-06-08
 
 ### Fixed
