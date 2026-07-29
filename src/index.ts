@@ -4,6 +4,13 @@ export { DebugAdmin } from './components/DebugAdmin';
 export { DevTools } from './components/DevTools';
 export type { DevToolsProps } from './components/DevTools';
 
+// Release Notes（@TWUWB-003）
+export { ReleaseNotes } from './components/ReleaseNotes';
+export { useReleaseNotes } from './hooks/useReleaseNotes';
+export type { UseReleaseNotesOptions, UseReleaseNotesReturn } from './hooks/useReleaseNotes';
+export { releaseNotesApi, fetchReleaseNotesFeed } from './utils/releaseNotesApi';
+export type { ReleaseNotesApiConfig } from './utils/releaseNotesApi';
+
 // Manual Components
 export {
   MarkdownRenderer,
@@ -97,4 +104,15 @@ export type {
   Feedback,
   FeedbackInput,
   FeedbackAdminProps,
+  // Release notes types
+  ReleaseCategory,
+  ReleaseNoteStatus,
+  ReleaseNote,
+  ReleaseNoteItem,
+  ReleaseNoteMedia,
+  ReleaseNoteInput,
+  ReleaseNoteItemInput,
+  ReleaseNoteTokenInfo,
+  ReleaseNoteTokens,
+  ReleaseNotesProps,
 } from './types';

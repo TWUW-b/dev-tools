@@ -403,6 +403,103 @@ class Database
             }
             $version = '12';
         }
+
+        // v13: リリースノート（@TWUWB-003）。
+        // notes/feedbacks が「報告を集める」側なのに対し、こちらは「直したことを知らせる」側。
+        // status(draft|published) と is_public(社外公開可否) は別の軸にしている:
+        //   draft                    … 管理画面のみ
+        //   published + is_public=0  … アプリ内のみ（社内向けの更新）
+        //   published + is_public=1  … 公開 URL にも出る（クライアントが読む）
+        // 社内向けを混ぜて外に出すのが一番まずいので、公開は明示的な 1 でしか起きないようにする。
+        if ((int)$version < 13) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS release_notes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        version TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        summary TEXT,
+                        released_on TEXT NOT NULL,
+                        previous_release_id INTEGER,
+                        cover_image_id INTEGER,
+                        status TEXT NOT NULL DEFAULT \'draft\',
+                        is_public INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        deleted_at DATETIME
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_release_notes_visibility ON release_notes(status, is_public)');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_release_notes_released_on ON release_notes(released_on)');
+
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS release_note_items (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        release_note_id INTEGER NOT NULL REFERENCES release_notes(id),
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        category TEXT NOT NULL DEFAULT \'fix\',
+                        headline TEXT NOT NULL,
+                        where_text TEXT,
+                        before_text TEXT,
+                        after_text TEXT,
+                        feedback_id INTEGER,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rn_items_note ON release_note_items(release_note_id)');
+                // 投入側(feedback-fix)が「この報告はもう告知済みか」を突き合わせる正本。
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rn_items_feedback ON release_note_items(feedback_id)');
+
+                // token: <img>/<video> は Authorization ヘッダを送れないため、配信は URL 中の
+                // 推測不能トークンで行う。ここが無いとブラウザで 401 になり何も描画されない
+                // （curl では通るので気づけない）。
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS release_note_images (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        release_note_id INTEGER NOT NULL REFERENCES release_notes(id),
+                        item_id INTEGER,
+                        token TEXT NOT NULL,
+                        stored_name TEXT NOT NULL,
+                        original_name TEXT NOT NULL,
+                        mime_type TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        caption TEXT,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rn_images_note ON release_note_images(release_note_id)');
+                $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_rn_images_token ON release_note_images(token)');
+
+                $this->pdo->exec("UPDATE meta SET value = '13' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '13';
+        }
+    }
+
+    /**
+     * meta テーブルの値を取得（未設定なら null）。
+     */
+    public function getMeta(string $key): ?string
+    {
+        $row = $this->fetchOne('SELECT value FROM meta WHERE key = ?', [$key]);
+        return $row === null ? null : (string) $row['value'];
+    }
+
+    /**
+     * meta テーブルへ値を保存（upsert）。
+     */
+    public function setMeta(string $key, string $value): void
+    {
+        $this->execute(
+            'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+            [$key, $value]
+        );
     }
 
     /**

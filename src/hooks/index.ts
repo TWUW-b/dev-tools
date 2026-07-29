@@ -13,3 +13,7 @@ export type { UseFeedbackOptions, UseFeedbackReturn } from './useFeedback';
 export { useFeedbackAdmin } from './useFeedbackAdmin';
 export type { UseFeedbackAdminOptions, FeedbackFilters, UseFeedbackAdminReturn } from './useFeedbackAdmin';
 export { useFeedbackAdminMode } from './useFeedbackAdminMode';
+
+// Release notes hooks
+export { useReleaseNotes } from './useReleaseNotes';
+export type { UseReleaseNotesOptions, UseReleaseNotesReturn } from './useReleaseNotes';

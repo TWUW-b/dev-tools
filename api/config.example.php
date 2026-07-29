@@ -28,6 +28,16 @@ return [
     // Feedback 管理者APIキー（必須。bin2hex(random_bytes(32)) で生成）
     'feedback_admin_key' => 'CHANGE_ME_BEFORE_DEPLOY',
 
+    // リリースノートのメディア保存先（任意）。既定は api/data/release-notes。
+    // 画像に加えて動画を置くため、notes/feedback の添付とはディレクトリを分けている。
+    // 'release_notes_dir' => __DIR__ . '/data/release-notes',
+
+    // リリースノートのメディア上限（任意・バイト。既定 50MB）。
+    // 動作の変化は動画でしか示せないため、静止画前提の 5MB では足りない。
+    // ここを上げるだけでは足りず、PHP の upload_max_filesize / post_max_size も
+    // 同等以上にする必要がある（超えると $_FILES が空で飛んでくる）。
+    // 'release_notes_max_upload' => 52428800,
+
     // Firebase 認証（任意）。設定すると notes/feedback 管理は
     // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」で許可される。
     // 各アプリの Firebase プロジェクト ID を入れる。null なら X-Admin-Key のみ（後方互換）。

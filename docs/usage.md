@@ -668,6 +668,54 @@ import { FeedbackAdmin } from '@twuw-b/dev-tools/manual';
 | `apiBaseUrl` | `string` | ✓ | フィードバック API の Base URL |
 | `adminKey` | `string` | ✓ | 管理者キー（`X-Admin-Key` ヘッダーで送信） |
 
+### ReleaseNotes（v1.3.0+）
+
+アプリ内に「更新情報」を表示するコンポーネント。ログイン中の利用者向け。
+**クライアント（非ログイン）向けの公開ページは PHP 側が単独で返す**ので、こちらは不要。
+
+```typescript
+import { ReleaseNotes } from '@twuw-b/dev-tools';
+
+// feedUrl は /__admin の「リリースノート」タブでコピーできる
+<ReleaseNotes feedUrl={import.meta.env.VITE_RELEASE_NOTES_FEED_URL} />
+```
+
+#### Props
+
+| Prop | 型 | 必須 | 説明 |
+|------|------|------|------|
+| `feedUrl` | `string` | ✓ | `GET /release-notes/feed/{token}` の URL |
+| `title` | `string` | | 見出し（既定: `更新情報`） |
+| `description` | `string` | | 見出し下の説明文 |
+| `initialOpenCount` | `number` | | 既定で開く号の数（既定: 1 = 最新のみ） |
+| `showFilter` | `boolean` | | 区分の絞り込みを出すか（既定: true） |
+| `storageKey` | `string` | | 未読管理のキー。同一オリジンに複数アプリを載せる場合に分ける |
+| `onLoaded` | `(notes: ReleaseNote[]) => void` | | 読み込み完了時 |
+
+#### 表示のしくみ
+
+「前回から何が変わったか」を3層で見せる。
+
+1. **号ごと** — カード冒頭の「前回（○月○日 第N号）からの変更」
+2. **項目ごと** — 「これまで → これから」の対
+3. **メディア** — 文章を読まなくても伝わる層
+
+動画は `#t=0.1` 付きで読み込むため、再生前でも冒頭フレームが表示される
+（付けないと真っ黒な箱になる）。静止画はクリックで拡大表示。
+
+スタイルはすべてインラインで、ホストの CSS に依存しない。
+
+#### 可視性
+
+| `status` | `is_public` | このコンポーネント | 公開ページ |
+|----------|-------------|------------------|-----------|
+| `draft` | - | × | × |
+| `published` | `false` | ○ | × |
+| `published` | `true` | ○ | ○ |
+
+`feedUrl` に internal トークンを渡すと `published` 全件、public トークンを渡すと
+社外公開分だけが出る。
+
 ---
 
 ## 3. フック
@@ -944,6 +992,26 @@ import { useFeedbackAdminMode } from '@twuw-b/dev-tools/manual';
 const isFeedbackAdmin = useFeedbackAdminMode();
 // URL に ?feedback=admin が含まれている場合 true
 ```
+
+### useReleaseNotes（v1.3.0+）
+
+リリースノートの取得と未読管理。ナビにバッジを出す用途を想定。
+
+```typescript
+import { useReleaseNotes } from '@twuw-b/dev-tools';
+
+const { notes, loading, error, unreadCount, markAllRead, refresh } = useReleaseNotes({
+  feedUrl,              // 必須
+  storageKey,           // 任意。未読の記録先（既定: devtools:release-notes:lastSeenId）
+  enabled: true,        // 任意。false の間は取得しない
+});
+
+// <Link to="/release-notes">更新情報 {unreadCount > 0 && <Badge>{unreadCount}</Badge>}</Link>
+```
+
+未読は「最後に見た号より **id が大きい** 号の数」で判定する。公開日ではなく id を使うのは、
+過去日付の号を後から追加しても未読が湧かないようにするため。`<ReleaseNotes />` を表示すると
+既読になる（内部で `markAllRead()` を呼ぶ）。
 
 ---
 

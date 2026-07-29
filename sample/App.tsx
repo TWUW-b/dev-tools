@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   // Components
   DebugPanel,
@@ -7,14 +7,18 @@ import {
   ManualTabPage,
   ManualSidebar,
   MarkdownRenderer,
+  ReleaseNotes,
   // Hooks
   useDebugMode,
   useManualPiP,
   useManualLoader,
   useFeedbackAdminMode,
+  useReleaseNotes,
   setManualTabBaseUrl,
   // Utils
   setDebugApiBaseUrl,
+  setDebugAdminKey,
+  releaseNotesApi,
   parseTestCaseMd,
   createLogCapture,
   createFeedbackLogCapture,
@@ -77,13 +81,17 @@ const manualItems: ManualItem[] = [
 const FEEDBACK_API = 'http://localhost:8081';
 const FEEDBACK_ADMIN_KEY = 'dev-admin-key-change-in-production';
 
-type View = 'app' | 'admin' | 'manual-tab' | 'manual-sidebar' | 'utils';
+// notes / release-notes 系は X-Admin-Key が要る
+setDebugAdminKey(FEEDBACK_ADMIN_KEY);
+
+type View = 'app' | 'admin' | 'manual-tab' | 'manual-sidebar' | 'release-notes' | 'utils';
 
 const NAV_ITEMS: { key: View; label: string }[] = [
   { key: 'app', label: 'App' },
   { key: 'admin', label: 'Admin' },
   { key: 'manual-tab', label: 'Manual (Tab)' },
   { key: 'manual-sidebar', label: 'Manual (Sidebar)' },
+  { key: 'release-notes', label: 'Release Notes' },
   { key: 'utils', label: 'Utils' },
 ];
 
@@ -150,6 +158,7 @@ export function App() {
         />
       )}
       {view === 'manual-sidebar' && <ManualSidebarView pip={pip} />}
+      {view === 'release-notes' && <ReleaseNotesView />}
       {view === 'utils' && <UtilsView />}
 
       {/* PiP（全ビュー共通） */}
@@ -258,6 +267,79 @@ function ManualSidebarView({ pip }: { pip: ReturnType<typeof useManualPiP> }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Release Notes View: アプリ内表示。
+ *
+ * 実アプリでは feedUrl を環境変数などで持つが、サンプルではトークンが DB 依存なので
+ * 管理 API から取り出している（/__admin の「リリースノート」タブでコピーできるのと同じ値）。
+ */
+function ReleaseNotesView() {
+  const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  const [pageUrl, setPageUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [scope, setScope] = useState<'internal' | 'public'>('internal');
+  const [tokens, setTokens] = useState<{ internal: string; public: string } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    releaseNotesApi
+      .tokens({ apiBaseUrl: FEEDBACK_API, env: 'dev', adminKey: FEEDBACK_ADMIN_KEY })
+      .then((t) => {
+        if (!alive) return;
+        // tokens API は絶対 URL を返す（API が別オリジンでもそのまま使える）
+        setTokens({ internal: t.internal.feedUrl, public: t.public.feedUrl });
+        setFeedUrl(t.internal.feedUrl);
+        setPageUrl(t.public.pageUrl);
+      })
+      .catch((e: Error) => alive && setError(e.message));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // バッジ用。コンポーネントを開くと既読になるので、切り替え直後だけ数が出る
+  const { unreadCount } = useReleaseNotes({ feedUrl: feedUrl ?? '', enabled: !!feedUrl });
+
+  const switchScope = (next: 'internal' | 'public') => {
+    if (!tokens) return;
+    setScope(next);
+    setFeedUrl(tokens[next]);
+  };
+
+  return (
+    <main style={{ padding: '24px' }}>
+      <div style={{ ...styles.card, marginBottom: '16px' }}>
+        <p style={{ ...styles.text, margin: 0 }}>
+          スコープ:{' '}
+          {(['internal', 'public'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => switchScope(s)}
+              style={{
+                ...styles.navBtn,
+                marginRight: '6px',
+                background: scope === s ? '#1E40AF' : '#fff',
+                color: scope === s ? '#fff' : '#374151',
+              }}
+            >
+              {s === 'internal' ? 'アプリ内（社内向けを含む）' : '社外公開のみ'}
+            </button>
+          ))}
+          <span style={{ marginLeft: '12px' }}>未読 {unreadCount} 件</span>
+          {pageUrl && (
+            <a href={pageUrl} target="_blank" rel="noreferrer" style={{ marginLeft: '12px', color: '#1E40AF' }}>
+              クライアント向け公開ページを開く
+            </a>
+          )}
+        </p>
+        {error && <p style={{ color: '#dc2626', fontSize: '13px', marginBottom: 0 }}>{error}</p>}
+      </div>
+
+      {feedUrl && <ReleaseNotes key={feedUrl} feedUrl={feedUrl} />}
+    </main>
   );
 }
 

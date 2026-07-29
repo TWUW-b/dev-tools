@@ -1,15 +1,16 @@
-import { u as s, a as u } from "./chunks/useDebugMode-IjhrC_NU.js";
-import { s as d, u as b } from "./chunks/useManualPiP-CjK-TJ87.js";
-import { u as l, a as n, b as M, c as m, d as t, e as c } from "./chunks/useFeedbackAdminMode-vEJc7eMn.js";
+import { u as s, a as u, b as o } from "./chunks/useReleaseNotes-C07kqzqH.js";
+import { s as b, u as l } from "./chunks/useManualPiP-CjK-TJ87.js";
+import { u as n, a as t, b as M, c as m, d as c, e as i } from "./chunks/useFeedbackAdminMode-BIbslj4E.js";
 export {
-  d as setManualTabBaseUrl,
+  b as setManualTabBaseUrl,
   s as useDebugMode,
   u as useDebugNotes,
-  l as useFeedback,
-  n as useFeedbackAdmin,
+  n as useFeedback,
+  t as useFeedbackAdmin,
   M as useFeedbackAdminMode,
   m as useManualDownload,
-  t as useManualLoader,
-  b as useManualPiP,
-  c as useResizable
+  c as useManualLoader,
+  l as useManualPiP,
+  o as useReleaseNotes,
+  i as useResizable
 };

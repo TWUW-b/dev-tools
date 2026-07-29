@@ -67,6 +67,7 @@ require_once __DIR__ . '/NotesController.php';
 require_once __DIR__ . '/TestController.php';
 require_once __DIR__ . '/FeedbackController.php';
 require_once __DIR__ . '/AttachmentController.php';
+require_once __DIR__ . '/ReleaseNotesController.php';
 
 // 環境パラメータ取得
 $env = $_GET['env'] ?? 'dev';
@@ -101,6 +102,14 @@ $testController = new TestController($db, $controller);
 $uploadDir = $config['upload_dir'] ?? __DIR__ . '/data/attachments';
 $feedbackController = new FeedbackController($db, $uploadDir);
 $attachmentController = new AttachmentController($db, $uploadDir);
+
+// リリースノート（@TWUWB-003）。メディアに動画を含むため既存の添付とは保存先も上限も分ける。
+$releaseNotesController = new ReleaseNotesController(
+    $db,
+    $config['release_notes_dir'] ?? __DIR__ . '/data/release-notes',
+    (int) ($config['release_notes_max_upload'] ?? 52428800)
+);
+$releaseNotesController->setUrlContext($basePath, $env);
 
 // Feedback / notes 管理者認証。
 // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」のいずれかで許可（方式A・OR受理）。
@@ -145,6 +154,51 @@ function requireFeedbackAdmin(array $config): void
 // ルーティング
 
 try {
+    // ── リリースノートの公開ルート（認証なし）──
+    // 認証ガードより前に置いて exit させる。これらは「ログインしないクライアントが読む」
+    // ことが存在意義なので、管理者認証を通してはならない。代わりに推測不能なトークンで守る。
+    // 特にメディアは <img>/<video> が Authorization を送れないため、認証必須にすると
+    // ブラウザで 401 になり何も表示されない（curl では通るので気づけない）。
+
+    // /release-notes/{p|feed|media}/... は「公開の名前空間」として、トークンの正否に関わらず
+    // 認証ガードの外で完結させる。ここで抜けると管理ルート扱いになり、トークンを間違えただけで
+    // 401 が返って「鍵さえあれば見える何かがある」ように読めてしまう。存在しないものには 404 を返す。
+    if (preg_match('#^/release-notes/(p|feed|media)/([^/]*)/?$#', $relativePath, $matches)) {
+        [$kind, $token] = [$matches[1], $matches[2]];
+
+        if ($method !== 'GET') {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Not found']);
+            exit;
+        }
+
+        // GET /release-notes/p/{token}（クライアント向け HTML ページ）
+        if ($kind === 'p') {
+            $releaseNotesController->publicPage($token);
+            exit;
+        }
+
+        // GET /release-notes/feed/{token}（JSON。アプリ内コンポーネントが使う）
+        if ($kind === 'feed') {
+            $result = $releaseNotesController->feed($token);
+            if (!$result['success']) {
+                http_response_code(404);
+            }
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /release-notes/media/{token}（画像・動画。Range 206 対応）
+        header_remove('Content-Type');
+        $releaseNotesController->serveMedia($token);
+        exit;
+    }
+
+    // 上記3つ以外の /release-notes 系は管理者のみ。
+    if (preg_match('#^/release-notes(/|$)#', $relativePath)) {
+        requireFeedbackAdmin($config);
+    }
+
     // notes データを読む/書く/吐く全ルートを管理者認証必須にする（方針A / @TWUWB-002）。
     // 参照実装の無認証 read/write を封鎖する。ガード対象:
     //   /notes*        … ノート CRUD
@@ -462,6 +516,115 @@ try {
     if ($method === 'DELETE' && preg_match('#^/feedbacks/(\d+)/?$#', $relativePath, $matches)) {
         requireFeedbackAdmin($config);
         $result = $feedbackController->delete((int) $matches[1]);
+        echo json_encode($result);
+        exit;
+    }
+
+    // ── Release notes routes（管理者。上のガードで認証済み）──
+
+    // GET /release-notes/tokens（公開 URL と 2 本のトークン）
+    if ($method === 'GET' && preg_match('#^/release-notes/tokens/?$#', $relativePath)) {
+        echo json_encode($releaseNotesController->tokens());
+        exit;
+    }
+
+    // POST /release-notes/tokens/rotate（漏れたときの失効手段）
+    if ($method === 'POST' && preg_match('#^/release-notes/tokens/rotate/?$#', $relativePath)) {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $result = $releaseNotesController->rotateToken((string) ($input['scope'] ?? ''));
+        http_response_code($result['success'] ? 200 : 400);
+        echo json_encode($result);
+        exit;
+    }
+
+    // GET /release-notes（下書き含む全件）
+    if ($method === 'GET' && preg_match('#^/release-notes/?$#', $relativePath)) {
+        echo json_encode($releaseNotesController->index());
+        exit;
+    }
+
+    // POST /release-notes（号の作成）
+    if ($method === 'POST' && preg_match('#^/release-notes/?$#', $relativePath)) {
+        $rawInput = file_get_contents('php://input');
+        if (strlen($rawInput) > 1048576) {
+            http_response_code(413);
+            echo json_encode(['success' => false, 'error' => 'Request body too large']);
+            exit;
+        }
+        $input = json_decode($rawInput, true) ?? [];
+        $result = $releaseNotesController->create($input);
+        http_response_code($result['success'] ? 201 : 400);
+        echo json_encode($result);
+        exit;
+    }
+
+    // POST /release-notes/{id}/items
+    if ($method === 'POST' && preg_match('#^/release-notes/(\d+)/items/?$#', $relativePath, $matches)) {
+        $rawInput = file_get_contents('php://input');
+        if (strlen($rawInput) > 1048576) {
+            http_response_code(413);
+            echo json_encode(['success' => false, 'error' => 'Request body too large']);
+            exit;
+        }
+        $input = json_decode($rawInput, true) ?? [];
+        $result = $releaseNotesController->addItem((int) $matches[1], $input);
+        http_response_code($result['success'] ? 201 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // PATCH /release-notes/{id}/items/{itemId}
+    if ($method === 'PATCH' && preg_match('#^/release-notes/(\d+)/items/(\d+)/?$#', $relativePath, $matches)) {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $result = $releaseNotesController->updateItem((int) $matches[1], (int) $matches[2], $input);
+        http_response_code($result['success'] ? 200 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // DELETE /release-notes/{id}/items/{itemId}
+    if ($method === 'DELETE' && preg_match('#^/release-notes/(\d+)/items/(\d+)/?$#', $relativePath, $matches)) {
+        $result = $releaseNotesController->deleteItem((int) $matches[1], (int) $matches[2]);
+        http_response_code($result['success'] ? 200 : 404);
+        echo json_encode($result);
+        exit;
+    }
+
+    // POST /release-notes/{id}/images（multipart/form-data。画像・動画）
+    if ($method === 'POST' && preg_match('#^/release-notes/(\d+)/images/?$#', $relativePath, $matches)) {
+        $result = $releaseNotesController->uploadImage((int) $matches[1]);
+        http_response_code($result['success'] ? 201 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // DELETE /release-notes/{id}/images/{imageId}
+    if ($method === 'DELETE' && preg_match('#^/release-notes/(\d+)/images/(\d+)/?$#', $relativePath, $matches)) {
+        $result = $releaseNotesController->deleteImage((int) $matches[1], (int) $matches[2]);
+        http_response_code($result['success'] ? 200 : 404);
+        echo json_encode($result);
+        exit;
+    }
+
+    // PATCH /release-notes/{id}（status / is_public / 各フィールド）
+    if ($method === 'PATCH' && preg_match('#^/release-notes/(\d+)/?$#', $relativePath, $matches)) {
+        $rawInput = file_get_contents('php://input');
+        if (strlen($rawInput) > 1048576) {
+            http_response_code(413);
+            echo json_encode(['success' => false, 'error' => 'Request body too large']);
+            exit;
+        }
+        $input = json_decode($rawInput, true) ?? [];
+        $result = $releaseNotesController->update((int) $matches[1], $input);
+        http_response_code($result['success'] ? 200 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // DELETE /release-notes/{id}（論理削除 + メディア実体の片付け）
+    if ($method === 'DELETE' && preg_match('#^/release-notes/(\d+)/?$#', $relativePath, $matches)) {
+        $result = $releaseNotesController->delete((int) $matches[1]);
+        http_response_code($result['success'] ? 200 : 404);
         echo json_encode($result);
         exit;
     }

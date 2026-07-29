@@ -35,36 +35,36 @@ async function m() {
 }
 function d(e, t) {
   if (!e || typeof e != "object") return t;
-  const s = e.error;
-  if (typeof s == "string") return s;
-  if (s && typeof s == "object") {
-    const a = s.message;
+  const n = e.error;
+  if (typeof n == "string") return n;
+  if (n && typeof n == "object") {
+    const a = n.message;
     if (typeof a == "string" && a.length > 0) return a;
   }
-  const n = e.message;
-  return typeof n == "string" && n.length > 0 ? n : t;
+  const s = e.message;
+  return typeof s == "string" && s.length > 0 ? s : t;
 }
 async function r(e, t) {
-  const s = await m(), n = {
+  const n = await m(), s = {
     ...t || {},
     headers: {
       ...(t == null ? void 0 : t.headers) || {},
-      ...s
+      ...n
     }
   };
-  return fetch(e, n);
+  return fetch(e, s);
 }
 async function i(e) {
   const t = await e.text();
-  let s;
+  let n;
   try {
-    s = JSON.parse(t);
+    n = JSON.parse(t);
   } catch {
     throw e.ok ? new Error("Invalid JSON response") : new Error(`HTTP ${e.status}: ${t.slice(0, 200)}`);
   }
   if (!e.ok)
-    throw new Error(d(s, `HTTP ${e.status}`));
-  return s;
+    throw new Error(d(n, `HTTP ${e.status}`));
+  return n;
 }
 const E = {
   /**
@@ -76,27 +76,27 @@ const E = {
       status: e.status || "",
       q: e.q || "",
       includeDeleted: e.includeDeleted ? "1" : "0"
-    }), s = await r(`${c}/notes?${t}`, {
+    }), n = await r(`${c}/notes?${t}`, {
       signal: e.signal
-    }), n = await i(s);
-    if (!n.success)
-      throw new Error(n.error || "Failed to fetch notes");
-    return n.data || [];
+    }), s = await i(n);
+    if (!s.success)
+      throw new Error(s.error || "Failed to fetch notes");
+    return s.data || [];
   },
   /**
    * ノート詳細を取得
    */
   async getNote(e, t) {
-    const s = await r(`${c}/notes/${t}?env=${e}`), n = await i(s);
-    if (!n.success || !n.note)
-      throw new Error(n.error || "Failed to fetch note");
-    return n.note;
+    const n = await r(`${c}/notes/${t}?env=${e}`), s = await i(n);
+    if (!s.success || !s.note)
+      throw new Error(s.error || "Failed to fetch note");
+    return s.note;
   },
   /**
    * ノートを作成
    */
   async createNote(e, t) {
-    const s = await r(`${c}/notes?env=${e}`, {
+    const n = await r(`${c}/notes?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -113,19 +113,19 @@ const E = {
         source: t.source || null,
         testCaseIds: t.testCaseIds ?? null
       })
-    }), n = await i(s);
-    if (!n.success || !n.note)
-      throw new Error(n.error || "Failed to create note");
-    return n.note;
+    }), s = await i(n);
+    if (!s.success || !s.note)
+      throw new Error(s.error || "Failed to create note");
+    return s.note;
   },
   /**
    * ノートのステータスを更新
    */
-  async updateStatus(e, t, s, n) {
+  async updateStatus(e, t, n, s) {
     const a = await r(`${c}/notes/${t}/status?env=${e}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: s, ...n })
+      body: JSON.stringify({ status: n, ...s })
     }), o = await i(a);
     if (!o.success)
       throw new Error(o.error || "Failed to update status");
@@ -133,12 +133,12 @@ const E = {
   /**
    * ノートの重要度を更新
    */
-  async updateSeverity(e, t, s) {
-    const n = await r(`${c}/notes/${t}/severity?env=${e}`, {
+  async updateSeverity(e, t, n) {
+    const s = await r(`${c}/notes/${t}/severity?env=${e}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ severity: s })
-    }), a = await i(n);
+      body: JSON.stringify({ severity: n })
+    }), a = await i(s);
     if (!a.success)
       throw new Error(a.error || "Failed to update severity");
   },
@@ -146,11 +146,11 @@ const E = {
    * ノートを削除（論理削除）
    */
   async deleteNote(e, t) {
-    const s = await r(`${c}/notes/${t}?env=${e}`, {
+    const n = await r(`${c}/notes/${t}?env=${e}`, {
       method: "DELETE"
-    }), n = await i(s);
-    if (!n.success)
-      throw new Error(n.error || "Failed to delete note");
+    }), s = await i(n);
+    if (!s.success)
+      throw new Error(s.error || "Failed to delete note");
   },
   /**
    * テストケースインポート
@@ -160,32 +160,32 @@ const E = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cases: e })
-    }), s = await i(t);
-    if (!s.success)
-      throw new Error(s.error || "Failed to import test cases");
-    return { total: s.total };
+    }), n = await i(t);
+    if (!n.success)
+      throw new Error(n.error || "Failed to import test cases");
+    return { total: n.total };
   },
   /**
    * テストツリー取得
    */
   async getTestTree(e) {
-    const t = await r(`${c}/test-cases/tree?env=${e}`), s = await i(t);
-    if (!s.success)
-      throw new Error(s.error || "Failed to fetch test tree");
-    return s.data;
+    const t = await r(`${c}/test-cases/tree?env=${e}`), n = await i(t);
+    if (!n.success)
+      throw new Error(n.error || "Failed to fetch test tree");
+    return n.data;
   },
   /**
    * テスト実行結果一括送信
    */
-  async submitTestRuns(e, t, s) {
-    const n = s ? {
-      ...s,
-      route: s.route || (typeof window < "u" ? window.location.pathname + window.location.search + window.location.hash : ""),
-      screen_name: s.screenName || (typeof document < "u" ? document.title : "")
+  async submitTestRuns(e, t, n) {
+    const s = n ? {
+      ...n,
+      route: n.route || (typeof window < "u" ? window.location.pathname + window.location.search + window.location.hash : ""),
+      screen_name: n.screenName || (typeof document < "u" ? document.title : "")
     } : void 0, a = await r(`${c}/test-runs?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ runs: t, failNote: n })
+      body: JSON.stringify({ runs: t, failNote: s })
     }), o = await i(a);
     if (!o.success)
       throw new Error(o.error || "Failed to submit test runs");
@@ -197,12 +197,12 @@ const E = {
   /**
    * 画像アップロード
    */
-  async uploadAttachment(e, t, s) {
-    const n = new FormData();
-    n.append("file", s);
+  async uploadAttachment(e, t, n) {
+    const s = new FormData();
+    s.append("file", n);
     const a = await r(`${c}/notes/${t}/attachments?env=${e}`, {
       method: "POST",
-      body: n
+      body: s
     }), o = await i(a);
     if (!o.success || !o.attachment)
       throw new Error(o.error || "Failed to upload attachment");
@@ -212,18 +212,18 @@ const E = {
    * 添付一覧取得
    */
   async getAttachments(e, t) {
-    const s = await r(`${c}/notes/${t}/attachments?env=${e}`), n = await i(s);
-    if (!n.success)
-      throw new Error(n.error || "Failed to fetch attachments");
-    return n.attachments;
+    const n = await r(`${c}/notes/${t}/attachments?env=${e}`), s = await i(n);
+    if (!s.success)
+      throw new Error(s.error || "Failed to fetch attachments");
+    return s.attachments;
   },
   /**
    * 添付削除
    */
-  async deleteAttachment(e, t, s) {
-    const n = await r(`${c}/notes/${t}/attachments/${s}?env=${e}`, {
+  async deleteAttachment(e, t, n) {
+    const s = await r(`${c}/notes/${t}/attachments/${n}?env=${e}`, {
       method: "DELETE"
-    }), a = await i(n);
+    }), a = await i(s);
     if (!a.success)
       throw new Error(a.error || "Failed to delete attachment");
   },
@@ -231,20 +231,20 @@ const E = {
    * アクティビティ一覧取得
    */
   async getActivities(e, t) {
-    const s = await r(`${c}/notes/${t}/activities?env=${e}`), n = await i(s);
-    if (!n.success)
-      throw new Error(n.error || "Failed to fetch activities");
-    return n.activities;
+    const n = await r(`${c}/notes/${t}/activities?env=${e}`), s = await i(n);
+    if (!s.success)
+      throw new Error(s.error || "Failed to fetch activities");
+    return s.activities;
   },
   /**
    * コメント追加
    */
-  async addActivity(e, t, s) {
-    const n = await r(`${c}/notes/${t}/activities?env=${e}`, {
+  async addActivity(e, t, n) {
+    const s = await r(`${c}/notes/${t}/activities?env=${e}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(s)
-    }), a = await i(n);
+      body: JSON.stringify(n)
+    }), a = await i(s);
     if (!a.success || !a.activity)
       throw new Error(a.error || "Failed to add activity");
     return a.activity;
@@ -264,19 +264,19 @@ function l(e) {
     throw new Error(`Invalid API base URL protocol: ${t.protocol}`);
   return t.origin + t.pathname.replace(/\/$/, "");
 }
-async function v({ apiBaseUrl: e, body: t, signal: s }) {
-  const n = l(e), o = await (await r(`${n}/feedbacks`, {
+async function v({ apiBaseUrl: e, body: t, signal: n }) {
+  const s = l(e), o = await (await r(`${s}/feedbacks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(t),
-    signal: s
+    signal: n
   })).json();
   if (!o.success)
     throw new Error(d(o, "Failed to submit feedback"));
   return o.data;
 }
 async function F(e) {
-  const t = l(e.apiBaseUrl), s = new URLSearchParams(e.query ?? {}).toString(), n = `${t}/feedbacks${s ? "?" + s : ""}`, o = await (await r(n, {
+  const t = l(e.apiBaseUrl), n = new URLSearchParams(e.query ?? {}).toString(), s = `${t}/feedbacks${n ? "?" + n : ""}`, o = await (await r(s, {
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
@@ -285,16 +285,16 @@ async function F(e) {
   return o;
 }
 async function T(e) {
-  const t = l(e.apiBaseUrl), n = await (await r(`${t}/feedbacks/${e.id}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}`, {
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
-  if (!n.success)
-    throw new Error(d(n, "Failed to fetch feedback"));
-  return n.data;
+  if (!s.success)
+    throw new Error(d(s, "Failed to fetch feedback"));
+  return s.data;
 }
 async function k(e) {
-  const t = l(e.apiBaseUrl), n = await (await r(`${t}/feedbacks/${e.id}/status`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -303,60 +303,62 @@ async function k(e) {
     body: JSON.stringify({ status: e.status }),
     signal: e.signal
   })).json();
-  if (!n.success)
-    throw new Error(d(n, "Failed to update status"));
-  return n.data;
+  if (!s.success)
+    throw new Error(d(s, "Failed to update status"));
+  return s.data;
 }
 async function j(e) {
-  const t = l(e.apiBaseUrl), n = await (await r(`${t}/feedbacks/${e.id}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.id}`, {
     method: "DELETE",
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
-  if (!n.success)
-    throw new Error(d(n, "Failed to delete feedback"));
+  if (!s.success)
+    throw new Error(d(s, "Failed to delete feedback"));
 }
 async function A(e) {
-  const t = l(e.apiBaseUrl), s = new FormData();
-  s.append("file", e.file);
+  const t = l(e.apiBaseUrl), n = new FormData();
+  n.append("file", e.file);
   const a = await (await r(`${t}/feedbacks/${e.feedbackId}/attachments`, {
     method: "POST",
-    body: s
+    body: n
   })).json();
   if (!a.success || !a.attachment)
     throw new Error(d(a, "Failed to upload attachment"));
   return a.attachment;
 }
 async function S(e) {
-  const t = l(e.apiBaseUrl), n = await (await r(`${t}/feedbacks/${e.feedbackId}/attachments/${e.attachmentId}`, {
+  const t = l(e.apiBaseUrl), s = await (await r(`${t}/feedbacks/${e.feedbackId}/attachments/${e.attachmentId}`, {
     method: "DELETE",
     headers: { "X-Admin-Key": e.adminKey },
     signal: e.signal
   })).json();
-  if (!n.success)
-    throw new Error(d(n, "Failed to delete attachment"));
+  if (!s.success)
+    throw new Error(d(s, "Failed to delete attachment"));
 }
 async function U(e) {
   var f, y;
-  const s = `${l(e.apiBaseUrl)}/feedbacks/export/${e.format}`, n = await r(s, {
+  const n = `${l(e.apiBaseUrl)}/feedbacks/export/${e.format}`, s = await r(n, {
     headers: { "X-Admin-Key": e.adminKey }
   });
-  if (!n.ok)
-    throw new Error(`Export failed: ${n.status}`);
-  const a = await n.blob(), o = ((y = (f = n.headers.get("Content-Disposition")) == null ? void 0 : f.match(/filename="?([^"]+)"?/)) == null ? void 0 : y[1]) ?? `feedbacks-export.${e.format}`, u = document.createElement("a");
+  if (!s.ok)
+    throw new Error(`Export failed: ${s.status}`);
+  const a = await s.blob(), o = ((y = (f = s.headers.get("Content-Disposition")) == null ? void 0 : f.match(/filename="?([^"]+)"?/)) == null ? void 0 : y[1]) ?? `feedbacks-export.${e.format}`, u = document.createElement("a");
   u.href = URL.createObjectURL(a), u.download = o, document.body.appendChild(u), u.click(), document.body.removeChild(u), URL.revokeObjectURL(u.href);
 }
 export {
   g as a,
   p as b,
   E as c,
-  j as d,
-  A as e,
-  T as f,
+  r as d,
+  d as e,
+  j as f,
   F as g,
-  S as h,
-  U as i,
-  b as j,
+  A as h,
+  T as i,
+  S as j,
+  U as k,
+  b as l,
   v as p,
   $ as s,
   k as u

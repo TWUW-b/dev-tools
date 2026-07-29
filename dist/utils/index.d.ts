@@ -4,3 +4,4 @@ export { parseTestCaseMd } from './parseTestCaseMd';
 export { createLogCapture } from './logCapture';
 export { createFeedbackLogCapture } from './feedbackLogCapture';
 export { postFeedback, getFeedbacks, getFeedbackDetail, updateFeedbackStatus, deleteFeedback } from './feedbackApi';
+export { releaseNotesApi, fetchReleaseNotesFeed, type ReleaseNotesApiConfig } from './releaseNotesApi';

@@ -39,6 +39,7 @@ api/feedback/data/*.sqlite
 
 # Upload data
 api/data/attachments/
+api/data/release-notes/
 
 # Playwright
 test-results/

@@ -2,6 +2,51 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.3.0] - 2026-07-29
+
+### Added
+
+- **リリースノート機能（@TWUWB-003）**: 「直したことを利用者・クライアントに知らせる」面を追加。
+  notes / feedbacks が報告を集める側なのに対し、こちらは告知する側。
+
+  面は3つ。**公開ページと管理タブは追加の配線なしで使える**。
+
+  | 面 | 読者 | 出し方 |
+  |----|------|--------|
+  | 公開ページ | クライアント（ログイン不要） | `GET /release-notes/p/{token}` が自己完結の HTML を返す |
+  | アプリ内 | ログイン中の利用者 | `<ReleaseNotes feedUrl={...} />` をホストが好きな場所に置く |
+  | 管理 | 開発側 | `/__admin` の「リリースノート」タブ |
+
+  - 公開ページは PHP が単独で返すため、ホストアプリのビルド・ルーティング・認証ガードに
+    一切依存しない（統合先ごとに認証除外を設定する必要がない）。
+  - 号ごとに `status`(draft|published) と `is_public`(社外公開の可否) を**別の軸**で持つ。
+    社内向けの更新を公開 URL に混ぜないため、`is_public` は明示的に ON にしたときだけ公開される。
+  - 公開トークンは2本（public / internal）。漏れたときは `POST /release-notes/tokens/rotate` で失効。
+  - API 形状は参照実装（Requirement Hub REQUIR-178）と揃えてあり、feedback-fix の
+    リリースノート画面から設定 URL の差し替えだけで投入できる。
+- `ReleaseNotes` コンポーネント / `useReleaseNotes` フック（未読バッジ用）/
+  `releaseNotesApi`・`fetchReleaseNotesFeed` を公開。スタイルはインラインのみでホスト CSS に非依存。
+- DB スキーマ v13: `release_notes` / `release_note_items` / `release_note_images`。
+
+### Fixed（新機能に最初から入れた対策）
+
+参照実装で実際に踏んだ、**curl では通るのにブラウザで壊れる**問題を最初から潰してある。
+
+- `<img>` / `<video>` は Authorization を送れないため、メディア配信は認証ではなく
+  URL 中の推測不能トークンで守る（認証必須にするとブラウザで 401 になり何も表示されない）。
+- 動画配信は Range(206) 対応。未対応だと全部落とし終えるまで再生できずシークもできない。
+- `application/octet-stream` で飛んできた添付を拡張子から補正（そのままだと `<video>` で描けない）。
+- 動画は `#t=0.1` 付きで読み込み、再生前でも冒頭フレームを表示する。
+- 号・項目の削除でメディアの行と**ファイル実体**を片付ける（論理削除だけだと孤児が残る）。
+- SVG はスクリプトを埋め込めるため添付を許可しない。
+
+### 設定
+
+- `config.php` に `release_notes_dir`（既定 `api/data/release-notes`）と
+  `release_notes_max_upload`（既定 50MB）を追加。いずれも任意。
+  動画を扱う場合は PHP の `upload_max_filesize` / `post_max_size` も合わせて上げること
+  （超えると `$_FILES` が空で飛んでくる）。
+
 ## [1.2.16] - 2026-07-17
 
 ### Security

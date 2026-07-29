@@ -520,3 +520,118 @@ export interface FeedbackAdminProps {
     apiBaseUrl: string;
     adminKey: string;
 }
+/** リリースノート項目の区分。この3つ以外を増やさない（読者が分類を覚えられなくなる） */
+export type ReleaseCategory = 'fix' | 'improve' | 'feature';
+/** 号の公開状態。社外公開の可否は is_public で別に持つ */
+export type ReleaseNoteStatus = 'draft' | 'published';
+/** 1つの変更点。必ず「これまで(before) → これから(after)」の対で読ませる */
+export interface ReleaseNoteItem {
+    id: number;
+    release_note_id: number;
+    sort_order: number;
+    category: ReleaseCategory;
+    /** 「〜を直しました」「〜できるようにしました」の形 */
+    headline: string;
+    /** 画面上の場所（例: 案件 > MTGログ） */
+    where_text: string | null;
+    before_text: string | null;
+    after_text: string | null;
+    /** 元になったフィードバック ID。投入側が二重掲載を検出する正本 */
+    feedback_id: number | null;
+}
+/** 添付メディア。動作の変化は動画、見た目の変化は静止画で示す */
+export interface ReleaseNoteMedia {
+    id: number;
+    release_note_id: number;
+    /** null なら号全体の代表メディア（一覧カードに出る） */
+    item_id: number | null;
+    original_name: string;
+    mime_type: string;
+    size: number;
+    caption: string | null;
+    sort_order: number;
+    /** 配信 URL。トークンを含むため認証なしで参照できる（<img>/<video> 用） */
+    url: string;
+}
+/** リリースノート1号 */
+export interface ReleaseNote {
+    id: number;
+    /** 第N号 */
+    version: string;
+    title: string;
+    summary: string | null;
+    /** YYYY-MM-DD */
+    released_on: string;
+    previous_release_id: number | null;
+    /** 「前回（○月○日 第N号）からの変更」を出すための最小情報 */
+    previous: {
+        id: number;
+        version: string;
+        released_on: string;
+    } | null;
+    cover_image_id: number | null;
+    status: ReleaseNoteStatus;
+    /** true で公開 URL にも出る。false なら published でもアプリ内だけ */
+    is_public: boolean;
+    created_at: string;
+    updated_at: string;
+    items: ReleaseNoteItem[];
+    images: ReleaseNoteMedia[];
+}
+/** 号の作成・更新に渡す値 */
+export interface ReleaseNoteInput {
+    version?: string;
+    title?: string;
+    summary?: string | null;
+    released_on?: string;
+    previous_release_id?: number | null;
+    cover_image_id?: number | null;
+    status?: ReleaseNoteStatus;
+    is_public?: boolean;
+}
+/** 項目の作成・更新に渡す値 */
+export interface ReleaseNoteItemInput {
+    category?: ReleaseCategory;
+    headline?: string;
+    where_text?: string | null;
+    before_text?: string | null;
+    after_text?: string | null;
+    feedback_id?: number | null;
+    sort_order?: number;
+}
+/** 公開トークン1本ぶんの情報 */
+export interface ReleaseNoteTokenInfo {
+    token: string;
+    /** クライアントに送る HTML ページの URL */
+    pageUrl: string;
+    /** アプリ内コンポーネントが読む JSON の URL */
+    feedUrl: string;
+}
+/**
+ * 2種類のトークン。
+ * public   … クライアントに配る。published かつ is_public の号だけ見える
+ * internal … アプリ内に埋める。published を全件見せる（社内向けの号を含む）
+ */
+export interface ReleaseNoteTokens {
+    public: ReleaseNoteTokenInfo;
+    internal: ReleaseNoteTokenInfo;
+}
+/** ReleaseNotes コンポーネントのプロパティ */
+export interface ReleaseNotesProps {
+    /** フィードの URL（GET /release-notes/feed/{token}）。tokens API が返す feedUrl をそのまま渡す */
+    feedUrl: string;
+    /** 見出し。既定「更新情報」 */
+    title?: string;
+    /** 見出し下の説明文 */
+    description?: string;
+    /** 既定で開く号の数。既定 1（最新のみ） */
+    initialOpenCount?: number;
+    /** 区分の絞り込み UI を出すか。既定 true */
+    showFilter?: boolean;
+    /** 未読管理のキー。複数アプリを同一オリジンに載せる場合に分ける */
+    storageKey?: string;
+    /** 読み込み完了時（未読件数の反映などに使う） */
+    onLoaded?: (notes: ReleaseNote[]) => void;
+    className?: string;
+    style?: React.CSSProperties;
+}

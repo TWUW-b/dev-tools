@@ -21,15 +21,15 @@ info:
 
     ## DB
 
-    SQLite。Database.php が自動マイグレーション（スキーマバージョン: 10）。
+    SQLite。Database.php が自動マイグレーション（スキーマバージョン: 13）。
 
     ### テーブル一覧
 
     | テーブル | 用途 | バージョン |
     |---------|------|----------|
-    | meta | スキーマバージョン管理 | v1 |
+    | meta | スキーマバージョン管理・公開トークン | v1 |
     | notes | デバッグノート | v1（v2-v6 で拡張） |
-    | test_cases | テストケース定義 | v3 |
+    | test_cases | テストケース定義 | v3（v11-v12 で拡張） |
     | test_runs | テスト実行結果 | v3 |
     | note_test_cases | ノート↔テストケース紐付け | v6 |
     | feedbacks | フィードバック | v7 |
@@ -37,6 +37,9 @@ info:
     | note_attachments | ノート添付ファイル | v8 |
     | feedback_attachments | フィードバック添付ファイル | v9 |
     | note_activities | ノートコメント・履歴 | v10 |
+    | release_notes | リリースノート（号） | v13 |
+    | release_note_items | リリースノートの項目 | v13 |
+    | release_note_images | リリースノートの画像・動画 | v13 |
 
     ### config.php
 
@@ -94,6 +97,8 @@ tags:
     description: フィードバック添付ファイル
   - name: Export
     description: エクスポート
+  - name: ReleaseNotes
+    description: リリースノート（直したことを利用者・クライアントに知らせる面）
   - name: OpenAPI
     description: API 仕様書
 
@@ -978,6 +983,466 @@ paths:
                 type: string
                 format: binary
 
+  # ── リリースノート（@TWUWB-003）──
+  # 公開の名前空間 /release-notes/{p|feed|media}/ だけが認証不要。
+  # それ以外は X-Admin-Key または Firebase IDトークンが要る。
+
+  /release-notes:
+    get:
+      tags: [ReleaseNotes]
+      summary: リリースノート一覧（管理）
+      description: |
+        下書きを含む全件を、項目・メディア込みで返す。
+        投入側（feedback-fix）はこれを叩いて `items[].feedback_id` を突き合わせ、
+        同じ報告を二重に告知しないようにする。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReleaseNote'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [ReleaseNotes]
+      summary: 号を作成（管理）
+      description: |
+        `previous_release_id` を省略すると、`released_on` から直前の号が自動で選ばれる。
+        これが画面の「前回（○月○日 第N号）からの変更」の根拠になる。
+        既定は `status=draft` / `is_public=false`（明示しない限り外に出さない）。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, title, released_on]
+              properties:
+                version: { type: string, example: 第3号 }
+                title: { type: string }
+                summary: { type: string, nullable: true }
+                released_on: { type: string, format: date, example: '2026-07-29' }
+                previous_release_id: { type: integer, nullable: true }
+                status: { type: string, enum: [draft, published] }
+                is_public: { type: boolean }
+      responses:
+        '201':
+          description: 作成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ReleaseNoteSummary' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /release-notes/{id}:
+    patch:
+      tags: [ReleaseNotes]
+      summary: 号を更新（管理）
+      description: |
+        `status`（draft ⇔ published）と `is_public`（社外公開の可否）は別の軸。
+        アプリ内にだけ出す社内向けの号は `status=published` かつ `is_public=false` にする。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version: { type: string }
+                title: { type: string }
+                summary: { type: string, nullable: true }
+                released_on: { type: string, format: date }
+                previous_release_id: { type: integer, nullable: true }
+                cover_image_id: { type: integer, nullable: true }
+                status: { type: string, enum: [draft, published] }
+                is_public: { type: boolean }
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [ReleaseNotes]
+      summary: 号を削除（管理）
+      description: |
+        号は論理削除だが、**添付メディアは行もファイル実体も物理削除する**。
+        論理削除だけにすると動画の実体が孤児として残るため。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/{id}/items:
+    post:
+      tags: [ReleaseNotes]
+      summary: 項目を追加（管理）
+      description: |
+        1項目は「これまで(before_text) → これから(after_text)」の対で書く。
+        `feedback_id` を入れておくと、投入側が二重掲載を検出できる。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [headline]
+              properties:
+                category: { type: string, enum: [fix, improve, feature], default: fix }
+                headline: { type: string, example: 編集ボタンで画面が真っ白になるのを直しました }
+                where_text: { type: string, nullable: true, example: 案件 > MTGログ }
+                before_text: { type: string, nullable: true }
+                after_text: { type: string, nullable: true }
+                feedback_id: { type: integer, nullable: true }
+                sort_order: { type: integer }
+      responses:
+        '201':
+          description: 作成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ReleaseNoteItem' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/{id}/items/{itemId}:
+    patch:
+      tags: [ReleaseNotes]
+      summary: 項目を更新（管理）
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category: { type: string, enum: [fix, improve, feature] }
+                headline: { type: string }
+                where_text: { type: string, nullable: true }
+                before_text: { type: string, nullable: true }
+                after_text: { type: string, nullable: true }
+                feedback_id: { type: integer, nullable: true }
+                sort_order: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [ReleaseNotes]
+      summary: 項目を削除（管理・ぶら下がるメディアも実体ごと消える）
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/{id}/images:
+    post:
+      tags: [ReleaseNotes]
+      summary: 画像・動画を添付（管理）
+      description: |
+        `item_id` を付ければその項目の証跡、省けば号全体の代表メディア（一覧カードに出る）。
+
+        - 上限は既定 50MB（`config.php` の `release_notes_max_upload`）。
+          PHP の `upload_max_filesize` / `post_max_size` も同等以上にしておくこと。
+        - 許可形式: png / jpeg / webp / gif / mp4 / webm / quicktime。**SVG は不可**。
+        - Content-Type は必ず付ける。`application/octet-stream` で飛ぶと拡張子からの
+          フォールバックに頼ることになる。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                item_id: { type: integer }
+                caption: { type: string }
+      responses:
+        '201':
+          description: 作成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ReleaseNoteMedia' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/{id}/images/{imageId}:
+    delete:
+      tags: [ReleaseNotes]
+      summary: メディアを削除（管理・実体も消える）
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: imageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/tokens:
+    get:
+      tags: [ReleaseNotes]
+      summary: 公開 URL とトークンを取得（管理）
+      description: |
+        2種類のトークンを返す（未生成なら生成される）。
+
+        | scope | 見えるもの | 用途 |
+        |-------|-----------|------|
+        | public | published かつ is_public | クライアントに配る URL |
+        | internal | published 全件（社内向けを含む） | アプリ内コンポーネントに渡す feedUrl |
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      public: { $ref: '#/components/schemas/ReleaseNoteTokenInfo' }
+                      internal: { $ref: '#/components/schemas/ReleaseNoteTokenInfo' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /release-notes/tokens/rotate:
+    post:
+      tags: [ReleaseNotes]
+      summary: トークンを再発行（管理）
+      description: URL が漏れたときの失効手段。**それまでに配った URL は開けなくなる**。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scope]
+              properties:
+                scope: { type: string, enum: [public, internal] }
+      responses:
+        '200':
+          description: 再発行後のトークン一式
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /release-notes/feed/{token}:
+    get:
+      tags: [ReleaseNotes]
+      summary: リリースノート一覧（公開・認証不要）
+      description: |
+        トークンのスコープで絞った一覧を返す。アプリ内の `<ReleaseNotes />` が読む口。
+        トークンが不正なら 404（401 は返さない）。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  scope: { type: string, enum: [public, internal] }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReleaseNote'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /release-notes/p/{token}:
+    get:
+      tags: [ReleaseNotes]
+      summary: クライアント向け公開ページ（HTML・認証不要）
+      description: |
+        自己完結した HTML を返す（外部 CSS/JS/フォントを一切参照しない）。
+        ホストアプリのビルド・ルーティング・認証ガードに依存しないので、URL を送るだけで読める。
+        `X-Robots-Tag: noindex, nofollow` を付けて検索エンジンには載せない。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: HTML
+          content:
+            text/html:
+              schema: { type: string }
+        '404':
+          description: 不正なトークン（HTML のエラーページ）
+
+  /release-notes/media/{token}:
+    get:
+      tags: [ReleaseNotes]
+      summary: 画像・動画の配信（認証不要・Range 対応）
+      description: |
+        **認証を通さない**。`<img>` / `<video>` は Authorization ヘッダを送れないため、
+        認証必須にするとブラウザからは 401 で何も表示されない（curl では通るので気づけない）。
+        代わりに推測不能なトークン（24byte hex）を URL に持たせている。
+
+        動画のために Range(206) に対応する。未対応だとブラウザが全部落とし終えるまで
+        再生を始められず、シークもできない。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+        - name: Range
+          in: header
+          required: false
+          schema: { type: string, example: bytes=0-1023 }
+      responses:
+        '200':
+          description: 全体
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '206':
+          description: 部分（Range 指定時）
+          headers:
+            Content-Range:
+              schema: { type: string, example: bytes 0-1023/17059 }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '416':
+          description: 範囲が不正
+          headers:
+            Content-Range:
+              schema: { type: string, example: bytes */17059 }
+
   /openapi.yaml:
     get:
       tags: [OpenAPI]
@@ -1445,6 +1910,95 @@ components:
           description: JSON 最大 512KB
         environment:
           type: object
+
+    ReleaseNoteSummary:
+      type: object
+      description: 号そのもの（項目・メディアを含まない形）
+      properties:
+        id: { type: integer }
+        version: { type: string, example: 第3号 }
+        title: { type: string }
+        summary: { type: string, nullable: true, description: 一覧カードに出る1〜2文 }
+        released_on: { type: string, format: date }
+        previous_release_id: { type: integer, nullable: true }
+        cover_image_id: { type: integer, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        is_public:
+          type: boolean
+          description: true で公開 URL にも出る。false なら published でもアプリ内だけ
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ReleaseNote:
+      allOf:
+        - $ref: '#/components/schemas/ReleaseNoteSummary'
+        - type: object
+          properties:
+            previous:
+              type: object
+              nullable: true
+              description: 「前回（○月○日 第N号）からの変更」を出すための最小情報
+              properties:
+                id: { type: integer }
+                version: { type: string }
+                released_on: { type: string, format: date }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReleaseNoteItem'
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReleaseNoteMedia'
+
+    ReleaseNoteItem:
+      type: object
+      description: 1つの変更点。必ず「これまで → これから」の対で読ませる
+      properties:
+        id: { type: integer }
+        release_note_id: { type: integer }
+        sort_order: { type: integer }
+        category:
+          type: string
+          enum: [fix, improve, feature]
+          description: fix=直したこと / improve=使いやすくしたこと / feature=新しくできること
+        headline: { type: string, example: 編集ボタンで画面が真っ白になるのを直しました }
+        where_text: { type: string, nullable: true, example: 案件 > MTGログ }
+        before_text: { type: string, nullable: true, description: これまでの困りごと }
+        after_text: { type: string, nullable: true, description: これからどうなるか }
+        feedback_id:
+          type: integer
+          nullable: true
+          description: 元になった報告。投入側が二重掲載を検出する正本
+
+    ReleaseNoteMedia:
+      type: object
+      description: |
+        添付メディア。動作の変化は動画、見た目の変化は静止画で示す。
+        token は返さず、配信 URL に埋めた形でのみ渡す。
+      properties:
+        id: { type: integer }
+        release_note_id: { type: integer }
+        item_id:
+          type: integer
+          nullable: true
+          description: null なら号全体の代表メディア
+        original_name: { type: string }
+        mime_type: { type: string, example: video/mp4 }
+        size: { type: integer }
+        caption: { type: string, nullable: true }
+        sort_order: { type: integer }
+        url:
+          type: string
+          description: 認証不要で参照できる配信 URL（<img> / <video> にそのまま入れる）
+          example: /__debug/api/release-notes/media/9f2c…
+
+    ReleaseNoteTokenInfo:
+      type: object
+      properties:
+        token: { type: string, description: 24byte hex }
+        pageUrl: { type: string, description: クライアントに送る HTML ページの URL }
+        feedUrl: { type: string, description: アプリ内コンポーネントが読む JSON の URL }
 
     Error:
       type: object

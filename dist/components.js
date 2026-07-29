@@ -1,15 +1,16 @@
-import { D as s, a as n, b as r } from "./chunks/DevTools-BniH8q2S.js";
-import { F as o, a as b, c as l, d as u, e as M, f as g, g as i, h as m } from "./chunks/FeedbackAdmin-Psn6na1H.js";
+import { D as s, a as n, b as o, R as r } from "./chunks/ReleaseNotes-Cv9U_RTQ.js";
+import { F as l, a as b, c as u, d as M, e as g, f as i, g as m, h as P } from "./chunks/FeedbackAdmin-DxM1CpDy.js";
 export {
   s as DebugAdmin,
   n as DebugPanel,
-  r as DevTools,
-  o as FeedbackAdmin,
+  o as DevTools,
+  l as FeedbackAdmin,
   b as FeedbackForm,
-  l as ManualLink,
-  u as ManualPage,
-  M as ManualPiP,
-  g as ManualSidebar,
-  i as ManualTabPage,
-  m as MarkdownRenderer
+  u as ManualLink,
+  M as ManualPage,
+  g as ManualPiP,
+  i as ManualSidebar,
+  m as ManualTabPage,
+  P as MarkdownRenderer,
+  r as ReleaseNotes
 };

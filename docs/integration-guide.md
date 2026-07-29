@@ -582,6 +582,99 @@ node docs/test-cases/import.js http://localhost:8082/api/__debug
 
 ---
 
+## オプション: リリースノート（クライアントへの更新告知・v1.3.0+）
+
+「直したことを利用者に知らせる」面。**追加の配線をしなくても、API をコピーした時点で使える**。
+公開ページは PHP が単独で返すので、アプリのビルド・ルーティング・認証ガードには一切触れない。
+
+### 面は3つある
+
+| 面 | 誰が読むか | 出し方 |
+|----|-----------|--------|
+| 公開ページ | クライアント（ログイン不要） | `GET /release-notes/p/{token}` が HTML を返す。URL を送るだけ |
+| アプリ内 | ログイン中の利用者 | `<ReleaseNotes feedUrl={...} />` を好きな場所に置く |
+| 管理 | 開発側 | `/__admin` の「リリースノート」タブ（配線不要） |
+
+号ごとに 2 つの軸で可視性を決める。**社内向けの更新を外に出さないため、`is_public` は明示的に
+ON にしたときだけ公開される**。
+
+| status | is_public | 管理画面 | アプリ内 | 公開 URL |
+|--------|-----------|---------|---------|---------|
+| draft | - | ○ | × | × |
+| published | false | ○ | ○ | × |
+| published | true | ○ | ○ | ○ |
+
+### 1. 公開 URL を確認する
+
+`/__admin` →「リリースノート」タブ。上部に 2 本の URL が出る。
+
+- **社外公開（クライアント向け）** … クライアントに送る URL
+- **アプリ内表示用（feedUrl）** … 次の手順でコンポーネントに渡す URL
+
+漏れた場合は「再発行」でトークンを作り直す（それまでに配った URL は開けなくなる）。
+
+### 2. アプリ内に置く（任意）
+
+```typescript
+import { ReleaseNotes } from '@twuw-b/dev-tools';
+
+const feedUrl = import.meta.env.VITE_RELEASE_NOTES_FEED_URL; // 上でコピーした feedUrl
+
+<Route path="/release-notes" element={<ReleaseNotes feedUrl={feedUrl} />} />
+```
+
+ナビに未読バッジを出す場合:
+
+```typescript
+import { useReleaseNotes } from '@twuw-b/dev-tools';
+
+const { unreadCount } = useReleaseNotes({ feedUrl });
+// <Link to="/release-notes">更新情報 {unreadCount > 0 && <span>{unreadCount}</span>}</Link>
+```
+
+未読の判定は「最後に見た号より新しい号」で、`localStorage` に持つ。
+`<ReleaseNotes />` を表示した時点で既読になる。
+
+### 3. PHP のアップロード上限を上げる（動画を載せる場合）
+
+動作の変化は動画でしか示せないため、既定の上限は 50MB にしてある。
+**PHP 側の上限が小さいと `$_FILES` が空で飛んでくる**ので、合わせて上げておく。
+
+```apache
+# backend/public/__debug/.htaccess もしくは php.ini
+php_value upload_max_filesize 64M
+php_value post_max_size 64M
+```
+
+`config.php` で変えたい場合:
+
+```php
+'release_notes_max_upload' => 52428800, // 50MB
+'release_notes_dir' => __DIR__ . '/data/release-notes',
+```
+
+### 4. 文面を投入する
+
+投入は feedback-fix のリリースノート画面から行う（マージ済み・本番反映済みのカードから
+AI が下書き → 人が確認 → 投入）。設定の F 群に次を入れる。
+
+| 設定 | 値 |
+|------|-----|
+| `releaseNoteUrl` | `https://<host>/api/__debug/release-notes` |
+| `releaseNoteAuth` | `admin-key` |
+| `releaseNoteToken` | `env:VITE_DEBUG_ADMIN_KEY` と同じ鍵 |
+| `releaseNotePageUrl` | 管理タブに出ている「社外公開」の URL |
+
+API を直接叩く場合は `POST /release-notes` → `POST /:id/items` → `POST /:id/images` の順。
+詳細は `api/openapi.yaml` の ReleaseNotes セクションを参照。
+
+### 5. 必ずブラウザで確認する
+
+**API が 200 を返すことと、画面に出ることは別**。特に添付は curl では気づけない。
+公開 URL を開いて、画像が表示され、動画が再生でき、シークできるところまで見る。
+
+---
+
 ## デバッグモードの起動方法
 
 | 方法 | 操作 |

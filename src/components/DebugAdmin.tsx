@@ -5,6 +5,7 @@ import type { DebugAdminProps, Note, NoteActivity, NoteAttachment, Status, Sever
 import { Icon, Spinner } from './shared';
 import { TestStatusTab } from './admin/TestStatusTab';
 import { FeedbackTab } from './admin/FeedbackTab';
+import { ReleaseNotesTab } from './admin/ReleaseNotesTab';
 import { formatJstDateTime, formatJstShort } from '../utils/datetime';
 
 // ライトモード カラー定義
@@ -92,7 +93,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
   }, []);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback' | 'release-notes'>('notes');
   const hasFeedbackTab = !!(feedbackApiBaseUrl && feedbackAdminKey);
   const [testCaseIdFilter, setTestCaseIdFilter] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -523,6 +524,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
           { key: 'notes' as const, label: 'ノート一覧' },
           { key: 'test-status' as const, label: 'テスト状況' },
           ...(hasFeedbackTab ? [{ key: 'feedback' as const, label: 'フィードバック' }] : []),
+          { key: 'release-notes' as const, label: 'リリースノート' },
         ]).map(({ key, label }) => (
           <button
             key={key}
@@ -561,6 +563,15 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
           adminKey={feedbackAdminKey!}
           colors={colors}
           isDarkMode={isDarkMode}
+          refreshKey={refreshKey}
+        />
+      ) : activeTab === 'release-notes' ? (
+        <ReleaseNotesTab
+          // apiBaseUrl は任意 prop。未指定時は notes 系と同じグローバル設定に合わせる。
+          apiBaseUrl={apiBaseUrl ?? getDebugApiBaseUrl()}
+          env={env}
+          adminKey={feedbackAdminKey}
+          colors={colors}
           refreshKey={refreshKey}
         />
       ) : (
