@@ -345,6 +345,10 @@ class ReleaseNotesController
             $prev = $row === null ? null : (int) $row['id'];
         } else {
             $prev = (int) $prev;
+            $err = $this->validatePrevious($prev, null);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
+            }
         }
 
         $status = ($input['status'] ?? '') === 'published' ? 'published' : 'draft';
@@ -399,11 +403,29 @@ class ReleaseNotesController
             $fields[] = 'is_public = ?';
             $binds[] = $this->truthy($input['is_public']) ? 1 : 0;
         }
-        foreach (['previous_release_id', 'cover_image_id'] as $key) {
-            if (array_key_exists($key, $input)) {
-                $fields[] = "$key = ?";
-                $binds[] = $input[$key] === null ? null : (int) $input[$key];
+        if (array_key_exists('previous_release_id', $input)) {
+            $prev = $input['previous_release_id'] === null ? null : (int) $input['previous_release_id'];
+            $err = $this->validatePrevious($prev, $id);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
             }
+            $fields[] = 'previous_release_id = ?';
+            $binds[] = $prev;
+        }
+        if (array_key_exists('cover_image_id', $input)) {
+            $cover = $input['cover_image_id'] === null ? null : (int) $input['cover_image_id'];
+            // 他の号のメディアを代表に指定できてしまうと、その号を消したときに表示が壊れる。
+            if ($cover !== null) {
+                $owns = $this->db->fetchOne(
+                    'SELECT id FROM release_note_images WHERE id = ? AND release_note_id = ?',
+                    [$cover, $id]
+                );
+                if ($owns === null) {
+                    return ['success' => false, 'error' => 'cover_image_id がこのリリースのメディアではありません'];
+                }
+            }
+            $fields[] = 'cover_image_id = ?';
+            $binds[] = $cover;
         }
 
         if (!$fields) {
@@ -714,12 +736,15 @@ class ReleaseNotesController
             return;
         }
         $img = $this->db->fetchOne(
-            'SELECT i.*, n.deleted_at FROM release_note_images i
+            'SELECT i.*, n.deleted_at, n.status FROM release_note_images i
                JOIN release_notes n ON n.id = i.release_note_id
               WHERE i.token = ?',
             [$token]
         );
-        if ($img === null || $img['deleted_at'] !== null) {
+        // 下書きの号のメディアは配信しない。トークンは URL に載るだけで所有者を問わないので、
+        // ここを開けておくと「まだ公開していない号に添付した証跡」がトークン経由で読めてしまう。
+        // is_public は見ない（社外公開でない published はアプリ内で表示する必要があるため）。
+        if ($img === null || $img['deleted_at'] !== null || $img['status'] !== 'published') {
             $this->mediaNotFound();
             return;
         }
@@ -844,6 +869,25 @@ class ReleaseNotesController
             'created_at' => Database::toJstIso($row['created_at']),
             'updated_at' => Database::toJstIso($row['updated_at']),
         ];
+    }
+
+    /**
+     * previous_release_id の妥当性を返す（null なら問題なし）。
+     *
+     * 「前回の号」を指す欄なので、存在する **別の** 号でなければならない。
+     * 自分自身を指すと画面に「前回（自分）からの変更」と出て意味を成さず、
+     * 存在しない ID は黙って無視される（設定したのに反映されない）。
+     */
+    private function validatePrevious(?int $prev, ?int $selfId): ?string
+    {
+        if ($prev === null) {
+            return null;
+        }
+        if ($selfId !== null && $prev === $selfId) {
+            return 'previous_release_id に自分自身は指定できません';
+        }
+        $row = $this->db->fetchOne('SELECT id FROM release_notes WHERE id = ? AND deleted_at IS NULL', [$prev]);
+        return $row === null ? 'previous_release_id のリリースが見つかりません' : null;
     }
 
     private function noteExists(int $id): bool
@@ -982,11 +1026,23 @@ HTML;
             ? '最初のリリースです'
             : '前回（' . $e($this->formatDate((string) $n['previous']['released_on'])) . ' ' . $e($n['previous']['version']) . '）からの変更';
 
+        // 代表メディアは cover_image_id の明示が最優先。指定が無ければ
+        // 「項目に紐付いていないメディア」の先頭を使う。
         $cover = null;
-        foreach ($n['images'] as $im) {
-            if ($im['item_id'] === null) {
-                $cover = $im;
-                break;
+        if ($n['cover_image_id'] !== null) {
+            foreach ($n['images'] as $im) {
+                if ($im['id'] === $n['cover_image_id']) {
+                    $cover = $im;
+                    break;
+                }
+            }
+        }
+        if ($cover === null) {
+            foreach ($n['images'] as $im) {
+                if ($im['item_id'] === null) {
+                    $cover = $im;
+                    break;
+                }
             }
         }
 

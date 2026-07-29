@@ -153,6 +153,26 @@ describe("号の CRUD", () => {
     expect((await admin("/release-notes/999999", { method: "PATCH", json: { title: "x" } })).status).toBe(404);
     expect((await admin("/release-notes/999999", { method: "DELETE" })).status).toBe(404);
   });
+
+  test("previous_release_id は存在する別の号でなければ 400", async () => {
+    const id = await createNote({ version: "第912号", title: "前回参照", released_on: "2026-02-20" });
+    createdNotes.push(id);
+
+    // 自分自身 → 画面に「前回（自分）からの変更」と出てしまう
+    const self = await admin(`/release-notes/${id}`, { method: "PATCH", json: { previous_release_id: id } });
+    expect(self.status).toBe(400);
+
+    // 存在しない ID → 黙って無視されると「設定したのに反映されない」になる
+    const missing = await admin(`/release-notes/${id}`, { method: "PATCH", json: { previous_release_id: 999999 } });
+    expect(missing.status).toBe(400);
+    expect((await admin("/release-notes", {
+      method: "POST",
+      json: { version: "第913号", title: "x", released_on: "2026-02-21", previous_release_id: 999999 },
+    })).status).toBe(400);
+
+    // null で明示的に外すのは許す（最初のリリース扱いに戻す）
+    expect((await admin(`/release-notes/${id}`, { method: "PATCH", json: { previous_release_id: null } })).status).toBe(200);
+  });
 });
 
 // ─── 項目 ───
@@ -270,7 +290,8 @@ describe("可視性の3段階", () => {
 
 describe("メディア", () => {
   test("アップロードした画像は認証なしで配信され、Range に対応する", async () => {
-    const noteId = await createNote({ version: "第940号", title: "メディア検証", released_on: "2026-05-01" });
+    // 配信は published の号だけなので、公開状態にしてから確かめる
+    const noteId = await createNote({ version: "第940号", title: "メディア検証", released_on: "2026-05-01", status: "published" });
     createdNotes.push(noteId);
 
     const up = await uploadMedia(noteId, { data: PNG_1X1, name: "shot.png", type: "image/png" }, { caption: "修正後" });
@@ -302,6 +323,44 @@ describe("メディア", () => {
     const over = await anon(`${BASE_URL}${media.url}`, { headers: { Range: "bytes=999999-" } });
     expect(over.status).toBe(416);
     expect(over.headers.get("content-range")).toBe(`bytes */${size}`);
+  });
+
+  test("下書きの号のメディアは配信しない（公開してから見えるようになる）", async () => {
+    const noteId = await createNote({ version: "第946号", title: "未公開の下書き", released_on: "2026-05-10" });
+    createdNotes.push(noteId);
+
+    const media = (await (await uploadMedia(noteId, { data: PNG_1X1, name: "wip.png", type: "image/png" })).json()).data;
+
+    // トークンを知っていても、まだ公開していない号の証跡は読めない
+    expect((await anon(`${BASE_URL}${media.url}`)).status).toBe(404);
+
+    await admin(`/release-notes/${noteId}`, { method: "PATCH", json: { status: "published" } });
+    expect((await anon(`${BASE_URL}${media.url}`)).status).toBe(200);
+
+    // 社外公開でない published はアプリ内で表示する必要があるので配信は続ける
+    expect((await anon(`${BASE_URL}${media.url}`)).status).toBe(200);
+
+    // 下書きに戻すと再び読めなくなる
+    await admin(`/release-notes/${noteId}`, { method: "PATCH", json: { status: "draft" } });
+    expect((await anon(`${BASE_URL}${media.url}`)).status).toBe(404);
+  });
+
+  test("cover_image_id は自分の号のメディアしか指定できない", async () => {
+    const a = await createNote({ version: "第947号", title: "A", released_on: "2026-05-11" });
+    const b = await createNote({ version: "第948号", title: "B", released_on: "2026-05-12" });
+    createdNotes.push(a, b);
+
+    const mediaOfA = (await (await uploadMedia(a, { data: PNG_1X1, name: "a.png", type: "image/png" })).json()).data;
+
+    // 他の号のメディアを代表にすると、その号を消したときに表示が壊れる
+    expect((await admin(`/release-notes/${b}`, { method: "PATCH", json: { cover_image_id: mediaOfA.id } })).status).toBe(400);
+    expect((await admin(`/release-notes/${b}`, { method: "PATCH", json: { cover_image_id: 999999 } })).status).toBe(400);
+    expect((await admin(`/release-notes/${a}`, { method: "PATCH", json: { cover_image_id: mediaOfA.id } })).status).toBe(200);
+
+    // メディアを消したら参照も外れる（存在しない id を指したままにしない）
+    await admin(`/release-notes/${a}/images/${mediaOfA.id}`, { method: "DELETE" });
+    const list = await (await admin("/release-notes")).json();
+    expect(list.data.find((n: { id: number }) => n.id === a).cover_image_id).toBeNull();
   });
 
   test("Content-Type を誤って送っても拡張子から補われる", async () => {
@@ -339,7 +398,7 @@ describe("メディア", () => {
   });
 
   test("メディア削除・号の削除でメディアが辿れなくなる", async () => {
-    const noteId = await createNote({ version: "第945号", title: "削除検証", released_on: "2026-05-06" });
+    const noteId = await createNote({ version: "第945号", title: "削除検証", released_on: "2026-05-06", status: "published" });
 
     const one = (await (await uploadMedia(noteId, { data: PNG_1X1, name: "a.png", type: "image/png" })).json()).data;
     const two = (await (await uploadMedia(noteId, { data: PNG_1X1, name: "b.png", type: "image/png" })).json()).data;

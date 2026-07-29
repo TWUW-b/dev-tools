@@ -216,7 +216,12 @@ function NoteCard({
   onToggle: () => void;
   onZoom: (url: string, caption: string | null) => void;
 }) {
-  const cover = note.images.find((im) => im.item_id === null) ?? null;
+  // 代表メディアは cover_image_id の明示が最優先。指定が無ければ
+  // 「項目に紐付いていないメディア」の先頭を使う（公開ページ側と同じ規則）。
+  const cover =
+    (note.cover_image_id !== null ? note.images.find((im) => im.id === note.cover_image_id) : undefined) ??
+    note.images.find((im) => im.item_id === null) ??
+    null;
   const counts = CATEGORY_ORDER
     .map((c) => ({ c, n: note.items.filter((i) => i.category === c).length }))
     .filter((x) => x.n > 0);
