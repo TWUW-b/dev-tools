@@ -12,33 +12,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { releaseNotesApi } from '../../utils/releaseNotesApi';
 import type { ReleaseCategory, ReleaseNote, ReleaseNoteTokens, Environment } from '../../types';
 import { Icon, Spinner } from '../shared';
+import { LIGHT_COLORS, type AdminColors } from '../adminColors';
 
-interface Colors {
-  bg: string;
-  bgSecondary: string;
-  bgTertiary: string;
-  border: string;
-  borderLight: string;
-  text: string;
-  textSecondary: string;
-  textMuted: string;
-  primary: string;
-  primaryLight: string;
-  link: string;
-  error: string;
-  errorBg: string;
-  success: string;
-  successBg: string;
-  warning: string;
-  warningBg: string;
-}
+// パレットは DebugAdmin と共有する（@TWUWB-005 で adminColors.ts へ切り出した）。
+// ホストが単体で使うときのために省略可にし、既定はライトモード。
+type Colors = AdminColors;
 
-interface ReleaseNotesTabProps {
+export interface ReleaseNotesTabProps {
   apiBaseUrl: string;
   env: Environment;
   adminKey?: string;
-  colors: Colors;
-  refreshKey: number;
+  /** 省略時はライトモードのパレット。DebugAdmin 以外のホストでもそのまま置ける。 */
+  colors?: Colors;
+  /** 外から再取得させたいときに変える。省略時は 0 固定（自前で再取得しない）。 */
+  refreshKey?: number;
 }
 
 const CATEGORY_LABELS: Record<ReleaseCategory, string> = {
@@ -52,7 +39,7 @@ function formatDate(ymd: string): string {
   return m ? `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日` : ymd;
 }
 
-export function ReleaseNotesTab({ apiBaseUrl, env, adminKey, colors, refreshKey }: ReleaseNotesTabProps) {
+export function ReleaseNotesTab({ apiBaseUrl, env, adminKey, colors = LIGHT_COLORS, refreshKey = 0 }: ReleaseNotesTabProps) {
   const config = { apiBaseUrl, env, adminKey };
 
   const [notes, setNotes] = useState<ReleaseNote[]>([]);

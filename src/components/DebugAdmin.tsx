@@ -7,60 +7,7 @@ import { TestStatusTab } from './admin/TestStatusTab';
 import { FeedbackTab } from './admin/FeedbackTab';
 import { ReleaseNotesTab } from './admin/ReleaseNotesTab';
 import { formatJstDateTime, formatJstShort } from '../utils/datetime';
-
-// ライトモード カラー定義
-const LIGHT_COLORS = {
-  primary: '#6366F1',
-  primaryLight: '#EEF2FF',
-  primaryDark: '#4F46E5',
-  accent: '#EC4899',
-  bg: '#FFFFFF',
-  bgSecondary: '#F9FAFB',
-  bgTertiary: '#F3F4F6',
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  error: '#EF4444',
-  errorBg: '#FEF2F2',
-  success: '#10B981',
-  successBg: '#ECFDF5',
-  warning: '#F59E0B',
-  warningBg: '#FFFBEB',
-  critical: '#7C2D12',
-  high: '#EF4444',
-  medium: '#F59E0B',
-  low: '#3B82F6',
-  link: '#6366F1',
-};
-
-// ダークモード カラー定義
-const DARK_COLORS = {
-  primary: '#818CF8',
-  primaryLight: '#1E1B4B',
-  primaryDark: '#A5B4FC',
-  accent: '#F472B6',
-  bg: '#0F172A',
-  bgSecondary: '#1E293B',
-  bgTertiary: '#334155',
-  border: '#334155',
-  borderLight: '#475569',
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  error: '#F87171',
-  errorBg: '#450A0A',
-  success: '#34D399',
-  successBg: '#064E3B',
-  warning: '#FBBF24',
-  warningBg: '#78350F',
-  critical: '#FB923C',
-  high: '#F87171',
-  medium: '#FBBF24',
-  low: '#60A5FA',
-  link: '#818CF8',
-};
+import { LIGHT_COLORS, DARK_COLORS } from './adminColors';
 
 // 自動更新間隔（ミリ秒）
 const AUTO_REFRESH_INTERVAL = 30000;

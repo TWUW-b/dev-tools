@@ -10,6 +10,12 @@ export { useReleaseNotes } from './hooks/useReleaseNotes';
 export type { UseReleaseNotesOptions, UseReleaseNotesReturn } from './hooks/useReleaseNotes';
 export { releaseNotesApi, fetchReleaseNotesFeed } from './utils/releaseNotesApi';
 export type { ReleaseNotesApiConfig } from './utils/releaseNotesApi';
+// 管理タブ（@TWUWB-005）。DebugAdmin を丸ごと載せられないホスト（他タブの API を持たない、
+// 独自の管理画面がある等）でも、リリースノートの公開制御だけを置けるように単体で公開する。
+export { ReleaseNotesTab } from './components/admin/ReleaseNotesTab';
+export type { ReleaseNotesTabProps } from './components/admin/ReleaseNotesTab';
+export { LIGHT_COLORS, DARK_COLORS } from './components/adminColors';
+export type { AdminColors } from './components/adminColors';
 
 // Manual Components
 export {

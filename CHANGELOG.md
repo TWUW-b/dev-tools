@@ -2,6 +2,25 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.3.2] - 2026-07-31
+
+### Added
+
+- **`ReleaseNotesTab` を単体で export（@TWUWB-005）**: 1.3.0 の「管理タブは配線不要」は
+  `DebugAdmin` を丸ごと載せているホストにしか成立しなかった。`ReleaseNotesTab` は
+  `src/index.ts` に無く、`exports` にワイルドカードも無いため deep import も塞がれており、
+  **独自の管理画面を持つホスト（Requirement Hub 等）からは一切使えなかった**。
+
+  他タブの API（notes の更新系・添付・test-cases・export）を持たないホストが `DebugAdmin` を
+  載せると壊れたボタンが並ぶため、リリースノートの公開制御だけを置けるようにした。
+
+  - `colors` と `refreshKey` を**省略可**にした（既定はライトモード / 0）。ホストは
+    `<ReleaseNotesTab apiBaseUrl={...} env="dev" adminKey={key} />` だけで置ける。
+  - パレット（`LIGHT_COLORS` / `DARK_COLORS` / 型 `AdminColors`）を `DebugAdmin.tsx` から
+    `components/adminColors.ts` へ切り出して公開。実体は 1 箇所のままで、`DebugAdmin` も
+    ここから読む。ホストがダークモードや自前の色を渡せる。
+  - `ReleaseNotesTabProps` も型として公開。
+
 ## [1.3.1] - 2026-07-31
 
 ### Fixed
