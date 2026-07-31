@@ -2,6 +2,16 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.3.1] - 2026-07-31
+
+### Fixed
+
+- **API テストヘルパの X-Admin-Key 付与範囲（@TWUWB-004）**: v1.2.16 で `api/index.php` のガードを
+  `#^/(notes|export|test-runs|test-cases)(/|$)#` へ広げたとき、`tests/api/helpers/client.ts` の判定が
+  `path.startsWith('/notes')` のままだったため、`/test-runs`・`/test-cases` を叩くテストに鍵が付かず
+  11 件が 401 で落ちていた。プロダクトコードは正常で**テストだけが赤い**状態だったため、
+  実害はテスト結果の信頼性のみ。配布物（dist / api）に変更は無い。
+
 ## [1.3.0] - 2026-07-29
 
 ### Added
