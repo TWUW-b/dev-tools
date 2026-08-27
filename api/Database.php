@@ -64,6 +64,10 @@ class Database
         ]);
 
         $this->pdo->exec('PRAGMA foreign_keys = ON');
+        // COUNT→判定→INSERT のような直列化が必要な処理で beginImmediate() を使うと、
+        // 並行リクエストの一方は書き込みロック待ちになる。既定の 0（即時失敗）のままだと
+        // "database is locked" 例外になってしまうため、待機できるようにしておく。
+        $this->pdo->exec('PRAGMA busy_timeout = 5000');
 
         // スキーマ初期化
         $this->initSchema();
@@ -480,6 +484,45 @@ class Database
             }
             $version = '13';
         }
+
+        // v14: マニュアル画像アップロード（RFC 002 / ADR-002）。
+        //
+        // ManualItem は dev-tools の DB に実体を持たない（ホストアプリが配列として渡す）。
+        // そのため release_notes 等のような「親テーブルへの外部キー」は張れない。
+        // manual_item_id は自由入力の文字列として受け取り、ManualItem.id と対応させる運用を
+        // ホストアプリ側に委ねる（API 側では ^[A-Za-z0-9_-]{1,128}$ の文字種検証のみ行い、
+        // その項目が実在するかどうかの存在チェックはできない／しない）。
+        //
+        // deleted_at は持たない。release_note_images と同じ理由（実ファイルと1:1のため、
+        // 論理削除だけでは実体が孤児化する）。削除時に DB 行と実ファイルを同時に消す物理削除方式。
+        if ((int)$version < 14) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS manual_media (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        manual_item_id TEXT NOT NULL,
+                        token TEXT NOT NULL,
+                        stored_name TEXT NOT NULL,
+                        original_name TEXT NOT NULL,
+                        mime_type TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        caption TEXT,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_manual_media_item ON manual_media(manual_item_id)');
+                $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_manual_media_token ON manual_media(token)');
+
+                $this->pdo->exec("UPDATE meta SET value = '14' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '14';
+        }
     }
 
     /**
@@ -536,6 +579,21 @@ class Database
     public function beginTransaction(): void
     {
         $this->pdo->beginTransaction();
+    }
+
+    /**
+     * IMMEDIATE トランザクションを開始する。
+     *
+     * beginTransaction()（SQLite の既定は DEFERRED）は最初の書き込み文が実行されるまで
+     * 書き込みロックを取らない。そのため「SELECT で件数を読む→上限を判定する→INSERT する」
+     * という処理を beginTransaction() でくくっても、判定に使う SELECT の時点ではロックが
+     * 無く、並行リクエストが同じ古い件数を読んで両方とも上限チェックを通過し得る（TOCTOU）。
+     * IMMEDIATE は BEGIN の時点で書き込みロックを取得するため、後続の SELECT を含めて
+     * トランザクション全体を直列化できる。commit()/rollBack() はそのまま使える。
+     */
+    public function beginImmediate(): void
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
     }
 
     /**

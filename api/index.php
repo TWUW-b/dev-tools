@@ -68,6 +68,7 @@ require_once __DIR__ . '/TestController.php';
 require_once __DIR__ . '/FeedbackController.php';
 require_once __DIR__ . '/AttachmentController.php';
 require_once __DIR__ . '/ReleaseNotesController.php';
+require_once __DIR__ . '/ManualMediaController.php';
 
 // 環境パラメータ取得
 $env = $_GET['env'] ?? 'dev';
@@ -110,6 +111,15 @@ $releaseNotesController = new ReleaseNotesController(
     (int) ($config['release_notes_max_upload'] ?? 52428800)
 );
 $releaseNotesController->setUrlContext($basePath, $env);
+
+// マニュアル画像（RFC 002 / ADR-002）。ManualItem は DB に実体を持たないため、
+// manual_item_id は自由入力の文字列（正規表現で検証したものだけをディレクトリ名に使う）。
+$manualMediaController = new ManualMediaController(
+    $db,
+    $config['manual_media_dir'] ?? __DIR__ . '/data/manual-media',
+    (int) ($config['manual_media_max_total_size'] ?? 524288000)
+);
+$manualMediaController->setUrlContext($basePath, $env);
 
 // Feedback / notes 管理者認証。
 // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」のいずれかで許可（方式A・OR受理）。
@@ -196,6 +206,20 @@ try {
 
     // 上記3つ以外の /release-notes 系は管理者のみ。
     if (preg_match('#^/release-notes(/|$)#', $relativePath)) {
+        requireFeedbackAdmin($config);
+    }
+
+    // ── マニュアル画像の公開ルート（認証なし）──
+    // release-notes の media と同じ理由: <img> は Authorization ヘッダを送れないため、
+    // 認証必須にするとブラウザで 401 になり何も表示されない。トークン一致のみで配信可否を判定する。
+    if ($method === 'GET' && preg_match('#^/manual/media/([^/]+)/?$#', $relativePath, $matches)) {
+        header_remove('Content-Type');
+        $manualMediaController->serveMedia($matches[1]);
+        exit;
+    }
+
+    // 上記の GET 配信ルート以外の /manual 系はすべて管理者のみ。
+    if (preg_match('#^/manual(/|$)#', $relativePath)) {
         requireFeedbackAdmin($config);
     }
 
@@ -624,6 +648,47 @@ try {
     // DELETE /release-notes/{id}（論理削除 + メディア実体の片付け）
     if ($method === 'DELETE' && preg_match('#^/release-notes/(\d+)/?$#', $relativePath, $matches)) {
         $result = $releaseNotesController->delete((int) $matches[1]);
+        http_response_code($result['success'] ? 200 : 404);
+        echo json_encode($result);
+        exit;
+    }
+
+    // ── Manual media routes（管理者。上のガードで認証済み）──
+
+    // POST /manual/items/{itemId}/media（multipart/form-data。画像のみ）
+    //
+    // itemId のキャプチャは [^/]+（緩い）にする。ここを ITEM_ID_PATTERN と同じ
+    // [A-Za-z0-9_-]{1,128} に絞ると、文字種・長さが不正な itemId はルート自体が
+    // マッチしなくなり、コントローラの検証（400 を返す設計。RFC 002 参照）まで
+    // 到達せずに素の 404 へ落ちてしまう。実在チェックができない manual_item_id の
+    // 唯一の検証はコントローラ側に一本化し、ルーティングでは「1セグメントであること」
+    // だけを見る。
+    if ($method === 'POST' && preg_match('#^/manual/items/([^/]+)/media/?$#', $relativePath, $matches)) {
+        $result = $manualMediaController->uploadImage($matches[1]);
+        http_response_code($result['success'] ? 201 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // GET /manual/items/{itemId}/media（itemId のキャプチャが緩い理由は上記コメント参照）
+    if ($method === 'GET' && preg_match('#^/manual/items/([^/]+)/media/?$#', $relativePath, $matches)) {
+        $result = $manualMediaController->list($matches[1]);
+        http_response_code($result['success'] ? 200 : 400);
+        echo json_encode($result);
+        exit;
+    }
+
+    // GET /manual/items（manual_item_id 横断の一覧。監査・容量確認用）
+    if ($method === 'GET' && preg_match('#^/manual/items/?$#', $relativePath)) {
+        $result = $manualMediaController->listItems();
+        http_response_code(200);
+        echo json_encode($result);
+        exit;
+    }
+
+    // DELETE /manual/media/{id}
+    if ($method === 'DELETE' && preg_match('#^/manual/media/(\d+)/?$#', $relativePath, $matches)) {
+        $result = $manualMediaController->deleteImage((int) $matches[1]);
         http_response_code($result['success'] ? 200 : 404);
         echo json_encode($result);
         exit;

@@ -99,6 +99,8 @@ tags:
     description: エクスポート
   - name: ReleaseNotes
     description: リリースノート（直したことを利用者・クライアントに知らせる面）
+  - name: Manual Media
+    description: マニュアル（ManualPiP / ManualSidebar）に貼る画像のアップロード・配信（RFC 002 / ADR-002）
   - name: OpenAPI
     description: API 仕様書
 
@@ -1443,6 +1445,177 @@ paths:
             Content-Range:
               schema: { type: string, example: bytes */17059 }
 
+  /manual/items/{itemId}/media:
+    post:
+      tags: [Manual Media]
+      summary: マニュアル画像を添付（管理）
+      description: |
+        ManualItem は dev-tools の DB に実体を持たない（ホストアプリが配列として渡す）ため、
+        `itemId` の実在確認はできない。API 側では `^[A-Za-z0-9_-]{1,128}$` の文字種検証のみを行う。
+
+        - 上限は 10MB 固定（設定不可）。PHP の `upload_max_filesize` / `post_max_size` も
+          同等以上にしておくこと。
+        - 許可形式: png / jpeg / webp / gif のみ。**SVG・動画は不可**（release-notes と異なり画像専用）。
+        - 1項目（`itemId`）あたり最大 30 枚。
+        - `itemId` の実在確認ができないため、全 `itemId` 横断の合計サイズにも上限がある
+          （既定 500MB。`manual_media_max_total_size` で設定可）。超過すると 400。
+          内訳は `GET /manual/items` で確認できる。
+        - Content-Type は必ず付ける。`application/octet-stream` で飛ぶと拡張子からの
+          フォールバックに頼ることになる。実ファイルの中身が画像として検出できない
+          場合は Content-Type や拡張子に関わらず拒否する（実体ベースの検証を優先する）。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: itemId
+          in: path
+          required: true
+          description: ManualItem.id と対応する自由文字列（DB上の実在確認はできない）
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                caption: { type: string }
+      responses:
+        '201':
+          description: 作成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ManualMedia' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Manual Media]
+      summary: 項目単位のメディア一覧（管理）
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ManualMedia'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /manual/items:
+    get:
+      tags: [Manual Media]
+      summary: manual_item_id 横断のメディア内訳（管理・監査用）
+      description: |
+        `manual_item_id` は実在チェックができず、項目単位の一覧
+        （`GET /manual/items/{itemId}/media`）も `itemId` を先に知っていないと呼べない。
+        どんな `manual_item_id` にどれだけメディアが積まれているかを横断的に確認する手段
+        として用意している（合計容量上限の監視用途）。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        manual_item_id: { type: string }
+                        media_count: { type: integer }
+                        total_size: { type: integer, description: バイト }
+
+  /manual/media/{id}:
+    delete:
+      tags: [Manual Media]
+      summary: マニュアル画像を削除（管理・実体も消える）
+      description: DB 行と実ファイルを同時に削除する（物理削除。`deleted_at` は持たない）。
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /manual/media/{token}:
+    get:
+      tags: [Manual Media]
+      summary: マニュアル画像の配信（認証不要・Range 対応）
+      description: |
+        **認証を通さない**。`<img>` は Authorization ヘッダを送れないため、認証必須にすると
+        ブラウザからは 401 で何も表示されない。代わりに推測不能なトークン（24byte hex）を
+        URL に持たせている。トークン一致のみで配信可否を判定する
+        （release-notes の `status=published` チェックに相当するものは無い。
+        マニュアルはアプリ内表示前提のため）。
+
+        画像のみの用途だが、将来の動画対応を見込み Range(206) に対応している。
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+        - name: Range
+          in: header
+          required: false
+          schema: { type: string, example: bytes=0-1023 }
+      responses:
+        '200':
+          description: 全体
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '206':
+          description: 部分（Range 指定時）
+          headers:
+            Content-Range:
+              schema: { type: string, example: bytes 0-1023/17059 }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '416':
+          description: 範囲が不正
+          headers:
+            Content-Range:
+              schema: { type: string, example: bytes */17059 }
+
   /openapi.yaml:
     get:
       tags: [OpenAPI]
@@ -1992,6 +2165,26 @@ components:
           type: string
           description: 認証不要で参照できる配信 URL（<img> / <video> にそのまま入れる）
           example: /__debug/api/release-notes/media/9f2c…
+
+    ManualMedia:
+      type: object
+      description: |
+        マニュアルページ（ManualItem 1件）に添付する画像。動画は対象外。
+        token は返さず、配信 URL に埋めた形でのみ渡す。
+      properties:
+        id: { type: integer }
+        manual_item_id:
+          type: string
+          description: ManualItem.id と対応する自由文字列（DB上の実在確認はできない）
+        original_name: { type: string }
+        mime_type: { type: string, example: image/png }
+        size: { type: integer }
+        caption: { type: string, nullable: true }
+        sort_order: { type: integer }
+        url:
+          type: string
+          description: 認証不要で参照できる配信 URL（<img> にそのまま入れる）
+          example: /__debug/api/manual/media/9f2c…
 
     ReleaseNoteTokenInfo:
       type: object
