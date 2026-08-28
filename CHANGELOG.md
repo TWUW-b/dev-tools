@@ -2,6 +2,23 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.4.3] - 2026-08-28
+
+### Fixed
+
+- **[1.4.2 の訂正] ManualPiP の初期表示位置は制御不可能と判明、`moveTo` 実装を削除**:
+  1.4.2 で `pip.moveTo()` により PiP ウィンドウを画面右下に配置する実装を追加したが、
+  Document Picture-in-Picture API の仕様上、**サイト側から PiP ウィンドウの位置を
+  設定することはできない**（なりすまし防止のための意図的な制限）。
+  仕様書に明記: "The website cannot set the position of the PiP window."
+  （https://wicg.github.io/document-picture-in-picture/）。Chrome の API 実装者も
+  同様に確認している（https://github.com/WICG/document-picture-in-picture/issues/34）。
+  そのため `pip.moveTo()` は Chrome では黙って無視され、実質的に何も行わないコードだった。
+  `initialPosition` prop・`computePipPosition`（`src/utils/pipPosition.ts`）・関連の
+  単体テストを削除し、死んだコードを除去。**サイズ（`initialSize`）はサイト側から指定
+  可能で、こちらは引き続き有効。** 位置については、ブラウザが前回閉じた位置を記憶して
+  次回再現する挙動（`preferInitialWindowPlacement` のデフォルト動作）に委ねる他ない。
+
 ## [1.4.2] - 2026-08-28
 
 ### Fixed
