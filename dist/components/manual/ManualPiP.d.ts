@@ -17,5 +17,5 @@ declare global {
  * PiP（Picture-in-Picture）フローティングウィンドウ
  * Document Picture-in-Picture API を使用して別ウィンドウで表示
  */
-export declare function ManualPiP({ isOpen, docPath, onClose, onNavigate, onAppNavigate, initialSize, showDownloadButton, items, feedbackApiBaseUrl, feedbackUserType, feedbackAppVersion, onFeedbackSubmitSuccess, onFeedbackSubmitError, feedbackDefaultHeight: _feedbackDefaultHeight, feedbackMinHeight: _feedbackMinHeight, feedbackMaxHeight: _feedbackMaxHeight, }: ManualPiPProps): import("react").ReactPortal | null;
+export declare function ManualPiP({ isOpen, docPath, onClose, onNavigate, onAppNavigate, initialPosition, initialSize, showDownloadButton, items, feedbackApiBaseUrl, feedbackUserType, feedbackAppVersion, onFeedbackSubmitSuccess, onFeedbackSubmitError, feedbackDefaultHeight: _feedbackDefaultHeight, feedbackMinHeight: _feedbackMinHeight, feedbackMaxHeight: _feedbackMaxHeight, }: ManualPiPProps): import("react").ReactPortal | null;
 export {};

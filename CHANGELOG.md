@@ -2,6 +2,18 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [Unreleased]
+
+### Fixed
+
+- **ManualPiP の初期表示位置**: Document Picture-in-Picture API の `requestWindow()` は
+  width/height のみ受け付け、位置（x/y）は指定できない仕様のため、常に画面左上に開いていた。
+  型定義のみ存在し実装に配線されていなかった `initialPosition` prop を接続し、
+  `requestWindow()` 完了後に `pip.moveTo()` で明示的に位置調整するよう修正。
+  `initialPosition` 指定時はそれを優先、未指定時はデフォルトで画面右下（端から20pxマージン）
+  に配置する。位置計算は `computePipPosition`（`src/utils/pipPosition.ts`）に純粋関数として
+  切り出し、単体テストで検証（Document PiP 自体は CDP 自動化ブラウザでは開けず実機検証不可のため）。
+
 ## [1.4.1] - 2026-08-28
 
 ### Fixed
