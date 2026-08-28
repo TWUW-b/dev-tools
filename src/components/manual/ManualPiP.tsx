@@ -48,6 +48,7 @@ export function ManualPiP({
   onAppNavigate,
   initialSize = { width: 420, height: 550 },
   showDownloadButton = false,
+  copyHostStyles = true,
   items,
   feedbackApiBaseUrl,
   feedbackUserType,
@@ -123,6 +124,12 @@ export function ManualPiP({
       style.textContent = getPipStyles();
       pip.document.head.appendChild(style);
 
+      // ホストページの CSS（利用側アプリが追加するマニュアル用カスタムクラス等）を PiP にも反映する。
+      // PiP は別 document のため、ここでコピーしない限りホスト側の <style>/<link> は一切効かない。
+      if (copyHostStyles) {
+        copyHostStylesheetsIntoPip(pip.document);
+      }
+
       // コンテナを作成
       const container = pip.document.createElement('div');
       container.id = 'manual-pip-root';
@@ -142,7 +149,7 @@ export function ManualPiP({
     } finally {
       isOpeningRef.current = false;
     }
-  }, [initialSize.width, initialSize.height, onClose]);
+  }, [initialSize.width, initialSize.height, copyHostStyles, onClose]);
 
   // PiPウィンドウを閉じる
   const closePipWindow = useCallback(() => {
@@ -619,6 +626,46 @@ export function ManualPiP({
     </div>,
     pipContainer
   );
+}
+
+/**
+ * ホスト（利用側アプリ）の document が読み込んでいる stylesheet を、PiP ウィンドウ（別 document）
+ * にもコピーする。
+ *
+ * PiP は Document Picture-in-Picture API で独立した document/window コンテキストを持つため、
+ * ホスト側の <style>/<link rel="stylesheet"> は自動では一切反映されない。getPipStyles() は
+ * PiP のチューム（ヘッダー・目次パネル等）と .manual-markdown の基本スタイル（h1-h3 等）しか
+ * カバーしておらず、利用側アプリが追加するマニュアル用カスタムクラス（例: 手順カード・
+ * スクリーンショット枠）はホスト側の CSS にしか定義されていないことが多い。個別のクラスを
+ * dev-tools 側で allowlist 的に管理するのではなく、ホストの stylesheet を丸ごとコピーすることで、
+ * 利用側アプリが将来追加する任意のクラスも自動的に PiP 内で有効になるようにする
+ * （Chrome 公式の Document Picture-in-Picture サンプルが推奨する手法）。
+ */
+function copyHostStylesheetsIntoPip(pipDocument: Document): void {
+  Array.from(document.styleSheets).forEach((sheet) => {
+    try {
+      // 同一オリジンの stylesheet は cssRules を読めるため、テキストとして複製する。
+      // <link> をそのまま複製すると二重フェッチになる上、動的に注入された <style> 要素
+      // （CSS-in-JS 等、href を持たない）はこの方法でしか複製できない。
+      const cssText = Array.from(sheet.cssRules)
+        .map((rule) => rule.cssText)
+        .join('\n');
+      if (!cssText) return;
+      const style = pipDocument.createElement('style');
+      style.textContent = cssText;
+      pipDocument.head.appendChild(style);
+    } catch {
+      // クロスオリジンの stylesheet（例: Google Fonts の <link>）は cssRules に
+      // アクセスできず SecurityError を投げる。<link> 要素として複製し、PiP 側で
+      // 再フェッチさせる（ブラウザキャッシュが効くため実質コストは小さい）。
+      if (sheet.href) {
+        const link = pipDocument.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = sheet.href;
+        pipDocument.head.appendChild(link);
+      }
+    }
+  });
 }
 
 /**

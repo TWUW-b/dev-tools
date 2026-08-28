@@ -427,6 +427,16 @@ export interface ManualPiPProps {
     };
     /** ダウンロードボタンを表示するか（デフォルト: false） */
     showDownloadButton?: boolean;
+    /**
+     * ホストページの stylesheet（<style>/<link rel="stylesheet">）を PiP ウィンドウにもコピーするか
+     * （デフォルト: true）。PiP は Document Picture-in-Picture API で独立した document を持つため、
+     * ホスト側の CSS（利用側アプリが追加するマニュアル用カスタムクラス等）は自動では一切反映されない。
+     * 既定でホストの stylesheet を丸ごとコピーすることで、dev-tools 側に個別のクラスを
+     * 登録しなくても、利用側アプリが追加した任意のマニュアル用スタイルが PiP 内でも有効になる。
+     * ホストの stylesheet が極端に大きい・PiP 内で意図せず他の CSS と衝突する等の理由で
+     * 無効化したい場合は false を指定する。
+     */
+    copyHostStyles?: boolean;
     /** フィードバックAPIのベースURL */
     feedbackApiBaseUrl?: string;
     /** ユーザー種別 */

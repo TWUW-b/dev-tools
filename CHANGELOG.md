@@ -2,6 +2,22 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.4.4] - 2026-08-28
+
+### Fixed
+
+- **PiP に利用側アプリの CSS が一切反映されない問題**: PiP は Document Picture-in-Picture API
+  で独立した document/window コンテキストを持つため、ホストページの `<style>`/
+  `<link rel="stylesheet">` が自動では一切反映されず、getPipStyles() がカバーする
+  PiP チーム・`.manual-markdown` の基本スタイル(h1-h3等)以外は素の HTML として崩れて
+  表示されていた。利用側アプリがマニュアル本文に追加する独自クラス(手順カード・
+  スクリーンショット枠等)は影響が大きく、画像を含む手順が続くとセクションの区切りが
+  全く分からなくなるという指摘があった。`ManualPiP` の PiP ウィンドウを開く処理に、
+  ホストの stylesheet を丸ごとコピーする `copyHostStylesheetsIntoPip()` を追加して解消
+  (Chrome 公式の Document Picture-in-Picture サンプルが推奨する手法。同一オリジンの
+  stylesheet はテキスト複製、クロスオリジンの `<link>` は要素複製で再フェッチさせる)。
+  新規 prop `copyHostStyles`(デフォルト `true`)で無効化も可能。
+
 ## [1.4.3] - 2026-08-28
 
 ### Fixed
