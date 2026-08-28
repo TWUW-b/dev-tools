@@ -5,4 +5,4 @@ import type { ManualTabPageProps } from '../../types';
  * `sidebarPath` を指定するとリサイズ可能なサイドバーが開く
  * `feedbackApiBaseUrl` を指定するとフィードバック機能が有効化
  */
-export declare function ManualTabPage({ defaultDocPath, sidebarPath, onSidebarNavigate, onSidebarAppNavigate, sidebarDefaultWidth, sidebarMinWidth, sidebarMaxWidth, feedbackApiBaseUrl, feedbackUserType, feedbackAppVersion, feedbackAdminUrl, feedbackDefaultHeight, feedbackMinHeight, feedbackMaxHeight, onFeedbackSubmitSuccess, onFeedbackSubmitError, }?: ManualTabPageProps): import("react/jsx-runtime").JSX.Element;
+export declare function ManualTabPage({ defaultDocPath, sidebarPath, onSidebarNavigate, onSidebarAppNavigate, sidebarDefaultWidth, sidebarMinWidth, sidebarMaxWidth, feedbackApiBaseUrl, feedbackUserType, feedbackAppVersion, feedbackAdminUrl, feedbackDefaultHeight, feedbackMinHeight, feedbackMaxHeight, onFeedbackSubmitSuccess, onFeedbackSubmitError, items, }?: ManualTabPageProps): import("react/jsx-runtime").JSX.Element;

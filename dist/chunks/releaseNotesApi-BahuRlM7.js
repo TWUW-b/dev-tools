@@ -1,4 +1,4 @@
-import { e as w, d } from "./feedbackApi-B81GxfJ2.js";
+import { e as w, d } from "./feedbackApi-BAwJP8AU.js";
 function n(e) {
   return e.apiBaseUrl.replace(/\/$/, "");
 }

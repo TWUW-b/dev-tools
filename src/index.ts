@@ -22,6 +22,7 @@ export {
   MarkdownRenderer,
   ManualPiP,
   ManualSidebar,
+  ManualTableOfContents,
   ManualLink,
   ManualPage,
   ManualTabPage,
@@ -34,6 +35,8 @@ export { useDebugMode } from './hooks/useDebugMode';
 export { useDebugNotes } from './hooks/useDebugNotes';
 export { useManualPiP, setManualTabBaseUrl } from './hooks/useManualPiP';
 export { useManualLoader } from './hooks/useManualLoader';
+export { useManualHeadings } from './hooks/useManualHeadings';
+export type { UseManualHeadingsReturn } from './hooks/useManualHeadings';
 export { useManualDownload } from './hooks/useManualDownload';
 export type { DownloadFile, UseManualDownloadReturn } from './hooks/useManualDownload';
 export { useResizable } from './hooks/useResizable';
@@ -91,6 +94,7 @@ export type {
   UseDebugModeReturn,
   // Manual types
   ManualItem,
+  ManualHeading,
   ManualViewMode,
   PiPState,
   UseManualPiPReturn,
@@ -98,6 +102,7 @@ export type {
   MarkdownRendererProps,
   ManualPiPProps,
   ManualSidebarProps,
+  ManualTableOfContentsProps,
   ManualLinkProps,
   ManualPageProps,
   ManualTabPageProps,

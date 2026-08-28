@@ -1,54 +1,56 @@
-import { D as s, a as o, b as r, c as t, L as u, R as d, d as l, p as b } from "./chunks/ReleaseNotes-Dh-W7dyL.js";
-import { u as m, a as i, b as M } from "./chunks/useReleaseNotes-C07kqzqH.js";
-import { f as c, r as A } from "./chunks/releaseNotesApi-f-5GsU66.js";
-import { D as L, F as f, a as R, M as g, b as S, c as k, d as x, e as F, f as O, g as C, h as N, i as P, l as T, m as _ } from "./chunks/FeedbackAdmin-DxM1CpDy.js";
-import { s as y, u as B } from "./chunks/useManualPiP-CjK-TJ87.js";
-import { u as h, a as E, b as w, c as G, d as I, e as K } from "./chunks/useFeedbackAdminMode-BIbslj4E.js";
-import { s as H, a as Y, b as j } from "./chunks/feedbackApi-B81GxfJ2.js";
-import { c as J, m as Q } from "./chunks/feedbackLogCapture-DUBfVREg.js";
-import { parseTestCaseMd as W } from "./utils.js";
-import { c as Z } from "./chunks/logCapture-Bkuy8MSd.js";
+import { D as s, a as o, b as r, c as u, L as t, R as l, d, p as n } from "./chunks/ReleaseNotes-DYeVcw3m.js";
+import { u as m, a as i, b as M } from "./chunks/useReleaseNotes-D1ZTqeG2.js";
+import { f as c, r as f } from "./chunks/releaseNotesApi-BahuRlM7.js";
+import { D, F as L, a as R, M as g, b as S, c as k, d as x, e as O, f as C, g as F, h as T, i as N, j as P, l as _, m as v, u as y } from "./chunks/FeedbackAdmin-CilvfVsH.js";
+import { s as U, u as h } from "./chunks/useManualPiP-CjK-TJ87.js";
+import { u as w, a as G, b as H, c as I, d as K, e as j } from "./chunks/useFeedbackAdminMode-DpbrwKWq.js";
+import { s as Y, a as q, b as J } from "./chunks/feedbackApi-BAwJP8AU.js";
+import { c as V, m as W } from "./chunks/feedbackLogCapture-DUBfVREg.js";
+import { parseTestCaseMd as Z } from "./utils.js";
+import { c as aa } from "./chunks/logCapture-Bkuy8MSd.js";
 export {
   s as DARK_COLORS,
-  L as DEBUG_COLORS,
+  D as DEBUG_COLORS,
   o as DebugAdmin,
   r as DebugPanel,
-  t as DevTools,
-  f as FeedbackAdmin,
+  u as DevTools,
+  L as FeedbackAdmin,
   R as FeedbackForm,
-  u as LIGHT_COLORS,
+  t as LIGHT_COLORS,
   g as MANUAL_COLORS,
   S as MATERIAL_SYMBOLS_CDN,
   k as ManualLink,
   x as ManualPage,
-  F as ManualPiP,
-  O as ManualSidebar,
-  C as ManualTabPage,
+  O as ManualPiP,
+  C as ManualSidebar,
+  F as ManualTabPage,
+  T as ManualTableOfContents,
   N as MarkdownRenderer,
-  d as ReleaseNotes,
-  l as ReleaseNotesTab,
-  J as createFeedbackLogCapture,
-  Z as createLogCapture,
+  l as ReleaseNotes,
+  d as ReleaseNotesTab,
+  V as createFeedbackLogCapture,
+  aa as createLogCapture,
   c as fetchReleaseNotesFeed,
   P as isAutoLoadDisabled,
-  T as loadMaterialSymbols,
-  Q as maskSensitive,
-  _ as materialSymbolsStyle,
-  b as parseEnvironmentsMd,
-  W as parseTestCaseMd,
-  A as releaseNotesApi,
-  H as setAuthTokenProvider,
-  Y as setDebugAdminKey,
-  j as setDebugApiBaseUrl,
-  y as setManualTabBaseUrl,
+  _ as loadMaterialSymbols,
+  W as maskSensitive,
+  v as materialSymbolsStyle,
+  n as parseEnvironmentsMd,
+  Z as parseTestCaseMd,
+  f as releaseNotesApi,
+  Y as setAuthTokenProvider,
+  q as setDebugAdminKey,
+  J as setDebugApiBaseUrl,
+  U as setManualTabBaseUrl,
   m as useDebugMode,
   i as useDebugNotes,
-  h as useFeedback,
-  E as useFeedbackAdmin,
-  w as useFeedbackAdminMode,
-  G as useManualDownload,
-  I as useManualLoader,
-  B as useManualPiP,
+  w as useFeedback,
+  G as useFeedbackAdmin,
+  H as useFeedbackAdminMode,
+  I as useManualDownload,
+  y as useManualHeadings,
+  K as useManualLoader,
+  h as useManualPiP,
   M as useReleaseNotes,
-  K as useResizable
+  j as useResizable
 };
