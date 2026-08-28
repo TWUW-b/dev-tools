@@ -417,12 +417,10 @@ export interface ManualPiPProps {
     onNavigate?: (path: string) => void;
     /** アプリリンククリック時のハンドラ（app:/...リンク用、メイン画面遷移） */
     onAppNavigate?: (path: string) => void;
-    /** 初期位置（オプション） */
-    initialPosition?: {
-        x: number;
-        y: number;
-    };
-    /** 初期サイズ（オプション） */
+    /** 初期サイズ（オプション）
+     * NOTE: 初期位置（x/y）は指定不可。Document Picture-in-Picture API の仕様上、
+     * サイト側から PiP ウィンドウの位置を制御することはできない（なりすまし防止のための
+     * 意図的な制限。https://wicg.github.io/document-picture-in-picture/ 参照）。 */
     initialSize?: {
         width: number;
         height: number;
