@@ -237,6 +237,9 @@ export interface DebugPanelProps {
     env?: Environment;
     onSave?: (note: Note) => void;
     onClose?: () => void;
+    /** 初期サイズ。width/height の指定値と実際の描画サイズの関係は
+     * ManualPiPProps.initialSize の NOTE を参照（同じ Document Picture-in-Picture
+     * API を使用しているため同様の制約が適用される）。 */
     initialSize?: {
         width: number;
         height: number;
@@ -420,7 +423,16 @@ export interface ManualPiPProps {
     /** 初期サイズ（オプション）
      * NOTE: 初期位置（x/y）は指定不可。Document Picture-in-Picture API の仕様上、
      * サイト側から PiP ウィンドウの位置を制御することはできない（なりすまし防止のための
-     * 意図的な制限。https://wicg.github.io/document-picture-in-picture/ 参照）。 */
+     * 意図的な制限。https://wicg.github.io/document-picture-in-picture/ 参照）。
+     *
+     * NOTE: width/height の指定値と実際の描画サイズは一致しない（Chrome 実機で実測・
+     * 詳細は CHANGELOG [1.4.6] 参照）。
+     * - width: 240px 未満を指定すると 240px にクランプされる（Chromium の PiP 最小幅）。
+     *   240px 以上はそのまま反映される。
+     * - height: 実際の viewport 高さ（innerHeight）は「指定値 − 56px」になる
+     *   （PiP ヘッダー分のオーバーヘッドと推定）。欲しい viewport 高さを得るには
+     *   `height = 欲しい高さ + 56` を指定する。極端に小さい値（52px 付近）や
+     *   大きい値（画面サイズに近い値）ではこの単純な計算式から外れる。 */
     initialSize?: {
         width: number;
         height: number;
