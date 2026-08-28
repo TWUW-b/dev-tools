@@ -790,7 +790,10 @@ function getPipStyles(): string {
       outline-offset: 2px;
     }
 
-    /* ハンバーガーメニュー（目次パネル開閉） */
+    /* ハンバーガーメニュー（目次パネル開閉）
+       button 要素は UA スタイルで color が親から継承されないため、
+       .pip-close-btn / .pip-download-btn と同様に明示指定する
+       （指定漏れにより中の .pip-icon が既定の黒文字になっていた）。 */
     .pip-menu-btn {
       display: flex;
       align-items: center;
@@ -800,6 +803,7 @@ function getPipStyles(): string {
       background: transparent;
       border: none;
       border-radius: 8px;
+      color: ${COLORS.white};
       cursor: pointer;
       transition: background 0.15s ease;
     }
