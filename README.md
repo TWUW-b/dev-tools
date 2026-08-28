@@ -190,6 +190,12 @@ function App() {
 
 ```typescript
 import { ManualPiP, useManualPiP } from '@twuw-b/dev-tools/manual';
+import type { ManualItem } from '@twuw-b/dev-tools';
+
+const manualItems: ManualItem[] = [
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: 'はじめに', order: 1 },
+  { id: 'faq', title: 'FAQ', path: '/docs/faq.md', category: 'はじめに', order: 2 },
+];
 
 function App() {
   const { isOpen, currentPath, openPiP, closePiP, setPath } = useManualPiP();
@@ -198,6 +204,7 @@ function App() {
     <>
       <button onClick={() => openPiP('/docs/guide.md')}>ヘルプ</button>
       <ManualPiP
+        items={manualItems}
         isOpen={isOpen}
         docPath={currentPath}
         onClose={closePiP}
@@ -207,6 +214,10 @@ function App() {
   );
 }
 ```
+
+`items` を渡すと「カテゴリ→ページ→見出し」の階層目次が使えるようになる。`ManualPiP` はハンバーガー
+メニューから開くオーバーレイパネル、`ManualTabPage` は画面幅767px以下で自動的に同じハンバーガー
+方式に切り替わり、それ以外は常時表示の左サイドバーになる（`items` 未指定なら従来通り目次なし）。
 
 ### フィードバック
 
