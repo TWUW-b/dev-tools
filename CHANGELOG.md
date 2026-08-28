@@ -2,6 +2,53 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.4.0] - 2026-08-28
+
+### Added
+
+- **マニュアル画像アップロードAPI（RFC 002 / @TWUWB-005）**: `ManualItem`（マニュアルページ）に
+  画像を添付・配信するバックエンドAPIを追加。`POST/GET /manual/items/{itemId}/media`、
+  `GET /manual/items`（横断一覧・監査用）、`DELETE /manual/media/{id}`、
+  `GET /manual/media/{token}`（認証なし配信）。`ReleaseNotesController` のメディア設計
+  （トークン配信・Range対応・MIME実体検証・物理削除）を踏襲しつつ、画像のみ(10MB上限・
+  30枚/項目・全item横断500MB上限)、親エンティティ無しの2階層構成に単純化。
+  フロントエンド実装は対象外（`docs/rfc/002-manual-media-upload-api.md` 参照）。
+- **マニュアル階層目次（@TWUWB-007）**: `ManualTableOfContents` を新設し、
+  「カテゴリ→ページ→見出し」の階層目次を `ManualTabPage`（PC想定・常時サイドバー、
+  モバイル幅767px以下では自動的にハンバーガーメニュー+オーバーレイパネルに切替）と
+  `ManualPiP`（ハンバーガーメニュー開閉）に追加。見出し(h2/h3)はページごとに遅延フェッチ・
+  キャッシュし、`rehype-slug` で実DOMに付与された id と一致するよう github-slugger 準拠で
+  スラッグ化。スクロールスパイ（`IntersectionObserver`）で現在の見出しを目次側にハイライト。
+  `items` prop 未指定時は既存の見た目・挙動を一切変えない後方互換を維持。
+
+### Fixed
+
+- **`.manual-markdown` の CSS 優先順位バグ（@TWUWB-008）**: `.manual-markdown` の CSS 定義が
+  `DebugPanel` / `ManualTabPage` / `ManualPiP` の3箇所に重複しており、いずれも「そのコンポー
+  ネント自身がマウントされた時のみ `<style>` を注入する」設計だったため、`ManualSidebar` +
+  `MarkdownRenderer` を単体で使う画面では CSS が一切当たらなかった。`MarkdownRenderer` 自身に
+  `:where()`（詳細度ゼロ）のフォールバックCSSを追加して解消。さらに、`ManualTabPage` 表示中に
+  `DebugPanel` を同時に開くと両者の同名セレクタが同じ CSS 詳細度で DOM 順序次第で優先順位が
+  不定になる別の潜在バグも発見し、各コンポーネントのルートクラスでスコープを追加して解消。
+- **マニュアル目次のレイアウトバグ**: サイドバーがスクロールに追従しない根本原因は、
+  `ManualTabPage` のコンテナが `minHeight:100vh`（`overflow` 指定なし）だったため、コンテンツ
+  増加でページ全体がスクロールし目次サイドバーが画面外に流れる不具合だった。`items` 指定時のみ
+  `height:100vh + overflow:hidden` に固定して解消（`items` 未指定時は従来の挙動を維持）。
+- 印刷時に `height:100vh + overflow:hidden` でコンテンツがクリップされる問題を `@media print`
+  でリセット。
+- 別ページへの遷移直後、stale content レースでスクロールスパイが前ページの見出しを一瞬誤って
+  ハイライトする問題（PC/PiP両方）。
+- 手動で閉じた見出しリストがスクロールで勝手に再展開される問題。
+- モバイルのハンバーガーパネル: ブレークポイント往復で開閉状態がリセットされない、
+  ブラウザの戻る/進む(popstate)で閉じない、背景が inert 化されずキーボードフォーカスが漏れる
+  問題を修正。
+- アクセシビリティ属性（`aria-expanded`/`aria-controls`、装飾アイコンの `aria-hidden`）の
+  欠落を複数箇所で追加。
+
+### Tests
+
+- Unit: 122 / API: 135 passed + 1 skipped / E2E: 43
+
 ## [1.3.2] - 2026-07-31
 
 ### Added
