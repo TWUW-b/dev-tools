@@ -457,6 +457,37 @@ function App() {
 | `feedbackDefaultHeight` | `number` | | フィードバック領域の初期高さ（デフォルト: 200px） |
 | `feedbackMinHeight` | `number` | | フィードバック領域の最小高さ（デフォルト: 150px） |
 | `feedbackMaxHeight` | `number` | | フィードバック領域の最大高さ（デフォルト: 400px） |
+| `items` | `ManualItem[]` | | マニュアル項目リスト。**指定時のみ**ヘッダーにハンバーガーメニューが表示され、トグルで階層目次パネル（`ManualTableOfContents`）を開閉できる。未指定時は既存の見た目・挙動を一切変えない |
+
+#### 階層目次パネル（items）
+
+`items` を渡すと、ヘッダー左側にハンバーガーメニューボタンが追加され、クリックで「カテゴリ → ページ → 見出し」の階層目次をオーバーレイ表示できます（背景クリック・Escape キーでも閉じられます）。
+
+```typescript
+import { ManualPiP, useManualPiP } from '@twuw-b/dev-tools/manual';
+import type { ManualItem } from '@twuw-b/dev-tools';
+
+const items: ManualItem[] = [
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: '基本' },
+  { id: 'faq', title: 'よくある質問', path: '/docs/faq.md', category: '基本' },
+];
+
+function App() {
+  const { isOpen, currentPath, openPiP, closePiP, setPath } = useManualPiP();
+
+  return (
+    <ManualPiP
+      isOpen={isOpen}
+      docPath={currentPath}
+      onClose={closePiP}
+      onNavigate={setPath}
+      items={items}
+    />
+  );
+}
+```
+
+見出しクリック時は、表示中のページであれば即座にスクロールし、別ページであれば遷移後にスクロールします。見出しは、そのページのトグルを開いたタイミングで Markdown を遅延フェッチして抽出します（事前の一括フェッチはしません）。
 
 ### ManualPage
 
@@ -508,6 +539,40 @@ const items: ManualItem[] = [
 | `onPiP` | `(path: string) => void` | | PiP で開くハンドラ |
 | `onNewTab` | `(path: string) => void` | | 新しいタブで開くハンドラ |
 
+### ManualTableOfContents
+
+「カテゴリ（アコーディオン） → ページ（トグルで見出し展開） → 見出し（クリックでジャンプ）」の階層目次を描画する共通コンポーネント。`ManualPiP`（オーバーレイパネル内）と `ManualTabPage`（常設サイドバー内）の両方が内部で使用しますが、単体でも使用可能です。特定の `document` には依存しないため、Document Picture-in-Picture の別ウィンドウ内でも動作します。
+
+カテゴリはデフォルトで `activePath` を含むもののみ開いた状態になります。各ページ行はページタイトルのクリック（`onSelectPage`）と、見出し展開トグルのクリックが独立した操作領域になっており、見出し展開時にそのページの Markdown を遅延フェッチして h2/h3 見出しを抽出します（`useManualHeadings` フックを内部で使用。事前の一括フェッチはしません）。見出しの `id` は `rehype-slug`（`MarkdownRenderer` が付与するもの）と同じアルゴリズム（`github-slugger`）で生成するため一致します。
+
+```typescript
+import { ManualTableOfContents } from '@twuw-b/dev-tools/manual';
+
+const items: ManualItem[] = [
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: '基本' },
+  { id: 'faq', title: 'よくある質問', path: '/docs/faq.md', category: '基本' },
+];
+
+<ManualTableOfContents
+  items={items}
+  activePath="/docs/guide.md"
+  onSelectPage={(path) => setDocPath(path)}
+  onSelectHeading={(path, headingId) => {
+    // path === 現在のページなら scrollIntoView、違えば遷移後にスクロール
+  }}
+/>
+```
+
+#### Props
+
+| Prop | 型 | 必須 | 説明 |
+|------|------|------|------|
+| `items` | `ManualItem[]` | ✓ | マニュアル項目リスト |
+| `activePath` | `string \| null` | | 現在表示中のページパス（指定時、そのページを含むカテゴリを初期状態で開く） |
+| `onSelectPage` | `(path: string) => void` | ✓ | ページ選択ハンドラ（ページタイトルクリック時） |
+| `onSelectHeading` | `(path: string, headingId: string) => void` | ✓ | 見出し選択ハンドラ（見出しクリック時） |
+| `className` | `string` | | 追加の CSS クラス名 |
+
 ### ManualTabPage
 
 別タブ用マニュアル表示ページ。URL クエリパラメータ `?path=/docs/xxx.md` でマニュアルを表示します。リサイズ可能なサイドバー、フィードバックセクション、管理画面へのショートカットを統合。
@@ -552,6 +617,23 @@ function ManualViewPage() {
 | `onFeedbackSubmitSuccess` | `(feedback: Feedback) => void` | | 送信成功コールバック |
 | `onFeedbackSubmitError` | `(error: Error) => void` | | 送信エラーコールバック |
 | `defaultDocPath` | `string` | | URL に `?path=` がない場合のデフォルトドキュメント |
+| `items` | `ManualItem[]` | | マニュアル項目リスト。**指定時のみ**メインペイン左側に常時表示の階層目次サイドバー（`ManualTableOfContents`、固定幅 260px）が表示される。既存の右サイドバー（`sidebarPath`/`feedbackApiBaseUrl`）とは独立して共存する。未指定時は既存の見た目・挙動を一切変えない |
+
+#### 階層目次サイドバー（items）
+
+```typescript
+import { ManualTabPage } from '@twuw-b/dev-tools/manual';
+import type { ManualItem } from '@twuw-b/dev-tools';
+
+const items: ManualItem[] = [
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: '基本' },
+  { id: 'faq', title: 'よくある質問', path: '/docs/faq.md', category: '基本' },
+];
+
+<ManualTabPage items={items} defaultDocPath="/docs/guide.md" />
+```
+
+レイアウトは「左目次 → メイン → 右サイドバー」の順になります。見出しクリック時は、表示中のページであれば即座にスクロールし、別ページであれば URL（`?path=`）を更新して遷移した後にスクロールします。
 
 ### ManualLink
 

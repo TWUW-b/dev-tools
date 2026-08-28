@@ -733,28 +733,32 @@ export function getPanelStyles(): string {
       min-width: 0;
     }
 
-    /* Markdown スタイル */
-    .manual-markdown {
+    /* Markdown スタイル
+       .debug-panel でスコープする: MarkdownRenderer 自身が持つ :where(.manual-markdown ...)
+       フォールバック（詳細度0）より確実に優先させるため、また ManualTabPage/ManualPiP の
+       同名セレクタ（詳細度は同じ0,0,2,0）と、両者が同時にマウントされた場合に DOM 順序
+       次第で優先順位が不定になるのを避けるため。 */
+    .debug-panel .manual-markdown {
       font-size: 13px;
       line-height: 1.6;
       color: ${COLORS.gray900};
     }
 
-    .manual-markdown h1 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid ${COLORS.gray200}; }
-    .manual-markdown h2 { font-size: 17px; font-weight: 600; margin: 14px 0 6px; }
-    .manual-markdown h3 { font-size: 15px; font-weight: 600; margin: 12px 0 4px; }
-    .manual-markdown h4 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+    .debug-panel .manual-markdown h1 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid ${COLORS.gray200}; }
+    .debug-panel .manual-markdown h2 { font-size: 17px; font-weight: 600; margin: 14px 0 6px; }
+    .debug-panel .manual-markdown h3 { font-size: 15px; font-weight: 600; margin: 12px 0 4px; }
+    .debug-panel .manual-markdown h4 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
 
-    .manual-markdown p { margin: 8px 0; }
+    .debug-panel .manual-markdown p { margin: 8px 0; }
 
-    .manual-markdown ul, .manual-markdown ol {
+    .debug-panel .manual-markdown ul, .debug-panel .manual-markdown ol {
       margin: 8px 0;
       padding-left: 20px;
     }
 
-    .manual-markdown li { margin: 2px 0; }
+    .debug-panel .manual-markdown li { margin: 2px 0; }
 
-    .manual-markdown code {
+    .debug-panel .manual-markdown code {
       background: ${COLORS.gray100};
       padding: 1px 4px;
       border-radius: 3px;
@@ -762,7 +766,7 @@ export function getPanelStyles(): string {
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     }
 
-    .manual-markdown pre {
+    .debug-panel .manual-markdown pre {
       background: ${COLORS.gray100};
       padding: 12px;
       border-radius: 6px;
@@ -770,42 +774,42 @@ export function getPanelStyles(): string {
       margin: 8px 0;
     }
 
-    .manual-markdown pre code {
+    .debug-panel .manual-markdown pre code {
       background: none;
       padding: 0;
     }
 
-    .manual-markdown table {
+    .debug-panel .manual-markdown table {
       border-collapse: collapse;
       width: 100%;
       margin: 8px 0;
       font-size: 12px;
     }
 
-    .manual-markdown th, .manual-markdown td {
+    .debug-panel .manual-markdown th, .debug-panel .manual-markdown td {
       border: 1px solid ${COLORS.gray200};
       padding: 6px 8px;
       text-align: left;
     }
 
-    .manual-markdown th {
+    .debug-panel .manual-markdown th {
       background: ${COLORS.gray100};
       font-weight: 600;
     }
 
-    .manual-markdown blockquote {
+    .debug-panel .manual-markdown blockquote {
       border-left: 3px solid ${COLORS.gray300};
       padding-left: 12px;
       margin: 8px 0;
       color: ${COLORS.gray500};
     }
 
-    .manual-markdown img {
+    .debug-panel .manual-markdown img {
       max-width: 100%;
       height: auto;
     }
 
-    .manual-markdown hr {
+    .debug-panel .manual-markdown hr {
       border: none;
       border-top: 1px solid ${COLORS.gray200};
       margin: 16px 0;

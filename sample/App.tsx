@@ -148,6 +148,7 @@ export function App() {
       )}
       {view === 'manual-tab' && (
         <ManualTabPage
+          items={manualItems}
           sidebarPath="/docs/index.md"
           defaultDocPath="/docs/guide.md"
           onSidebarNavigate={(path) => console.log('Navigate:', path)}
@@ -163,6 +164,7 @@ export function App() {
 
       {/* PiP（全ビュー共通） */}
       <ManualPiP
+        items={manualItems}
         isOpen={pip.isOpen}
         docPath={pip.currentPath}
         onClose={pip.closePiP}

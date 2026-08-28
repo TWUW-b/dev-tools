@@ -1,5 +1,10 @@
 # 使い方ガイド
 
+![検証用グラデーション画像](http://localhost:8081/manual/media/2c4648a54b84cd131e1797090116495a5faeea6961b6c33b?env=dev)
+
+マニュアル画像アップロードAPI(RFC 002)で実際にアップロードした画像です。API(localhost:8081)と
+sample app(localhost:3000)はオリジンが異なるため、Markdown内では絶対URLで参照する必要があります。
+
 ## デバッグモードの起動
 
 デバッグモードを有効にする方法は3つあります:

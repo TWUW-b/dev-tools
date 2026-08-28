@@ -11,6 +11,7 @@ export {
   MarkdownRenderer,
   ManualPiP,
   ManualSidebar,
+  ManualTableOfContents,
   ManualLink,
   ManualPage,
   ManualTabPage,

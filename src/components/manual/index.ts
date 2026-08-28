@@ -1,6 +1,7 @@
 export { MarkdownRenderer } from './MarkdownRenderer';
 export { ManualPiP } from './ManualPiP';
 export { ManualSidebar } from './ManualSidebar';
+export { ManualTableOfContents } from './ManualTableOfContents';
 export { ManualLink } from './ManualLink';
 export { ManualPage } from './ManualPage';
 export { ManualTabPage } from './ManualTabPage';

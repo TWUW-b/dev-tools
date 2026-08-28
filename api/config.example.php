@@ -38,6 +38,16 @@ return [
     // 同等以上にする必要がある（超えると $_FILES が空で飛んでくる）。
     // 'release_notes_max_upload' => 52428800,
 
+    // マニュアル画像の保存先（任意）。既定は api/data/manual-media。
+    // 'manual_media_dir' => __DIR__ . '/data/manual-media',
+
+    // マニュアル画像の合計容量上限（任意・バイト。既定 500MB）。
+    // manual_item_id は実在チェックができない（ホストアプリが持つ ManualItem に
+    // DB 上の実体が無いため）。項目単位の30枚上限だけでは、新しい manual_item_id を
+    // 名乗って POST するだけで際限なく容量を確保できてしまうため、全 item 横断の
+    // 合計サイズにも上限を設けている。GET /manual/items で現在の内訳を確認できる。
+    // 'manual_media_max_total_size' => 524288000,
+
     // Firebase 認証（任意）。設定すると notes/feedback 管理は
     // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」で許可される。
     // 各アプリの Firebase プロジェクト ID を入れる。null なら X-Admin-Key のみ（後方互換）。

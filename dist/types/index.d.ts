@@ -320,6 +320,15 @@ export interface PiPState {
         height: number;
     };
 }
+/** マニュアル見出し（ページ内の h2/h3 一つ分） */
+export interface ManualHeading {
+    /** 見出し要素の id（rehype-slug が振る id と一致させる） */
+    id: string;
+    /** 見出しテキスト（インライン記法を除去済み） */
+    text: string;
+    /** 見出しレベル（h2 または h3 のみ対象） */
+    level: 2 | 3;
+}
 /** 表示モード */
 export type ManualViewMode = 'pip' | 'tab';
 /** PiPフック戻り値 */
@@ -371,6 +380,8 @@ export interface ManualTabPageProps {
     onFeedbackSubmitError?: (error: Error) => void;
     /** Default document path when URL has no ?path= parameter */
     defaultDocPath?: string;
+    /** マニュアル項目リスト。指定時のみ左側に階層目次サイドバーが常時表示される（未指定時は既存の見た目・挙動のまま） */
+    items?: ManualItem[];
 }
 /** マニュアルローダー戻り値 */
 export interface UseManualLoaderReturn {
@@ -434,6 +445,8 @@ export interface ManualPiPProps {
     feedbackMinHeight?: number;
     /** フィードバック領域の最大高さ（px）デフォルト: 400 */
     feedbackMaxHeight?: number;
+    /** マニュアル項目リスト。指定時のみヘッダーにハンバーガーメニューが表示され、トグルで階層目次パネルを開閉できる（未指定時は既存の見た目・挙動のまま） */
+    items?: ManualItem[];
 }
 /** ManualSidebar プロパティ */
 export interface ManualSidebarProps {
@@ -449,6 +462,21 @@ export interface ManualSidebarProps {
     onPiP?: (path: string) => void;
     /** 新しいタブで開くハンドラ（オプション） */
     onNewTab?: (path: string) => void;
+}
+/** ManualTableOfContents プロパティ */
+export interface ManualTableOfContentsProps {
+    /** マニュアル項目リスト */
+    items: ManualItem[];
+    /** 現在表示中のページパス（指定時、そのページを含むカテゴリを初期状態で開く） */
+    activePath?: string | null;
+    /** ページ選択ハンドラ（ページタイトルクリック時） */
+    onSelectPage: (path: string) => void;
+    /** 見出し選択ハンドラ（見出しクリック時） */
+    onSelectHeading: (path: string, headingId: string) => void;
+    /** 現在ビューポート内で読まれている見出しの id（スクロールスパイ用。指定時にハイライトする） */
+    activeHeadingId?: string | null;
+    /** 追加のクラス名 */
+    className?: string;
 }
 /** ManualLink プロパティ */
 export interface ManualLinkProps {

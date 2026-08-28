@@ -1,7 +1,7 @@
-import { c as u, f as d, l as b, i as h, g, p as k, s as F, b as x, u as A } from "./chunks/feedbackApi-B81GxfJ2.js";
+import { c as u, f as d, k as b, h, g as k, p as g, s as F, b as x, u as A } from "./chunks/feedbackApi-BAwJP8AU.js";
 import { c as W, m as C } from "./chunks/feedbackLogCapture-DUBfVREg.js";
 import { c as B } from "./chunks/logCapture-Bkuy8MSd.js";
-import { f as N, r as S } from "./chunks/releaseNotesApi-f-5GsU66.js";
+import { f as N, r as S } from "./chunks/releaseNotesApi-BahuRlM7.js";
 function f(c) {
   const n = c.split(`
 `), i = [];
@@ -36,10 +36,10 @@ export {
   N as fetchReleaseNotesFeed,
   b as getDebugApiBaseUrl,
   h as getFeedbackDetail,
-  g as getFeedbacks,
+  k as getFeedbacks,
   C as maskSensitive,
   f as parseTestCaseMd,
-  k as postFeedback,
+  g as postFeedback,
   S as releaseNotesApi,
   F as setAuthTokenProvider,
   x as setDebugApiBaseUrl,
