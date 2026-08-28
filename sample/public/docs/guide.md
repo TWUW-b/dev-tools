@@ -45,6 +45,32 @@ PiP（Picture-in-Picture）ウィンドウで Markdown ドキュメントを表�
 
 ユーザーからのバグ報告・要望・質問を収集できます。
 
+## 手順
+
+<div class="manual-step">
+  <div class="manual-step-info">
+    <div class="manual-step-num"><span class="n">1</span><span class="manual-step-cap">デバッグモードを有効にする</span></div>
+    <p class="manual-step-detail">URL に <code>#debug</code> を付けるか、<code>z</code> キーを素早く3回押します。</p>
+  </div>
+  <div class="manual-shot">
+    <img src="/docs/images/sample-form.png" alt="サンプル画面(ダミー)。保存ボタンの位置">
+    <div class="manual-mark" style="left:5.5%;top:76%;width:31%;height:12%"></div>
+  </div>
+</div>
+
+<div class="manual-step">
+  <div class="manual-step-info">
+    <div class="manual-step-num"><span class="n">2</span><span class="manual-step-cap">画面右下のバグアイコンをクリックする</span></div>
+    <p class="manual-step-detail">Record / Manage / Test の3タブが開きます。</p>
+  </div>
+</div>
+
+<div class="manual-step">
+  <div class="manual-step-info">
+    <div class="manual-step-num"><span class="n">3</span><span class="manual-step-cap">Record タブから記録する</span></div>
+  </div>
+</div>
+
 ---
 
 [FAQ はこちら](/docs/faq.md) | [API リファレンス](/docs/api.md)
