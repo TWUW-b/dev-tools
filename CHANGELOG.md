@@ -2,6 +2,23 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.4.5] - 2026-08-28
+
+### Fixed
+
+- **`initialSize` を指定しても以前開いたサイズのまま変わらない問題**: Document
+  Picture-in-Picture API はデフォルト(`preferInitialWindowPlacement: false`)で
+  「PiP ウィンドウを閉じたときの位置・サイズを記憶し、次回 `requestWindow()` を
+  呼んでもそれを再利用する」仕様のため、一度でも別サイズで開いた履歴があると、
+  `width`/`height` オプションで指定したサイズが無視され続けていた。
+  `requestWindow()` に `preferInitialWindowPlacement: true` を渡し、常に
+  `initialSize` で指定したサイズで開くよう修正（Chrome 130+。非対応ブラウザでは
+  オプションが無視されるだけで従来通り動作する）。
+  仕様: https://wicg.github.io/document-picture-in-picture/#dictdef-documentpictureinpictureoptions
+- なお Document Picture-in-Picture のデスクトップ最小ウィンドウサイズは Chromium 実装で
+  幅240px・高さ52px（`kMinWindowSize`）。これを下回る `initialSize` を指定すると
+  ブラウザ側でその下限に引き上げられる場合がある。
+
 ## [1.4.4] - 2026-08-28
 
 ### Fixed

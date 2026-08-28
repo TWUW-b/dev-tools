@@ -17,6 +17,8 @@ import { MATERIAL_SYMBOLS_CDN } from '../styles/material-symbols';
 interface DocumentPictureInPictureOptions {
   width?: number;
   height?: number;
+  // ManualPiP.tsx 側の同名グローバル宣言と型を一致させるために追加（このファイルでは未使用）。
+  preferInitialWindowPlacement?: boolean;
 }
 
 interface DocumentPictureInPicture extends EventTarget {

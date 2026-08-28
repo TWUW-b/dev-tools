@@ -2,6 +2,7 @@ import type { DebugPanelProps } from '../types';
 interface DocumentPictureInPictureOptions {
     width?: number;
     height?: number;
+    preferInitialWindowPlacement?: boolean;
 }
 interface DocumentPictureInPicture extends EventTarget {
     requestWindow(options?: DocumentPictureInPictureOptions): Promise<Window>;

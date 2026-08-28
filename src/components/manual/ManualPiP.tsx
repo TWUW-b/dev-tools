@@ -19,6 +19,10 @@ interface PendingScrollTarget {
 interface DocumentPictureInPictureOptions {
   width?: number;
   height?: number;
+  // Chrome 130+。true にすると、閉じたときの位置・サイズを記憶して次回再利用する
+  // デフォルト挙動を無効化し、常に width/height で指定した初期サイズで開く。
+  // 仕様: https://wicg.github.io/document-picture-in-picture/#dictdef-documentpictureinpictureoptions
+  preferInitialWindowPlacement?: boolean;
 }
 
 interface DocumentPictureInPicture extends EventTarget {
@@ -109,6 +113,12 @@ export function ManualPiP({
       const pip = await window.documentPictureInPicture.requestWindow({
         width: pipWidth,
         height: pipHeight,
+        // Document Picture-in-Picture API はデフォルト(false)で「閉じたときの
+        // 位置・サイズを記憶し、次回はそれを再利用する」仕様のため、true を渡さないと
+        // 一度でも手動リサイズ/別サイズで開いた履歴があると width/height の指定が
+        // 無視され続ける。true にして常に指定サイズで開かせる（Chrome 130+。
+        // 非対応ブラウザではオプションが単に無視されるだけで害はない）。
+        preferInitialWindowPlacement: true,
       });
 
       // NOTE: PiP ウィンドウの初期位置はサイト側から制御できない（Document
