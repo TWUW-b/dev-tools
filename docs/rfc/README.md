@@ -25,4 +25,4 @@
 | # | Title | Status | Target |
 |---|---|---|---|
 | [001](./001-environment-switching.md) | 環境切替機能（dev/test/staging/prod） | **Proposed** | 未定 |
-| [002](./002-manual-media-upload-api.md) | マニュアル画像アップロードAPI | **Accepted** | 未定 |
+| [002](./002-manual-media-upload-api.md) | マニュアル画像アップロードAPI | **Implemented** | v1.4.0 |

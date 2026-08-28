@@ -2,15 +2,14 @@
 
 | 項目 | 値 |
 |---|---|
-| **Status** | **Accepted**（仕様合意済み・実装未着手） |
+| **Status** | **Implemented**（v1.4.0 で取り込み済み） |
 | Created | 2026-08-26 |
-| Updated | 2026-08-26 |
-| Target Version | 未定 |
-| Related | `api/ReleaseNotesController.php`（メディア配信の参照実装）, `api/AttachmentController.php`（notes添付の参照実装）, ADR-002（pm-server 記録済み） |
+| Updated | 2026-08-28 |
+| Target Version | v1.4.0 |
+| Related | `api/ReleaseNotesController.php`（メディア配信の参照実装）, `api/AttachmentController.php`（notes添付の参照実装）, ADR-002（pm-server 記録済み）, `api/ManualMediaController.php`（実装本体） |
 
-> ⚠ この RFC は仕様合意まで完了した段階で、実装はまだ着手していない。
-> 着手時は `docs/draft/` に実装計画 MD を作成してから進める想定（本RFCのREADME運用に準拠）。
-> **本RFCのスコープは API のみ**。フロントエンド（`MarkdownRenderer` の画像パス解決、`ManualItem` 型拡張、管理画面UI等）は対象外。
+> ✅ 実装完了。`api/ManualMediaController.php` として実装され、v1.4.0 で main に取り込み・publish 済み。
+> **本RFCのスコープは API のみ**。フロントエンド（`MarkdownRenderer` の画像パス解決、`ManualItem` 型拡張、管理画面UI等）は対象外のまま（未実装）。
 
 ---
 
