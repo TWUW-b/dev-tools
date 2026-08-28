@@ -5,6 +5,7 @@ import { FeedbackForm } from './FeedbackForm';
 import { ManualTableOfContents } from './ManualTableOfContents';
 import { useManualLoader } from '../../hooks/useManualLoader';
 import { useManualDownload } from '../../hooks/useManualDownload';
+import { computePipPosition } from '../../utils/pipPosition';
 import { MATERIAL_SYMBOLS_CDN, materialSymbolsStyle } from '../../styles/material-symbols';
 import type { ManualPiPProps } from '../../types';
 import { MANUAL_COLORS as COLORS } from '../../styles/colors';
@@ -46,6 +47,7 @@ export function ManualPiP({
   onClose,
   onNavigate,
   onAppNavigate,
+  initialPosition,
   initialSize = { width: 420, height: 550 },
   showDownloadButton = false,
   items,
@@ -110,6 +112,26 @@ export function ManualPiP({
         height: pipHeight,
       });
 
+      // PiP ウィンドウの初期位置を設定する。
+      // Document Picture-in-Picture API の requestWindow() は width/height のみ受け付け、
+      // 位置(x/y)は指定できない仕様のため（ブラウザ既定では画面左上に開く）、
+      // ウィンドウ取得後に moveTo() で明示的に移動する。
+      // initialPosition が指定されていればそれを優先し、未指定時はデフォルトで画面右下に配置する。
+      try {
+        const { x, y } = computePipPosition({
+          pipWidth,
+          pipHeight,
+          screenAvailWidth: window.screen.availWidth,
+          screenAvailHeight: window.screen.availHeight,
+          initialPosition,
+        });
+        pip.moveTo(x, y);
+      } catch (err) {
+        // マルチモニタ環境やブラウザ/OSの制約で moveTo が失敗しても致命的ではないため
+        // 例外を握りつぶし、位置調整なしでPiP自体は開いたままにする
+        console.warn('Failed to position PiP window:', err);
+      }
+
       // スタイルを追加
       const style = pip.document.createElement('style');
       style.textContent = getPipStyles();
@@ -134,7 +156,7 @@ export function ManualPiP({
     } finally {
       isOpeningRef.current = false;
     }
-  }, [initialSize.width, initialSize.height, onClose]);
+  }, [initialSize.width, initialSize.height, initialPosition, onClose]);
 
   // PiPウィンドウを閉じる
   const closePipWindow = useCallback(() => {
