@@ -171,7 +171,12 @@ export function ManualTableOfContents({
               !error &&
               headings?.map((heading) => {
                 const isSubHeading = heading.level === 3;
-                const isActiveHeading = activeHeadingId === heading.id;
+                // heading.id は useManualHeadings が呼び出し毎に新しい GithubSlugger インスタンスで
+                // 生成するため、ページをまたいで一意ではない（例: 複数ページの「手順」見出しが
+                // どちらも id="手順" になる）。activeHeadingId だけで比較すると、展開中の
+                // 全ページの同名見出しが同時にハイライトされてしまうため、必ず isActive
+                // （= このページが現在表示中かどうか）も条件に含める。
+                const isActiveHeading = isActive && activeHeadingId === heading.id;
 
                 return (
                   <li key={heading.id}>

@@ -652,7 +652,7 @@ function getPipStyles(): string {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
+      padding: 16px 24px;
       background: ${COLORS.primary};
       color: ${COLORS.white};
     }
@@ -663,12 +663,8 @@ function getPipStyles(): string {
       gap: 12px;
     }
 
-    .pip-header-left .pip-icon {
-      color: ${COLORS.secondary};
-    }
-
     .pip-title {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
     }
 
@@ -839,12 +835,15 @@ function getPipStyles(): string {
       padding: 8px 0;
     }
 
-    /* コンテンツエリア */
+    /* コンテンツエリア
+       padding は ManualTabPage の mainContent(32px) より狭い 24px を意図的に維持する
+       （PiP は 420〜650px 幅の小さいフローティングウィンドウのため、32px にすると
+       本文の実効幅が狭くなりすぎる）。line-height は ManualTabPage と揃える。 */
     .pip-content {
       flex: 1;
       overflow: auto;
       padding: 24px;
-      line-height: 1.6;
+      line-height: 1.7;
       min-width: 0;
     }
 

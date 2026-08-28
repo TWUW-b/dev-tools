@@ -1059,7 +1059,7 @@ function $e({
         !B && j && /* @__PURE__ */ e("li", { style: { ...J.headingStatus, color: n.error }, children: "見出しの読み込みに失敗しました" }),
         !B && !j && k && k.length === 0 && /* @__PURE__ */ e("li", { style: J.headingStatus, children: "見出しなし" }),
         !B && !j && (k == null ? void 0 : k.map((_) => {
-          const N = _.level === 3, Z = u === _.id;
+          const N = _.level === 3, Z = w && u === _.id;
           return /* @__PURE__ */ e("li", { children: /* @__PURE__ */ o(
             "button",
             {
@@ -1623,7 +1623,7 @@ function Gn() {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
+      padding: 16px 24px;
       background: ${n.primary};
       color: ${n.white};
     }
@@ -1634,12 +1634,8 @@ function Gn() {
       gap: 12px;
     }
 
-    .pip-header-left .pip-icon {
-      color: ${n.secondary};
-    }
-
     .pip-title {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
     }
 
@@ -1810,12 +1806,15 @@ function Gn() {
       padding: 8px 0;
     }
 
-    /* コンテンツエリア */
+    /* コンテンツエリア
+       padding は ManualTabPage の mainContent(32px) より狭い 24px を意図的に維持する
+       （PiP は 420〜650px 幅の小さいフローティングウィンドウのため、32px にすると
+       本文の実効幅が狭くなりすぎる）。line-height は ManualTabPage と揃える。 */
     .pip-content {
       flex: 1;
       overflow: auto;
       padding: 24px;
-      line-height: 1.6;
+      line-height: 1.7;
       min-width: 0;
     }
 
