@@ -1259,7 +1259,13 @@ function at({
       try {
         const k = V ? 650 : l.width, G = l.height, L = await window.documentPictureInPicture.requestWindow({
           width: k,
-          height: G
+          height: G,
+          // Document Picture-in-Picture API はデフォルト(false)で「閉じたときの
+          // 位置・サイズを記憶し、次回はそれを再利用する」仕様のため、true を渡さないと
+          // 一度でも手動リサイズ/別サイズで開いた履歴があると width/height の指定が
+          // 無視され続ける。true にして常に指定サイズで開かせる（Chrome 130+。
+          // 非対応ブラウザではオプションが単に無視されるだけで害はない）。
+          preferInitialWindowPlacement: !0
         }), Z = L.document.createElement("style");
         Z.textContent = Vn(), L.document.head.appendChild(Z), D && Gn(L.document);
         const J = L.document.createElement("div");
