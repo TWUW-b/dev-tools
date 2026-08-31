@@ -15,6 +15,14 @@ interface PendingScrollTarget {
   headingId: string;
 }
 
+/**
+ * ホバーで開いた目次パネルを閉じるまでの遅延（ms）。
+ * ハンバーガーボタンとパネル本体は DOM 上で兄弟要素（間にオーバーレイの隙間がある）なので、
+ * ボタン→パネルへポインタを移動する一瞬だけ「どちらの上にもいない」瞬間が生じる。
+ * 即座に閉じるとチラつくため、少し待ってから閉じる（ボタン/パネルへ戻れば下記でキャンセルされる）。
+ */
+const TOC_HOVER_CLOSE_DELAY_MS = 200;
+
 // Document Picture-in-Picture API 型定義
 interface DocumentPictureInPictureOptions {
   width?: number;
@@ -77,6 +85,7 @@ export function ManualPiP({
   // 目次パネル表示制御（items が指定されている場合のみ）
   const [isTocOpen, setIsTocOpen] = useState(false);
   const pendingScrollRef = useRef<PendingScrollTarget | null>(null);
+  const tocHoverCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // pending スクロール対象への遷移中、実際に該当パスのフェッチが開始（loading=true）されたのを
   // 一度でも観測したかどうか。useManualLoader は path 変更時に content を null リセットしないため、
   // docPath 切替直後の再レンダーでは content が前ページの内容のまま残ることがある。
@@ -259,6 +268,33 @@ export function ManualPiP({
       pipWindow.document.removeEventListener('toggle', handleToggle, true);
     };
   }, [pipWindow, onAppNavigate]);
+
+  // 目次パネル: ホバーでの開閉（2026-08-31 追加）。
+  // ハンバーガーボタン・パネル本体のどちらかにポインタが乗っている間は開いたままにし、
+  // 両方から離れたら TOC_HOVER_CLOSE_DELAY_MS 待って自動的に閉じる。
+  // クリックでの開閉（ボタン/閉じるボタン/背景クリック/Escape）は従来どおり残す。
+  const cancelTocHoverClose = useCallback(() => {
+    if (tocHoverCloseTimeoutRef.current !== null) {
+      clearTimeout(tocHoverCloseTimeoutRef.current);
+      tocHoverCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const openTocOnHover = useCallback(() => {
+    cancelTocHoverClose();
+    setIsTocOpen(true);
+  }, [cancelTocHoverClose]);
+
+  const scheduleTocHoverClose = useCallback(() => {
+    cancelTocHoverClose();
+    tocHoverCloseTimeoutRef.current = setTimeout(() => {
+      tocHoverCloseTimeoutRef.current = null;
+      setIsTocOpen(false);
+    }, TOC_HOVER_CLOSE_DELAY_MS);
+  }, [cancelTocHoverClose]);
+
+  // アンマウント時に保留中のクローズタイマーが残らないようにする
+  useEffect(() => cancelTocHoverClose, [cancelTocHoverClose]);
 
   // 目次パネル: ページ選択
   const handleTocSelectPage = useCallback(
@@ -481,9 +517,17 @@ export function ManualPiP({
         <div className="pip-header-left">
           {items && (
             <button
-              onClick={() => setIsTocOpen((prev) => !prev)}
+              // ホバー（onMouseEnter）で開くのが主経路になったため、クリックは常に「開く」
+              // （トグルにすると、ホバーで既に開いた状態でクリックすると即座に閉じてしまう）。
+              // 閉じる手段は閉じるボタン・背景クリック・Escape・ホバー解除で担保する。
+              onClick={() => {
+                cancelTocHoverClose();
+                setIsTocOpen(true);
+              }}
+              onMouseEnter={openTocOnHover}
+              onMouseLeave={scheduleTocHoverClose}
               className="pip-menu-btn"
-              aria-label={isTocOpen ? '目次を閉じる' : '目次を開く'}
+              aria-label="目次を開く"
               aria-expanded={isTocOpen}
             >
               <span className="pip-icon">menu</span>
@@ -531,6 +575,8 @@ export function ManualPiP({
               role="dialog"
               aria-label="目次"
               aria-hidden={!isTocOpen}
+              onMouseEnter={cancelTocHoverClose}
+              onMouseLeave={scheduleTocHoverClose}
             >
               <div className="pip-toc-panel-header">
                 <span className="pip-toc-panel-title">目次</span>

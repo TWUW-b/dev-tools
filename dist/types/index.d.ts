@@ -385,6 +385,21 @@ export interface ManualTabPageProps {
     defaultDocPath?: string;
     /** マニュアル項目リスト。指定時のみ左側に階層目次サイドバーが常時表示される（未指定時は既存の見た目・挙動のまま） */
     items?: ManualItem[];
+    /**
+     * 目次サイドバーのカテゴリ初期開閉状態。
+     * - 'active'（デフォルト、既存挙動）: 現在表示中のページを含むカテゴリのみ開く
+     * - 'all': 全カテゴリを初期状態から開く
+     */
+    defaultExpandCategories?: 'active' | 'all';
+    /**
+     * 本文（Markdown）内の app: リンククリック時のハンドラ。
+     * `window.open()` でこのページを開いた場合は従来どおり window.opener への
+     * postMessage（{ type: 'manual-app-navigate', path }）が優先される。
+     * window.opener が無い場合（直接 URL アクセス・ブックマーク等）のフォールバックとして、
+     * 指定時はこのコールバックが呼ばれる（2026-08-31: /manual-view 直接アクセス時に
+     * app: リンクが無反応だった不具合の修正）。
+     */
+    onAppNavigate?: (path: string) => void;
 }
 /** マニュアルローダー戻り値 */
 export interface UseManualLoaderReturn {
@@ -495,6 +510,12 @@ export interface ManualTableOfContentsProps {
     onSelectHeading: (path: string, headingId: string) => void;
     /** 現在ビューポート内で読まれている見出しの id（スクロールスパイ用。指定時にハイライトする） */
     activeHeadingId?: string | null;
+    /**
+     * カテゴリの初期開閉状態。
+     * - 'active'（デフォルト、既存挙動）: 現在表示中のページを含むカテゴリのみ開く
+     * - 'all': 全カテゴリを初期状態から開く
+     */
+    defaultExpandCategories?: 'active' | 'all';
     /** 追加のクラス名 */
     className?: string;
 }

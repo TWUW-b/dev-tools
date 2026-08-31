@@ -1,4 +1,4 @@
-import { F as n, a as s, c as d, d as l, e as r, f as M, g as u, h as b, i } from "../chunks/FeedbackAdmin-X49maws1.js";
+import { F as n, a as s, c as d, d as l, e as r, f as M, g as u, h as b, i } from "../chunks/FeedbackAdmin-Dznvvw4p.js";
 export {
   n as FeedbackAdmin,
   s as FeedbackForm,

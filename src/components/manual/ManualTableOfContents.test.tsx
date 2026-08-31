@@ -64,3 +64,60 @@ describe('ManualTableOfContents', () => {
     expect(pageBSteps2).toHaveStyle({ background: '#e3f2fd' });
   });
 });
+
+/**
+ * カテゴリの初期開閉状態 (defaultExpandCategories)。
+ * 2026-08-31: 章を1つずつ開かないとページ名すら見えない、というフィードバックを受けて
+ * 'all'（全カテゴリ初期展開）を追加した。既存利用者に影響が出ないよう、未指定時は
+ * 従来どおり「activePath を含むカテゴリのみ開く」動作を維持する。
+ */
+describe('ManualTableOfContents defaultExpandCategories', () => {
+  const TWO_CATEGORIES: ManualItem[] = [
+    { id: 'page-a', title: 'ページA', path: '/docs/page-a.md', category: 'カテゴリ1', order: 1 },
+    { id: 'page-b', title: 'ページB', path: '/docs/page-b.md', category: 'カテゴリ2', order: 2 },
+  ];
+
+  it('未指定時: どのページもアクティブでなければ全カテゴリが閉じている（既存挙動）', () => {
+    render(
+      <ManualTableOfContents
+        items={TWO_CATEGORIES}
+        activePath={null}
+        onSelectPage={vi.fn()}
+        onSelectHeading={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'ページA' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ページB' })).not.toBeInTheDocument();
+  });
+
+  it("'all' 指定時: どのページもアクティブでなくても全カテゴリが初期状態から開いている", () => {
+    render(
+      <ManualTableOfContents
+        items={TWO_CATEGORIES}
+        activePath={null}
+        onSelectPage={vi.fn()}
+        onSelectHeading={vi.fn()}
+        defaultExpandCategories="all"
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'ページA' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ページB' })).toBeInTheDocument();
+  });
+
+  it("'all' 指定時でも activePath を含むカテゴリを開く既存ロジックと矛盾しない（両カテゴリとも開いたまま）", () => {
+    render(
+      <ManualTableOfContents
+        items={TWO_CATEGORIES}
+        activePath="/docs/page-b.md"
+        onSelectPage={vi.fn()}
+        onSelectHeading={vi.fn()}
+        defaultExpandCategories="all"
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'ページA' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ページB' })).toBeInTheDocument();
+  });
+});

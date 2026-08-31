@@ -54,23 +54,27 @@ export function ManualTableOfContents({
   onSelectPage,
   onSelectHeading,
   activeHeadingId = null,
+  defaultExpandCategories = 'active',
   className = '',
 }: ManualTableOfContentsProps) {
   const { groups, uncategorized } = useMemo(() => groupByCategory(items), [items]);
   const { getHeadings, loadHeadings, isLoading, getError } = useManualHeadings();
 
-  // カテゴリの開閉状態。デフォルトは activePath を含むカテゴリのみ開く
+  // カテゴリの開閉状態。
+  // - 'active'（デフォルト）: activePath を含むカテゴリのみ開く
+  // - 'all': 全カテゴリを初期状態から開く（2026-08-31: 章を1つずつ開かないと
+  //   ページ名すら見えない、というフィードバックを受けて追加）
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => {
     const activeCategory = findCategoryForPath(items, activePath);
     const initial: Record<string, boolean> = {};
     for (const group of groups) {
-      initial[group.category] = group.category === activeCategory;
+      initial[group.category] = defaultExpandCategories === 'all' || group.category === activeCategory;
     }
     return initial;
   });
 
   // activePath が変化した際、そのページを含むカテゴリを開く（既存の開閉状態は維持し、
-  // 該当カテゴリのみ追加で開く）。
+  // 該当カテゴリのみ追加で開く）。'all' モードでは元々全カテゴリが開いているため無害。
   // ManualTabPage の docPath は useEffect で遅れて確定するため（初回マウント直後は null）、
   // 上の useState 初期化子は activePath=null の時点で1度だけ評価され、後から
   // defaultDocPath が反映されても再計算されない。これを追跡して確実に開く。
