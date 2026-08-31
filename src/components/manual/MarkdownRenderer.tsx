@@ -1,10 +1,41 @@
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import type { MarkdownRendererProps } from '../../types';
 import type { Components } from 'react-markdown';
 import { MANUAL_COLORS as COLORS } from '../../styles/colors';
+
+/**
+ * アプリ画面遷移を表す独自スキームのプレフィックス。
+ *
+ * `#app:` は useManualLoader が Markdown 記法 `](app:` を書き換えた形式。
+ * react-markdown の URL サニタイズを避けるための既存の回避策で、MD 本文に直接
+ * 書かれることもあるため両方を受け付ける。
+ */
+const APP_LINK_PREFIXES = ['#app:', 'app:'] as const;
+
+/** app リンクなら遷移先パスを、そうでなければ null を返す */
+function resolveAppLinkPath(href: string): string | null {
+  for (const prefix of APP_LINK_PREFIXES) {
+    if (href.startsWith(prefix)) return href.slice(prefix.length);
+  }
+  return null;
+}
+
+/**
+ * react-markdown の defaultUrlTransform は未知スキームの href を空文字に落とす。
+ * `app:` はマニュアル内の独自スキームなので素通しし、それ以外は既定のサニタイズに
+ * 委ねる（`javascript:` 等は従来どおり除去される）。
+ *
+ * NOTE: これが無いと生 HTML 直書きの `<a href="app:/properties">` が `<a href="">` に
+ * なり、下の app 分岐に入らず「外部リンク」フォールバック（`target="_blank"`）へ落ちる。
+ * その結果 PiP 内なのに新しいタブが開き、空 href がホスト SPA のルートへ解決されて
+ * 無関係な画面に飛ぶ（v1.4.7 までの不具合）。
+ */
+function manualUrlTransform(url: string): string {
+  return url.startsWith('app:') ? url : defaultUrlTransform(url);
+}
 
 /**
  * .manual-markdown の基底スタイル（詳細度ゼロの :where() で定義）。
@@ -151,8 +182,8 @@ export function MarkdownRenderer({
       // NOTE: <a>タグではなく<span>を使用してブラウザのデフォルト動作を回避
       // PiPウィンドウ内で<a>タグを使うと、別ウィンドウコンテキストでの処理により
       // ブラウザが勝手に新しいタブを開いてしまう問題を回避
-      if (href && href.startsWith('app:') && onAppLinkClick) {
-        const appPath = href.replace('app:', '');
+      const appPath = href ? resolveAppLinkPath(href) : null;
+      if (appPath !== null && onAppLinkClick) {
         return (
           <span
             role="link"
@@ -218,7 +249,12 @@ export function MarkdownRenderer({
   return (
     <div className={`manual-markdown ${className}`}>
       <style>{BASE_MARKDOWN_CSS}</style>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSlug]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, rehypeSlug]}
+        urlTransform={manualUrlTransform}
+        components={components}
+      >
         {content}
       </ReactMarkdown>
     </div>

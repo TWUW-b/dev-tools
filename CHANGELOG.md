@@ -2,6 +2,23 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.4.8] - 2026-08-31
+
+### Fixed
+
+- **マニュアル本文の `app:` リンク (アプリ画面遷移) が別画面へ飛ぶ不具合を修正**:
+  `MarkdownRenderer` が react-markdown の `urlTransform` を指定しておらず、既定の
+  `defaultUrlTransform` が `app:` を未知スキームとみなして href を空文字に落としていた。
+  そのため `href.startsWith('app:')` の分岐に入らず「外部リンク」フォールバック
+  (`<a href="" target="_blank">`) になり、クリックすると PiP 内でも新しいタブが開き、
+  空 href がホスト SPA のルートへ解決されて無関係な画面に遷移していた。
+  `app:` だけを素通しする `urlTransform` を渡して修正 (`javascript:` 等のサニタイズは維持)。
+  併せて `#app:` (useManualLoader が Markdown 記法を書き換えた形式) も同じ app 分岐で
+  扱うようにし、`href.replace('app:', '')` が `#app:/x` を `#/x` にしていた取りこぼしも解消。
+  これにより Markdown 記法 `[表示名](app:/path)` と生 HTML `<a href="app:/path">` の
+  どちらの書き方でも、PiP・別タブ (`ManualTabPage` の `window.opener` postMessage)・
+  サイドバーのすべての経路で正しく遷移する。
+
 ## [1.4.7] - 2026-08-28
 
 ### Fixed

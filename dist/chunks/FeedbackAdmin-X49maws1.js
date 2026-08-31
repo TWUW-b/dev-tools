@@ -2,11 +2,11 @@ import { jsxs as o, jsx as e, Fragment as xe } from "react/jsx-runtime";
 import { useState as $, useRef as W, useCallback as B, useEffect as S, useMemo as We } from "react";
 import { createPortal as nn } from "react-dom";
 import { u as tn, d as ye, c as rn, e as Re, b as on, a as an } from "./useFeedbackAdminMode-DpbrwKWq.js";
-import ln from "react-markdown";
-import un from "remark-gfm";
-import sn from "rehype-raw";
-import { c as cn } from "./feedbackLogCapture-DUBfVREg.js";
-import { l as dn, h as pn, i as gn } from "./feedbackApi-BAwJP8AU.js";
+import ln, { defaultUrlTransform as un } from "react-markdown";
+import sn from "remark-gfm";
+import cn from "rehype-raw";
+import { c as dn } from "./feedbackLogCapture-DUBfVREg.js";
+import { l as pn, h as gn, i as Dn } from "./feedbackApi-BAwJP8AU.js";
 const Se = {
   primary: "#1E40AF",
   primaryHover: "#1E3A8A",
@@ -33,17 +33,17 @@ const Se = {
   white: "#FFFFFF",
   error: "#DC2626",
   errorBg: "#FEE2E2"
-}, Me = ["image/png", "image/jpeg", "image/webp", "image/gif"], Dn = 5, hn = 5 * 1024 * 1024;
-function fn({
+}, Te = ["image/png", "image/jpeg", "image/webp", "image/gif"], hn = 5, fn = 5 * 1024 * 1024;
+function mn({
   files: n,
   onAdd: r,
   onRemove: i,
-  maxFiles: u = Dn,
-  maxFileSize: s = hn,
+  maxFiles: u = hn,
+  maxFileSize: s = fn,
   disabled: l = !1,
   pipDocument: p
 }) {
-  const [D, f] = $(!1), [C, x] = $(null), I = W(null), b = W(0), E = B((c) => {
+  const [D, f] = $(!1), [b, x] = $(null), I = W(null), C = W(0), E = B((c) => {
     x(null);
     const w = u - n.length;
     if (w <= 0) {
@@ -53,7 +53,7 @@ function fn({
     const v = [];
     for (const O of c) {
       if (v.length >= w) break;
-      if (!Me.includes(O.type)) {
+      if (!Te.includes(O.type)) {
         x(`${O.name}: 対応していない形式です（PNG/JPEG/WebP/GIF）`);
         continue;
       }
@@ -64,7 +64,7 @@ function fn({
       v.push(O);
     }
     v.length > 0 && r(v);
-  }, [n.length, u, s, r]), M = B((c) => {
+  }, [n.length, u, s, r]), T = B((c) => {
     var O;
     if (l) return;
     const w = (O = c.clipboardData) == null ? void 0 : O.items;
@@ -72,24 +72,24 @@ function fn({
     const v = [];
     for (let z = 0; z < w.length; z++) {
       const _ = w[z];
-      if (_.kind === "file" && Me.includes(_.type)) {
+      if (_.kind === "file" && Te.includes(_.type)) {
         const V = _.getAsFile();
         V && v.push(V);
       }
     }
     v.length > 0 && (c.preventDefault(), E(v));
   }, [l, E]);
-  S(() => (document.addEventListener("paste", M), p == null || p.addEventListener("paste", M), () => {
-    document.removeEventListener("paste", M), p == null || p.removeEventListener("paste", M);
-  }), [M, p]);
-  const T = B((c) => {
-    c.preventDefault(), c.stopPropagation(), b.current++, b.current === 1 && f(!0);
+  S(() => (document.addEventListener("paste", T), p == null || p.addEventListener("paste", T), () => {
+    document.removeEventListener("paste", T), p == null || p.removeEventListener("paste", T);
+  }), [T, p]);
+  const M = B((c) => {
+    c.preventDefault(), c.stopPropagation(), C.current++, C.current === 1 && f(!0);
   }, []), R = B((c) => {
-    c.preventDefault(), c.stopPropagation(), b.current--, b.current === 0 && f(!1);
+    c.preventDefault(), c.stopPropagation(), C.current--, C.current === 0 && f(!1);
   }, []), a = B((c) => {
     c.preventDefault(), c.stopPropagation();
-  }, []), N = B((c) => {
-    if (c.preventDefault(), c.stopPropagation(), b.current = 0, f(!1), l) return;
+  }, []), H = B((c) => {
+    if (c.preventDefault(), c.stopPropagation(), C.current = 0, f(!1), l) return;
     const w = Array.from(c.dataTransfer.files);
     E(w);
   }, [l, E]), q = B(() => {
@@ -111,10 +111,10 @@ function fn({
       "div",
       {
         className: `debug-dropzone ${D ? "dragging" : ""} ${l ? "disabled" : ""}`,
-        onDragEnter: T,
+        onDragEnter: M,
         onDragLeave: R,
         onDragOver: a,
-        onDrop: N,
+        onDrop: H,
         onClick: q,
         role: "button",
         tabIndex: 0,
@@ -138,9 +138,9 @@ function fn({
         onChange: h
       }
     ),
-    C && /* @__PURE__ */ e("div", { style: { fontSize: "11px", color: Se.error }, children: C }),
+    b && /* @__PURE__ */ e("div", { style: { fontSize: "11px", color: Se.error }, children: b }),
     n.length > 0 && /* @__PURE__ */ e("div", { className: "debug-thumbnails", children: n.map((c, w) => /* @__PURE__ */ e(
-      mn,
+      Fn,
       {
         file: c,
         onRemove: () => i(w),
@@ -150,7 +150,7 @@ function fn({
     )) })
   ] });
 }
-function mn({ file: n, onRemove: r, formatSize: i }) {
+function Fn({ file: n, onRemove: r, formatSize: i }) {
   const [u, s] = $(null);
   return S(() => {
     const l = URL.createObjectURL(n);
@@ -172,7 +172,7 @@ function mn({ file: n, onRemove: r, formatSize: i }) {
     /* @__PURE__ */ e("div", { className: "debug-thumbnail-info", children: i(n.size) })
   ] });
 }
-const Fn = /[\0-\x1F!-,\.\/:-@\[-\^`\{-\xA9\xAB-\xB4\xB6-\xB9\xBB-\xBF\xD7\xF7\u02C2-\u02C5\u02D2-\u02DF\u02E5-\u02EB\u02ED\u02EF-\u02FF\u0375\u0378\u0379\u037E\u0380-\u0385\u0387\u038B\u038D\u03A2\u03F6\u0482\u0530\u0557\u0558\u055A-\u055F\u0589-\u0590\u05BE\u05C0\u05C3\u05C6\u05C8-\u05CF\u05EB-\u05EE\u05F3-\u060F\u061B-\u061F\u066A-\u066D\u06D4\u06DD\u06DE\u06E9\u06FD\u06FE\u0700-\u070F\u074B\u074C\u07B2-\u07BF\u07F6-\u07F9\u07FB\u07FC\u07FE\u07FF\u082E-\u083F\u085C-\u085F\u086B-\u089F\u08B5\u08C8-\u08D2\u08E2\u0964\u0965\u0970\u0984\u098D\u098E\u0991\u0992\u09A9\u09B1\u09B3-\u09B5\u09BA\u09BB\u09C5\u09C6\u09C9\u09CA\u09CF-\u09D6\u09D8-\u09DB\u09DE\u09E4\u09E5\u09F2-\u09FB\u09FD\u09FF\u0A00\u0A04\u0A0B-\u0A0E\u0A11\u0A12\u0A29\u0A31\u0A34\u0A37\u0A3A\u0A3B\u0A3D\u0A43-\u0A46\u0A49\u0A4A\u0A4E-\u0A50\u0A52-\u0A58\u0A5D\u0A5F-\u0A65\u0A76-\u0A80\u0A84\u0A8E\u0A92\u0AA9\u0AB1\u0AB4\u0ABA\u0ABB\u0AC6\u0ACA\u0ACE\u0ACF\u0AD1-\u0ADF\u0AE4\u0AE5\u0AF0-\u0AF8\u0B00\u0B04\u0B0D\u0B0E\u0B11\u0B12\u0B29\u0B31\u0B34\u0B3A\u0B3B\u0B45\u0B46\u0B49\u0B4A\u0B4E-\u0B54\u0B58-\u0B5B\u0B5E\u0B64\u0B65\u0B70\u0B72-\u0B81\u0B84\u0B8B-\u0B8D\u0B91\u0B96-\u0B98\u0B9B\u0B9D\u0BA0-\u0BA2\u0BA5-\u0BA7\u0BAB-\u0BAD\u0BBA-\u0BBD\u0BC3-\u0BC5\u0BC9\u0BCE\u0BCF\u0BD1-\u0BD6\u0BD8-\u0BE5\u0BF0-\u0BFF\u0C0D\u0C11\u0C29\u0C3A-\u0C3C\u0C45\u0C49\u0C4E-\u0C54\u0C57\u0C5B-\u0C5F\u0C64\u0C65\u0C70-\u0C7F\u0C84\u0C8D\u0C91\u0CA9\u0CB4\u0CBA\u0CBB\u0CC5\u0CC9\u0CCE-\u0CD4\u0CD7-\u0CDD\u0CDF\u0CE4\u0CE5\u0CF0\u0CF3-\u0CFF\u0D0D\u0D11\u0D45\u0D49\u0D4F-\u0D53\u0D58-\u0D5E\u0D64\u0D65\u0D70-\u0D79\u0D80\u0D84\u0D97-\u0D99\u0DB2\u0DBC\u0DBE\u0DBF\u0DC7-\u0DC9\u0DCB-\u0DCE\u0DD5\u0DD7\u0DE0-\u0DE5\u0DF0\u0DF1\u0DF4-\u0E00\u0E3B-\u0E3F\u0E4F\u0E5A-\u0E80\u0E83\u0E85\u0E8B\u0EA4\u0EA6\u0EBE\u0EBF\u0EC5\u0EC7\u0ECE\u0ECF\u0EDA\u0EDB\u0EE0-\u0EFF\u0F01-\u0F17\u0F1A-\u0F1F\u0F2A-\u0F34\u0F36\u0F38\u0F3A-\u0F3D\u0F48\u0F6D-\u0F70\u0F85\u0F98\u0FBD-\u0FC5\u0FC7-\u0FFF\u104A-\u104F\u109E\u109F\u10C6\u10C8-\u10CC\u10CE\u10CF\u10FB\u1249\u124E\u124F\u1257\u1259\u125E\u125F\u1289\u128E\u128F\u12B1\u12B6\u12B7\u12BF\u12C1\u12C6\u12C7\u12D7\u1311\u1316\u1317\u135B\u135C\u1360-\u137F\u1390-\u139F\u13F6\u13F7\u13FE-\u1400\u166D\u166E\u1680\u169B-\u169F\u16EB-\u16ED\u16F9-\u16FF\u170D\u1715-\u171F\u1735-\u173F\u1754-\u175F\u176D\u1771\u1774-\u177F\u17D4-\u17D6\u17D8-\u17DB\u17DE\u17DF\u17EA-\u180A\u180E\u180F\u181A-\u181F\u1879-\u187F\u18AB-\u18AF\u18F6-\u18FF\u191F\u192C-\u192F\u193C-\u1945\u196E\u196F\u1975-\u197F\u19AC-\u19AF\u19CA-\u19CF\u19DA-\u19FF\u1A1C-\u1A1F\u1A5F\u1A7D\u1A7E\u1A8A-\u1A8F\u1A9A-\u1AA6\u1AA8-\u1AAF\u1AC1-\u1AFF\u1B4C-\u1B4F\u1B5A-\u1B6A\u1B74-\u1B7F\u1BF4-\u1BFF\u1C38-\u1C3F\u1C4A-\u1C4C\u1C7E\u1C7F\u1C89-\u1C8F\u1CBB\u1CBC\u1CC0-\u1CCF\u1CD3\u1CFB-\u1CFF\u1DFA\u1F16\u1F17\u1F1E\u1F1F\u1F46\u1F47\u1F4E\u1F4F\u1F58\u1F5A\u1F5C\u1F5E\u1F7E\u1F7F\u1FB5\u1FBD\u1FBF-\u1FC1\u1FC5\u1FCD-\u1FCF\u1FD4\u1FD5\u1FDC-\u1FDF\u1FED-\u1FF1\u1FF5\u1FFD-\u203E\u2041-\u2053\u2055-\u2070\u2072-\u207E\u2080-\u208F\u209D-\u20CF\u20F1-\u2101\u2103-\u2106\u2108\u2109\u2114\u2116-\u2118\u211E-\u2123\u2125\u2127\u2129\u212E\u213A\u213B\u2140-\u2144\u214A-\u214D\u214F-\u215F\u2189-\u24B5\u24EA-\u2BFF\u2C2F\u2C5F\u2CE5-\u2CEA\u2CF4-\u2CFF\u2D26\u2D28-\u2D2C\u2D2E\u2D2F\u2D68-\u2D6E\u2D70-\u2D7E\u2D97-\u2D9F\u2DA7\u2DAF\u2DB7\u2DBF\u2DC7\u2DCF\u2DD7\u2DDF\u2E00-\u2E2E\u2E30-\u3004\u3008-\u3020\u3030\u3036\u3037\u303D-\u3040\u3097\u3098\u309B\u309C\u30A0\u30FB\u3100-\u3104\u3130\u318F-\u319F\u31C0-\u31EF\u3200-\u33FF\u4DC0-\u4DFF\u9FFD-\u9FFF\uA48D-\uA4CF\uA4FE\uA4FF\uA60D-\uA60F\uA62C-\uA63F\uA673\uA67E\uA6F2-\uA716\uA720\uA721\uA789\uA78A\uA7C0\uA7C1\uA7CB-\uA7F4\uA828-\uA82B\uA82D-\uA83F\uA874-\uA87F\uA8C6-\uA8CF\uA8DA-\uA8DF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA954-\uA95F\uA97D-\uA97F\uA9C1-\uA9CE\uA9DA-\uA9DF\uA9FF\uAA37-\uAA3F\uAA4E\uAA4F\uAA5A-\uAA5F\uAA77-\uAA79\uAAC3-\uAADA\uAADE\uAADF\uAAF0\uAAF1\uAAF7-\uAB00\uAB07\uAB08\uAB0F\uAB10\uAB17-\uAB1F\uAB27\uAB2F\uAB5B\uAB6A-\uAB6F\uABEB\uABEE\uABEF\uABFA-\uABFF\uD7A4-\uD7AF\uD7C7-\uD7CA\uD7FC-\uD7FF\uE000-\uF8FF\uFA6E\uFA6F\uFADA-\uFAFF\uFB07-\uFB12\uFB18-\uFB1C\uFB29\uFB37\uFB3D\uFB3F\uFB42\uFB45\uFBB2-\uFBD2\uFD3E-\uFD4F\uFD90\uFD91\uFDC8-\uFDEF\uFDFC-\uFDFF\uFE10-\uFE1F\uFE30-\uFE32\uFE35-\uFE4C\uFE50-\uFE6F\uFE75\uFEFD-\uFF0F\uFF1A-\uFF20\uFF3B-\uFF3E\uFF40\uFF5B-\uFF65\uFFBF-\uFFC1\uFFC8\uFFC9\uFFD0\uFFD1\uFFD8\uFFD9\uFFDD-\uFFFF]|\uD800[\uDC0C\uDC27\uDC3B\uDC3E\uDC4E\uDC4F\uDC5E-\uDC7F\uDCFB-\uDD3F\uDD75-\uDDFC\uDDFE-\uDE7F\uDE9D-\uDE9F\uDED1-\uDEDF\uDEE1-\uDEFF\uDF20-\uDF2C\uDF4B-\uDF4F\uDF7B-\uDF7F\uDF9E\uDF9F\uDFC4-\uDFC7\uDFD0\uDFD6-\uDFFF]|\uD801[\uDC9E\uDC9F\uDCAA-\uDCAF\uDCD4-\uDCD7\uDCFC-\uDCFF\uDD28-\uDD2F\uDD64-\uDDFF\uDF37-\uDF3F\uDF56-\uDF5F\uDF68-\uDFFF]|\uD802[\uDC06\uDC07\uDC09\uDC36\uDC39-\uDC3B\uDC3D\uDC3E\uDC56-\uDC5F\uDC77-\uDC7F\uDC9F-\uDCDF\uDCF3\uDCF6-\uDCFF\uDD16-\uDD1F\uDD3A-\uDD7F\uDDB8-\uDDBD\uDDC0-\uDDFF\uDE04\uDE07-\uDE0B\uDE14\uDE18\uDE36\uDE37\uDE3B-\uDE3E\uDE40-\uDE5F\uDE7D-\uDE7F\uDE9D-\uDEBF\uDEC8\uDEE7-\uDEFF\uDF36-\uDF3F\uDF56-\uDF5F\uDF73-\uDF7F\uDF92-\uDFFF]|\uD803[\uDC49-\uDC7F\uDCB3-\uDCBF\uDCF3-\uDCFF\uDD28-\uDD2F\uDD3A-\uDE7F\uDEAA\uDEAD-\uDEAF\uDEB2-\uDEFF\uDF1D-\uDF26\uDF28-\uDF2F\uDF51-\uDFAF\uDFC5-\uDFDF\uDFF7-\uDFFF]|\uD804[\uDC47-\uDC65\uDC70-\uDC7E\uDCBB-\uDCCF\uDCE9-\uDCEF\uDCFA-\uDCFF\uDD35\uDD40-\uDD43\uDD48-\uDD4F\uDD74\uDD75\uDD77-\uDD7F\uDDC5-\uDDC8\uDDCD\uDDDB\uDDDD-\uDDFF\uDE12\uDE38-\uDE3D\uDE3F-\uDE7F\uDE87\uDE89\uDE8E\uDE9E\uDEA9-\uDEAF\uDEEB-\uDEEF\uDEFA-\uDEFF\uDF04\uDF0D\uDF0E\uDF11\uDF12\uDF29\uDF31\uDF34\uDF3A\uDF45\uDF46\uDF49\uDF4A\uDF4E\uDF4F\uDF51-\uDF56\uDF58-\uDF5C\uDF64\uDF65\uDF6D-\uDF6F\uDF75-\uDFFF]|\uD805[\uDC4B-\uDC4F\uDC5A-\uDC5D\uDC62-\uDC7F\uDCC6\uDCC8-\uDCCF\uDCDA-\uDD7F\uDDB6\uDDB7\uDDC1-\uDDD7\uDDDE-\uDDFF\uDE41-\uDE43\uDE45-\uDE4F\uDE5A-\uDE7F\uDEB9-\uDEBF\uDECA-\uDEFF\uDF1B\uDF1C\uDF2C-\uDF2F\uDF3A-\uDFFF]|\uD806[\uDC3B-\uDC9F\uDCEA-\uDCFE\uDD07\uDD08\uDD0A\uDD0B\uDD14\uDD17\uDD36\uDD39\uDD3A\uDD44-\uDD4F\uDD5A-\uDD9F\uDDA8\uDDA9\uDDD8\uDDD9\uDDE2\uDDE5-\uDDFF\uDE3F-\uDE46\uDE48-\uDE4F\uDE9A-\uDE9C\uDE9E-\uDEBF\uDEF9-\uDFFF]|\uD807[\uDC09\uDC37\uDC41-\uDC4F\uDC5A-\uDC71\uDC90\uDC91\uDCA8\uDCB7-\uDCFF\uDD07\uDD0A\uDD37-\uDD39\uDD3B\uDD3E\uDD48-\uDD4F\uDD5A-\uDD5F\uDD66\uDD69\uDD8F\uDD92\uDD99-\uDD9F\uDDAA-\uDEDF\uDEF7-\uDFAF\uDFB1-\uDFFF]|\uD808[\uDF9A-\uDFFF]|\uD809[\uDC6F-\uDC7F\uDD44-\uDFFF]|[\uD80A\uD80B\uD80E-\uD810\uD812-\uD819\uD824-\uD82B\uD82D\uD82E\uD830-\uD833\uD837\uD839\uD83D\uD83F\uD87B-\uD87D\uD87F\uD885-\uDB3F\uDB41-\uDBFF][\uDC00-\uDFFF]|\uD80D[\uDC2F-\uDFFF]|\uD811[\uDE47-\uDFFF]|\uD81A[\uDE39-\uDE3F\uDE5F\uDE6A-\uDECF\uDEEE\uDEEF\uDEF5-\uDEFF\uDF37-\uDF3F\uDF44-\uDF4F\uDF5A-\uDF62\uDF78-\uDF7C\uDF90-\uDFFF]|\uD81B[\uDC00-\uDE3F\uDE80-\uDEFF\uDF4B-\uDF4E\uDF88-\uDF8E\uDFA0-\uDFDF\uDFE2\uDFE5-\uDFEF\uDFF2-\uDFFF]|\uD821[\uDFF8-\uDFFF]|\uD823[\uDCD6-\uDCFF\uDD09-\uDFFF]|\uD82C[\uDD1F-\uDD4F\uDD53-\uDD63\uDD68-\uDD6F\uDEFC-\uDFFF]|\uD82F[\uDC6B-\uDC6F\uDC7D-\uDC7F\uDC89-\uDC8F\uDC9A-\uDC9C\uDC9F-\uDFFF]|\uD834[\uDC00-\uDD64\uDD6A-\uDD6C\uDD73-\uDD7A\uDD83\uDD84\uDD8C-\uDDA9\uDDAE-\uDE41\uDE45-\uDFFF]|\uD835[\uDC55\uDC9D\uDCA0\uDCA1\uDCA3\uDCA4\uDCA7\uDCA8\uDCAD\uDCBA\uDCBC\uDCC4\uDD06\uDD0B\uDD0C\uDD15\uDD1D\uDD3A\uDD3F\uDD45\uDD47-\uDD49\uDD51\uDEA6\uDEA7\uDEC1\uDEDB\uDEFB\uDF15\uDF35\uDF4F\uDF6F\uDF89\uDFA9\uDFC3\uDFCC\uDFCD]|\uD836[\uDC00-\uDDFF\uDE37-\uDE3A\uDE6D-\uDE74\uDE76-\uDE83\uDE85-\uDE9A\uDEA0\uDEB0-\uDFFF]|\uD838[\uDC07\uDC19\uDC1A\uDC22\uDC25\uDC2B-\uDCFF\uDD2D-\uDD2F\uDD3E\uDD3F\uDD4A-\uDD4D\uDD4F-\uDEBF\uDEFA-\uDFFF]|\uD83A[\uDCC5-\uDCCF\uDCD7-\uDCFF\uDD4C-\uDD4F\uDD5A-\uDFFF]|\uD83B[\uDC00-\uDDFF\uDE04\uDE20\uDE23\uDE25\uDE26\uDE28\uDE33\uDE38\uDE3A\uDE3C-\uDE41\uDE43-\uDE46\uDE48\uDE4A\uDE4C\uDE50\uDE53\uDE55\uDE56\uDE58\uDE5A\uDE5C\uDE5E\uDE60\uDE63\uDE65\uDE66\uDE6B\uDE73\uDE78\uDE7D\uDE7F\uDE8A\uDE9C-\uDEA0\uDEA4\uDEAA\uDEBC-\uDFFF]|\uD83C[\uDC00-\uDD2F\uDD4A-\uDD4F\uDD6A-\uDD6F\uDD8A-\uDFFF]|\uD83E[\uDC00-\uDFEF\uDFFA-\uDFFF]|\uD869[\uDEDE-\uDEFF]|\uD86D[\uDF35-\uDF3F]|\uD86E[\uDC1E\uDC1F]|\uD873[\uDEA2-\uDEAF]|\uD87A[\uDFE1-\uDFFF]|\uD87E[\uDE1E-\uDFFF]|\uD884[\uDF4B-\uDFFF]|\uDB40[\uDC00-\uDCFF\uDDF0-\uDFFF]/g, xn = Object.hasOwnProperty;
+const xn = /[\0-\x1F!-,\.\/:-@\[-\^`\{-\xA9\xAB-\xB4\xB6-\xB9\xBB-\xBF\xD7\xF7\u02C2-\u02C5\u02D2-\u02DF\u02E5-\u02EB\u02ED\u02EF-\u02FF\u0375\u0378\u0379\u037E\u0380-\u0385\u0387\u038B\u038D\u03A2\u03F6\u0482\u0530\u0557\u0558\u055A-\u055F\u0589-\u0590\u05BE\u05C0\u05C3\u05C6\u05C8-\u05CF\u05EB-\u05EE\u05F3-\u060F\u061B-\u061F\u066A-\u066D\u06D4\u06DD\u06DE\u06E9\u06FD\u06FE\u0700-\u070F\u074B\u074C\u07B2-\u07BF\u07F6-\u07F9\u07FB\u07FC\u07FE\u07FF\u082E-\u083F\u085C-\u085F\u086B-\u089F\u08B5\u08C8-\u08D2\u08E2\u0964\u0965\u0970\u0984\u098D\u098E\u0991\u0992\u09A9\u09B1\u09B3-\u09B5\u09BA\u09BB\u09C5\u09C6\u09C9\u09CA\u09CF-\u09D6\u09D8-\u09DB\u09DE\u09E4\u09E5\u09F2-\u09FB\u09FD\u09FF\u0A00\u0A04\u0A0B-\u0A0E\u0A11\u0A12\u0A29\u0A31\u0A34\u0A37\u0A3A\u0A3B\u0A3D\u0A43-\u0A46\u0A49\u0A4A\u0A4E-\u0A50\u0A52-\u0A58\u0A5D\u0A5F-\u0A65\u0A76-\u0A80\u0A84\u0A8E\u0A92\u0AA9\u0AB1\u0AB4\u0ABA\u0ABB\u0AC6\u0ACA\u0ACE\u0ACF\u0AD1-\u0ADF\u0AE4\u0AE5\u0AF0-\u0AF8\u0B00\u0B04\u0B0D\u0B0E\u0B11\u0B12\u0B29\u0B31\u0B34\u0B3A\u0B3B\u0B45\u0B46\u0B49\u0B4A\u0B4E-\u0B54\u0B58-\u0B5B\u0B5E\u0B64\u0B65\u0B70\u0B72-\u0B81\u0B84\u0B8B-\u0B8D\u0B91\u0B96-\u0B98\u0B9B\u0B9D\u0BA0-\u0BA2\u0BA5-\u0BA7\u0BAB-\u0BAD\u0BBA-\u0BBD\u0BC3-\u0BC5\u0BC9\u0BCE\u0BCF\u0BD1-\u0BD6\u0BD8-\u0BE5\u0BF0-\u0BFF\u0C0D\u0C11\u0C29\u0C3A-\u0C3C\u0C45\u0C49\u0C4E-\u0C54\u0C57\u0C5B-\u0C5F\u0C64\u0C65\u0C70-\u0C7F\u0C84\u0C8D\u0C91\u0CA9\u0CB4\u0CBA\u0CBB\u0CC5\u0CC9\u0CCE-\u0CD4\u0CD7-\u0CDD\u0CDF\u0CE4\u0CE5\u0CF0\u0CF3-\u0CFF\u0D0D\u0D11\u0D45\u0D49\u0D4F-\u0D53\u0D58-\u0D5E\u0D64\u0D65\u0D70-\u0D79\u0D80\u0D84\u0D97-\u0D99\u0DB2\u0DBC\u0DBE\u0DBF\u0DC7-\u0DC9\u0DCB-\u0DCE\u0DD5\u0DD7\u0DE0-\u0DE5\u0DF0\u0DF1\u0DF4-\u0E00\u0E3B-\u0E3F\u0E4F\u0E5A-\u0E80\u0E83\u0E85\u0E8B\u0EA4\u0EA6\u0EBE\u0EBF\u0EC5\u0EC7\u0ECE\u0ECF\u0EDA\u0EDB\u0EE0-\u0EFF\u0F01-\u0F17\u0F1A-\u0F1F\u0F2A-\u0F34\u0F36\u0F38\u0F3A-\u0F3D\u0F48\u0F6D-\u0F70\u0F85\u0F98\u0FBD-\u0FC5\u0FC7-\u0FFF\u104A-\u104F\u109E\u109F\u10C6\u10C8-\u10CC\u10CE\u10CF\u10FB\u1249\u124E\u124F\u1257\u1259\u125E\u125F\u1289\u128E\u128F\u12B1\u12B6\u12B7\u12BF\u12C1\u12C6\u12C7\u12D7\u1311\u1316\u1317\u135B\u135C\u1360-\u137F\u1390-\u139F\u13F6\u13F7\u13FE-\u1400\u166D\u166E\u1680\u169B-\u169F\u16EB-\u16ED\u16F9-\u16FF\u170D\u1715-\u171F\u1735-\u173F\u1754-\u175F\u176D\u1771\u1774-\u177F\u17D4-\u17D6\u17D8-\u17DB\u17DE\u17DF\u17EA-\u180A\u180E\u180F\u181A-\u181F\u1879-\u187F\u18AB-\u18AF\u18F6-\u18FF\u191F\u192C-\u192F\u193C-\u1945\u196E\u196F\u1975-\u197F\u19AC-\u19AF\u19CA-\u19CF\u19DA-\u19FF\u1A1C-\u1A1F\u1A5F\u1A7D\u1A7E\u1A8A-\u1A8F\u1A9A-\u1AA6\u1AA8-\u1AAF\u1AC1-\u1AFF\u1B4C-\u1B4F\u1B5A-\u1B6A\u1B74-\u1B7F\u1BF4-\u1BFF\u1C38-\u1C3F\u1C4A-\u1C4C\u1C7E\u1C7F\u1C89-\u1C8F\u1CBB\u1CBC\u1CC0-\u1CCF\u1CD3\u1CFB-\u1CFF\u1DFA\u1F16\u1F17\u1F1E\u1F1F\u1F46\u1F47\u1F4E\u1F4F\u1F58\u1F5A\u1F5C\u1F5E\u1F7E\u1F7F\u1FB5\u1FBD\u1FBF-\u1FC1\u1FC5\u1FCD-\u1FCF\u1FD4\u1FD5\u1FDC-\u1FDF\u1FED-\u1FF1\u1FF5\u1FFD-\u203E\u2041-\u2053\u2055-\u2070\u2072-\u207E\u2080-\u208F\u209D-\u20CF\u20F1-\u2101\u2103-\u2106\u2108\u2109\u2114\u2116-\u2118\u211E-\u2123\u2125\u2127\u2129\u212E\u213A\u213B\u2140-\u2144\u214A-\u214D\u214F-\u215F\u2189-\u24B5\u24EA-\u2BFF\u2C2F\u2C5F\u2CE5-\u2CEA\u2CF4-\u2CFF\u2D26\u2D28-\u2D2C\u2D2E\u2D2F\u2D68-\u2D6E\u2D70-\u2D7E\u2D97-\u2D9F\u2DA7\u2DAF\u2DB7\u2DBF\u2DC7\u2DCF\u2DD7\u2DDF\u2E00-\u2E2E\u2E30-\u3004\u3008-\u3020\u3030\u3036\u3037\u303D-\u3040\u3097\u3098\u309B\u309C\u30A0\u30FB\u3100-\u3104\u3130\u318F-\u319F\u31C0-\u31EF\u3200-\u33FF\u4DC0-\u4DFF\u9FFD-\u9FFF\uA48D-\uA4CF\uA4FE\uA4FF\uA60D-\uA60F\uA62C-\uA63F\uA673\uA67E\uA6F2-\uA716\uA720\uA721\uA789\uA78A\uA7C0\uA7C1\uA7CB-\uA7F4\uA828-\uA82B\uA82D-\uA83F\uA874-\uA87F\uA8C6-\uA8CF\uA8DA-\uA8DF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA954-\uA95F\uA97D-\uA97F\uA9C1-\uA9CE\uA9DA-\uA9DF\uA9FF\uAA37-\uAA3F\uAA4E\uAA4F\uAA5A-\uAA5F\uAA77-\uAA79\uAAC3-\uAADA\uAADE\uAADF\uAAF0\uAAF1\uAAF7-\uAB00\uAB07\uAB08\uAB0F\uAB10\uAB17-\uAB1F\uAB27\uAB2F\uAB5B\uAB6A-\uAB6F\uABEB\uABEE\uABEF\uABFA-\uABFF\uD7A4-\uD7AF\uD7C7-\uD7CA\uD7FC-\uD7FF\uE000-\uF8FF\uFA6E\uFA6F\uFADA-\uFAFF\uFB07-\uFB12\uFB18-\uFB1C\uFB29\uFB37\uFB3D\uFB3F\uFB42\uFB45\uFBB2-\uFBD2\uFD3E-\uFD4F\uFD90\uFD91\uFDC8-\uFDEF\uFDFC-\uFDFF\uFE10-\uFE1F\uFE30-\uFE32\uFE35-\uFE4C\uFE50-\uFE6F\uFE75\uFEFD-\uFF0F\uFF1A-\uFF20\uFF3B-\uFF3E\uFF40\uFF5B-\uFF65\uFFBF-\uFFC1\uFFC8\uFFC9\uFFD0\uFFD1\uFFD8\uFFD9\uFFDD-\uFFFF]|\uD800[\uDC0C\uDC27\uDC3B\uDC3E\uDC4E\uDC4F\uDC5E-\uDC7F\uDCFB-\uDD3F\uDD75-\uDDFC\uDDFE-\uDE7F\uDE9D-\uDE9F\uDED1-\uDEDF\uDEE1-\uDEFF\uDF20-\uDF2C\uDF4B-\uDF4F\uDF7B-\uDF7F\uDF9E\uDF9F\uDFC4-\uDFC7\uDFD0\uDFD6-\uDFFF]|\uD801[\uDC9E\uDC9F\uDCAA-\uDCAF\uDCD4-\uDCD7\uDCFC-\uDCFF\uDD28-\uDD2F\uDD64-\uDDFF\uDF37-\uDF3F\uDF56-\uDF5F\uDF68-\uDFFF]|\uD802[\uDC06\uDC07\uDC09\uDC36\uDC39-\uDC3B\uDC3D\uDC3E\uDC56-\uDC5F\uDC77-\uDC7F\uDC9F-\uDCDF\uDCF3\uDCF6-\uDCFF\uDD16-\uDD1F\uDD3A-\uDD7F\uDDB8-\uDDBD\uDDC0-\uDDFF\uDE04\uDE07-\uDE0B\uDE14\uDE18\uDE36\uDE37\uDE3B-\uDE3E\uDE40-\uDE5F\uDE7D-\uDE7F\uDE9D-\uDEBF\uDEC8\uDEE7-\uDEFF\uDF36-\uDF3F\uDF56-\uDF5F\uDF73-\uDF7F\uDF92-\uDFFF]|\uD803[\uDC49-\uDC7F\uDCB3-\uDCBF\uDCF3-\uDCFF\uDD28-\uDD2F\uDD3A-\uDE7F\uDEAA\uDEAD-\uDEAF\uDEB2-\uDEFF\uDF1D-\uDF26\uDF28-\uDF2F\uDF51-\uDFAF\uDFC5-\uDFDF\uDFF7-\uDFFF]|\uD804[\uDC47-\uDC65\uDC70-\uDC7E\uDCBB-\uDCCF\uDCE9-\uDCEF\uDCFA-\uDCFF\uDD35\uDD40-\uDD43\uDD48-\uDD4F\uDD74\uDD75\uDD77-\uDD7F\uDDC5-\uDDC8\uDDCD\uDDDB\uDDDD-\uDDFF\uDE12\uDE38-\uDE3D\uDE3F-\uDE7F\uDE87\uDE89\uDE8E\uDE9E\uDEA9-\uDEAF\uDEEB-\uDEEF\uDEFA-\uDEFF\uDF04\uDF0D\uDF0E\uDF11\uDF12\uDF29\uDF31\uDF34\uDF3A\uDF45\uDF46\uDF49\uDF4A\uDF4E\uDF4F\uDF51-\uDF56\uDF58-\uDF5C\uDF64\uDF65\uDF6D-\uDF6F\uDF75-\uDFFF]|\uD805[\uDC4B-\uDC4F\uDC5A-\uDC5D\uDC62-\uDC7F\uDCC6\uDCC8-\uDCCF\uDCDA-\uDD7F\uDDB6\uDDB7\uDDC1-\uDDD7\uDDDE-\uDDFF\uDE41-\uDE43\uDE45-\uDE4F\uDE5A-\uDE7F\uDEB9-\uDEBF\uDECA-\uDEFF\uDF1B\uDF1C\uDF2C-\uDF2F\uDF3A-\uDFFF]|\uD806[\uDC3B-\uDC9F\uDCEA-\uDCFE\uDD07\uDD08\uDD0A\uDD0B\uDD14\uDD17\uDD36\uDD39\uDD3A\uDD44-\uDD4F\uDD5A-\uDD9F\uDDA8\uDDA9\uDDD8\uDDD9\uDDE2\uDDE5-\uDDFF\uDE3F-\uDE46\uDE48-\uDE4F\uDE9A-\uDE9C\uDE9E-\uDEBF\uDEF9-\uDFFF]|\uD807[\uDC09\uDC37\uDC41-\uDC4F\uDC5A-\uDC71\uDC90\uDC91\uDCA8\uDCB7-\uDCFF\uDD07\uDD0A\uDD37-\uDD39\uDD3B\uDD3E\uDD48-\uDD4F\uDD5A-\uDD5F\uDD66\uDD69\uDD8F\uDD92\uDD99-\uDD9F\uDDAA-\uDEDF\uDEF7-\uDFAF\uDFB1-\uDFFF]|\uD808[\uDF9A-\uDFFF]|\uD809[\uDC6F-\uDC7F\uDD44-\uDFFF]|[\uD80A\uD80B\uD80E-\uD810\uD812-\uD819\uD824-\uD82B\uD82D\uD82E\uD830-\uD833\uD837\uD839\uD83D\uD83F\uD87B-\uD87D\uD87F\uD885-\uDB3F\uDB41-\uDBFF][\uDC00-\uDFFF]|\uD80D[\uDC2F-\uDFFF]|\uD811[\uDE47-\uDFFF]|\uD81A[\uDE39-\uDE3F\uDE5F\uDE6A-\uDECF\uDEEE\uDEEF\uDEF5-\uDEFF\uDF37-\uDF3F\uDF44-\uDF4F\uDF5A-\uDF62\uDF78-\uDF7C\uDF90-\uDFFF]|\uD81B[\uDC00-\uDE3F\uDE80-\uDEFF\uDF4B-\uDF4E\uDF88-\uDF8E\uDFA0-\uDFDF\uDFE2\uDFE5-\uDFEF\uDFF2-\uDFFF]|\uD821[\uDFF8-\uDFFF]|\uD823[\uDCD6-\uDCFF\uDD09-\uDFFF]|\uD82C[\uDD1F-\uDD4F\uDD53-\uDD63\uDD68-\uDD6F\uDEFC-\uDFFF]|\uD82F[\uDC6B-\uDC6F\uDC7D-\uDC7F\uDC89-\uDC8F\uDC9A-\uDC9C\uDC9F-\uDFFF]|\uD834[\uDC00-\uDD64\uDD6A-\uDD6C\uDD73-\uDD7A\uDD83\uDD84\uDD8C-\uDDA9\uDDAE-\uDE41\uDE45-\uDFFF]|\uD835[\uDC55\uDC9D\uDCA0\uDCA1\uDCA3\uDCA4\uDCA7\uDCA8\uDCAD\uDCBA\uDCBC\uDCC4\uDD06\uDD0B\uDD0C\uDD15\uDD1D\uDD3A\uDD3F\uDD45\uDD47-\uDD49\uDD51\uDEA6\uDEA7\uDEC1\uDEDB\uDEFB\uDF15\uDF35\uDF4F\uDF6F\uDF89\uDFA9\uDFC3\uDFCC\uDFCD]|\uD836[\uDC00-\uDDFF\uDE37-\uDE3A\uDE6D-\uDE74\uDE76-\uDE83\uDE85-\uDE9A\uDEA0\uDEB0-\uDFFF]|\uD838[\uDC07\uDC19\uDC1A\uDC22\uDC25\uDC2B-\uDCFF\uDD2D-\uDD2F\uDD3E\uDD3F\uDD4A-\uDD4D\uDD4F-\uDEBF\uDEFA-\uDFFF]|\uD83A[\uDCC5-\uDCCF\uDCD7-\uDCFF\uDD4C-\uDD4F\uDD5A-\uDFFF]|\uD83B[\uDC00-\uDDFF\uDE04\uDE20\uDE23\uDE25\uDE26\uDE28\uDE33\uDE38\uDE3A\uDE3C-\uDE41\uDE43-\uDE46\uDE48\uDE4A\uDE4C\uDE50\uDE53\uDE55\uDE56\uDE58\uDE5A\uDE5C\uDE5E\uDE60\uDE63\uDE65\uDE66\uDE6B\uDE73\uDE78\uDE7D\uDE7F\uDE8A\uDE9C-\uDEA0\uDEA4\uDEAA\uDEBC-\uDFFF]|\uD83C[\uDC00-\uDD2F\uDD4A-\uDD4F\uDD6A-\uDD6F\uDD8A-\uDFFF]|\uD83E[\uDC00-\uDFEF\uDFFA-\uDFFF]|\uD869[\uDEDE-\uDEFF]|\uD86D[\uDF35-\uDF3F]|\uD86E[\uDC1E\uDC1F]|\uD873[\uDEA2-\uDEAF]|\uD87A[\uDFE1-\uDFFF]|\uD87E[\uDE1E-\uDFFF]|\uD884[\uDF4B-\uDFFF]|\uDB40[\uDC00-\uDCFF\uDDF0-\uDFFF]/g, yn = Object.hasOwnProperty;
 class qe {
   /**
    * Create a new slug class.
@@ -196,9 +196,9 @@ class qe {
    */
   slug(r, i) {
     const u = this;
-    let s = yn(r, i === !0);
+    let s = bn(r, i === !0);
     const l = s;
-    for (; xn.call(u.occurrences, s); )
+    for (; yn.call(u.occurrences, s); )
       u.occurrences[l]++, s = l + "-" + u.occurrences[l];
     return u.occurrences[s] = 0, s;
   }
@@ -211,24 +211,24 @@ class qe {
     this.occurrences = /* @__PURE__ */ Object.create(null);
   }
 }
-function yn(n, r) {
-  return typeof n != "string" ? "" : (r || (n = n.toLowerCase()), n.replace(Fn, "").replace(/ /g, "-"));
+function bn(n, r) {
+  return typeof n != "string" ? "" : (r || (n = n.toLowerCase()), n.replace(xn, "").replace(/ /g, "-"));
 }
-function bn(n) {
+function Cn(n) {
   const r = n.type === "element" ? n.tagName.toLowerCase() : "", i = r.length === 2 && r.charCodeAt(0) === 104 ? r.charCodeAt(1) : 0;
   return i > 48 && i < 55 ? i - 48 : void 0;
 }
-function Cn(n) {
+function En(n) {
   return "children" in n ? Ke(n) : "value" in n ? n.value : "";
 }
-function En(n) {
+function An(n) {
   return n.type === "text" ? n.value : "children" in n ? Ke(n) : "";
 }
 function Ke(n) {
   let r = -1;
   const i = [];
   for (; ++r < n.children.length; )
-    i[r] = En(n.children[r]);
+    i[r] = An(n.children[r]);
   return i.join("");
 }
 const Ge = (
@@ -248,24 +248,24 @@ const Ge = (
    */
   (function(n) {
     if (n == null)
-      return Bn;
+      return vn;
     if (typeof n == "function")
       return Ce(n);
     if (typeof n == "object")
-      return Array.isArray(n) ? An(n) : (
+      return Array.isArray(n) ? wn(n) : (
         // Cast because `ReadonlyArray` goes into the above but `isArray`
         // narrows to `Array`.
-        wn(
+        kn(
           /** @type {Props} */
           n
         )
       );
     if (typeof n == "string")
-      return kn(n);
+      return Bn(n);
     throw new Error("Expected function, string, or object as test");
   })
 );
-function An(n) {
+function wn(n) {
   const r = [];
   let i = -1;
   for (; ++i < n.length; )
@@ -278,7 +278,7 @@ function An(n) {
     return !1;
   }
 }
-function wn(n) {
+function kn(n) {
   const r = (
     /** @type {Record<string, unknown>} */
     n
@@ -296,7 +296,7 @@ function wn(n) {
     return !0;
   }
 }
-function kn(n) {
+function Bn(n) {
   return Ce(r);
   function r(i) {
     return i && i.type === n;
@@ -305,7 +305,7 @@ function kn(n) {
 function Ce(n) {
   return r;
   function r(i, u, s) {
-    return !!(vn(i) && n.call(
+    return !!(Sn(i) && n.call(
       this,
       i,
       typeof u == "number" ? u : void 0,
@@ -313,19 +313,19 @@ function Ce(n) {
     ));
   }
 }
-function Bn() {
+function vn() {
   return !0;
 }
-function vn(n) {
+function Sn(n) {
   return n !== null && typeof n == "object" && "type" in n;
 }
-const Ve = [], Sn = !0, Te = !1, $n = "skip";
-function zn(n, r, i, u) {
+const Ve = [], $n = !0, Me = !1, zn = "skip";
+function Ln(n, r, i, u) {
   let s;
   typeof r == "function" && typeof i != "function" ? (u = i, i = r) : s = r;
   const l = Ge(s), p = u ? -1 : 1;
   D(n, void 0, [])();
-  function D(f, C, x) {
+  function D(f, b, x) {
     const I = (
       /** @type {Record<string, unknown>} */
       f && typeof f == "object" ? f : {}
@@ -338,53 +338,62 @@ function zn(n, r, i, u) {
           typeof I.name == "string" ? I.name : void 0
         )
       );
-      Object.defineProperty(b, "name", {
+      Object.defineProperty(C, "name", {
         value: "node (" + (f.type + (E ? "<" + E + ">" : "")) + ")"
       });
     }
-    return b;
-    function b() {
-      let E = Ve, M, T, R;
-      if ((!r || l(f, C, x[x.length - 1] || void 0)) && (E = Ln(i(f, x)), E[0] === Te))
+    return C;
+    function C() {
+      let E = Ve, T, M, R;
+      if ((!r || l(f, b, x[x.length - 1] || void 0)) && (E = In(i(f, x)), E[0] === Me))
         return E;
       if ("children" in f && f.children) {
         const a = (
           /** @type {UnistParent} */
           f
         );
-        if (a.children && E[0] !== $n)
-          for (T = (u ? a.children.length : -1) + p, R = x.concat(a); T > -1 && T < a.children.length; ) {
-            const N = a.children[T];
-            if (M = D(N, T, R)(), M[0] === Te)
-              return M;
-            T = typeof M[1] == "number" ? M[1] : T + p;
+        if (a.children && E[0] !== zn)
+          for (M = (u ? a.children.length : -1) + p, R = x.concat(a); M > -1 && M < a.children.length; ) {
+            const H = a.children[M];
+            if (T = D(H, M, R)(), T[0] === Me)
+              return T;
+            M = typeof T[1] == "number" ? T[1] : M + p;
           }
       }
       return E;
     }
   }
 }
-function Ln(n) {
-  return Array.isArray(n) ? n : typeof n == "number" ? [Sn, n] : n == null ? Ve : [n];
+function In(n) {
+  return Array.isArray(n) ? n : typeof n == "number" ? [$n, n] : n == null ? Ve : [n];
 }
-function In(n, r, i, u) {
+function Rn(n, r, i, u) {
   let s, l, p;
-  l = r, p = i, s = u, zn(n, l, D, s);
-  function D(f, C) {
-    const x = C[C.length - 1], I = x ? x.children.indexOf(f) : void 0;
+  l = r, p = i, s = u, Ln(n, l, D, s);
+  function D(f, b) {
+    const x = b[b.length - 1], I = x ? x.children.indexOf(f) : void 0;
     return p(f, I, x);
   }
 }
-const Rn = {}, _e = new qe();
+const Tn = {}, _e = new qe();
 function Mn(n) {
-  const i = (n || Rn).prefix || "";
+  const i = (n || Tn).prefix || "";
   return function(u) {
-    _e.reset(), In(u, "element", function(s) {
-      bn(s) && !s.properties.id && (s.properties.id = i + _e.slug(Cn(s)));
+    _e.reset(), Rn(u, "element", function(s) {
+      Cn(s) && !s.properties.id && (s.properties.id = i + _e.slug(En(s)));
     });
   };
 }
-const Tn = `
+const _n = ["#app:", "app:"];
+function Pn(n) {
+  for (const r of _n)
+    if (n.startsWith(r)) return n.slice(r.length);
+  return null;
+}
+function Nn(n) {
+  return n.startsWith("app:") ? n : un(n);
+}
+const Hn = `
 :where(.manual-markdown) {
   color: ${t.gray700};
 }
@@ -503,35 +512,32 @@ function be({
 }) {
   const s = {
     a: ({ href: l, children: p, ...D }) => {
-      if (l && l.startsWith("app:") && u) {
-        const f = l.replace("app:", "");
-        return /* @__PURE__ */ e(
-          "span",
-          {
-            role: "link",
-            tabIndex: 0,
-            onClick: (C) => {
-              C.preventDefault(), C.stopPropagation(), u(f);
-            },
-            onKeyDown: (C) => {
-              (C.key === "Enter" || C.key === " ") && (C.preventDefault(), u(f));
-            },
-            style: {
-              color: "#043E80",
-              textDecoration: "underline",
-              cursor: "pointer"
-            },
-            ...D,
-            children: p
-          }
-        );
-      }
-      return l && /\.md(#|$|\?)/.test(l) && i ? /* @__PURE__ */ e(
+      const f = l ? Pn(l) : null;
+      return f !== null && u ? /* @__PURE__ */ e(
+        "span",
+        {
+          role: "link",
+          tabIndex: 0,
+          onClick: (b) => {
+            b.preventDefault(), b.stopPropagation(), u(f);
+          },
+          onKeyDown: (b) => {
+            (b.key === "Enter" || b.key === " ") && (b.preventDefault(), u(f));
+          },
+          style: {
+            color: "#043E80",
+            textDecoration: "underline",
+            cursor: "pointer"
+          },
+          ...D,
+          children: p
+        }
+      ) : l && /\.md(#|$|\?)/.test(l) && i ? /* @__PURE__ */ e(
         "a",
         {
           href: l,
-          onClick: (f) => {
-            f.preventDefault(), i(l);
+          onClick: (b) => {
+            b.preventDefault(), i(l);
           },
           style: {
             color: "#043E80",
@@ -555,11 +561,20 @@ function be({
     }
   };
   return /* @__PURE__ */ o("div", { className: `manual-markdown ${r}`, children: [
-    /* @__PURE__ */ e("style", { children: Tn }),
-    /* @__PURE__ */ e(ln, { remarkPlugins: [un], rehypePlugins: [sn, Mn], components: s, children: n })
+    /* @__PURE__ */ e("style", { children: Hn }),
+    /* @__PURE__ */ e(
+      ln,
+      {
+        remarkPlugins: [sn],
+        rehypePlugins: [cn, Mn],
+        urlTransform: Nn,
+        components: s,
+        children: n
+      }
+    )
   ] });
 }
-const Ue = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap", _n = `
+const Ue = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap", On = `
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
@@ -591,13 +606,13 @@ function Ee(n = !1) {
 function Ae() {
   return typeof window < "u" && window.__MANUAL_VIEWER_DISABLE_AUTO_LOAD_MATERIAL_SYMBOLS__ === !0;
 }
-const Pn = [
+const jn = [
   { value: "bug", label: "不具合", color: "#DC2626" },
   { value: "question", label: "質問", color: "#2563EB" },
   { value: "request", label: "要望", color: "#059669" },
   { value: "share", label: "共有", color: "#6B7280" },
   { value: "other", label: "その他", color: "#9333EA" }
-], Hn = `
+], Wn = `
   .debug-field { margin-bottom: 0; }
   .debug-field > label { display: block; font-size: 12px; color: #6B7280; margin-bottom: 6px; }
   .debug-dropzone {
@@ -644,7 +659,7 @@ function Xe({
   const D = W(null);
   S(() => {
     try {
-      const d = cn({
+      const d = dn({
         // フィードバックAPI自身への fetch を除外（無限ループ防止）
         networkExclude: [n]
       });
@@ -656,7 +671,7 @@ function Xe({
       };
     }
   }, [n]);
-  const [f, C] = $(null), [x, I] = $(""), [b, E] = $(!1), [M, T] = $(""), [R, a] = $(""), [N, q] = $([]), [h, A] = $(!1), [c, w] = $(null), v = W(), O = W(!1);
+  const [f, b] = $(null), [x, I] = $(""), [C, E] = $(!1), [T, M] = $(""), [R, a] = $(""), [H, q] = $([]), [h, A] = $(!1), [c, w] = $(null), v = W(), O = W(!1);
   S(() => () => {
     v.current && clearTimeout(v.current);
   }, []);
@@ -665,11 +680,11 @@ function Xe({
     if (!f || !x.trim() || O.current) return;
     O.current = !0;
     let d = x.trim();
-    (M.trim() || R.trim()) && (d += `
+    (T.trim() || R.trim()) && (d += `
 
----`, M.trim() && (d += `
+---`, T.trim() && (d += `
 再現手順:
-${M.trim()}`), R.trim() && (d += `
+${T.trim()}`), R.trim() && (d += `
 期待結果:
 ${R.trim()}`));
     const P = f === "bug" && D.current ? {
@@ -680,10 +695,10 @@ ${R.trim()}`));
       message: d
     }, P);
     if (X) {
-      if (N.length > 0)
-        for (const ae of N)
+      if (H.length > 0)
+        for (const ae of H)
           try {
-            await dn({
+            await pn({
               apiBaseUrl: n,
               feedbackId: X.id,
               file: ae
@@ -691,11 +706,11 @@ ${R.trim()}`));
           } catch (ie) {
             console.error("Failed to upload attachment:", ie);
           }
-      C(null), I(""), T(""), a(""), E(!1), q([]), w(null), (oe = D.current) == null || oe.clear(), A(!0), v.current && clearTimeout(v.current), v.current = setTimeout(() => A(!1), 3e3), u == null || u(X);
+      b(null), I(""), M(""), a(""), E(!1), q([]), w(null), (oe = D.current) == null || oe.clear(), A(!0), v.current && clearTimeout(v.current), v.current = setTimeout(() => A(!1), 3e3), u == null || u(X);
     } else
       w(ee), s == null || s(ee ?? new Error("Unknown error"));
     O.current = !1;
-  }, [f, x, M, R, N, n, p, u, s]), V = B(
+  }, [f, x, T, R, H, n, p, u, s]), V = B(
     (d) => {
       (d.metaKey || d.ctrlKey) && d.key === "Enter" && z && (d.preventDefault(), _());
     },
@@ -706,14 +721,14 @@ ${R.trim()}`));
     q((P) => P.filter((X, ee) => ee !== d));
   }, []);
   return /* @__PURE__ */ o("div", { style: j.container, children: [
-    /* @__PURE__ */ e("style", { children: `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }${Hn}` }),
+    /* @__PURE__ */ e("style", { children: `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }${Wn}` }),
     /* @__PURE__ */ o("div", { style: j.section, children: [
-      /* @__PURE__ */ e("div", { style: j.tagGroup, role: "radiogroup", "aria-label": "フィードバック種別", children: Pn.map((d) => /* @__PURE__ */ e(
+      /* @__PURE__ */ e("div", { style: j.tagGroup, role: "radiogroup", "aria-label": "フィードバック種別", children: jn.map((d) => /* @__PURE__ */ e(
         "button",
         {
           role: "radio",
           "aria-checked": f === d.value,
-          onClick: () => C(f === d.value ? null : d.value),
+          onClick: () => b(f === d.value ? null : d.value),
           style: {
             ...j.tag,
             ...f === d.value ? { backgroundColor: d.color, color: "#fff", borderColor: d.color } : { borderColor: "#D1D5DB", color: "#6B7280" }
@@ -738,9 +753,9 @@ ${R.trim()}`));
       }
     ) }),
     /* @__PURE__ */ e("div", { style: j.section, children: /* @__PURE__ */ e(
-      fn,
+      mn,
       {
-        files: N,
+        files: H,
         onAdd: K,
         onRemove: g,
         maxFiles: 3,
@@ -752,17 +767,17 @@ ${R.trim()}`));
       "不具合タグを選択すると、直前の動作ログが自動で添付されます"
     ] }),
     /* @__PURE__ */ o("div", { style: j.section, children: [
-      /* @__PURE__ */ o("button", { onClick: () => E(!b), style: j.detailToggle, "aria-expanded": b, children: [
-        /* @__PURE__ */ e("span", { style: j.iconSmall, children: b ? "expand_less" : "expand_more" }),
+      /* @__PURE__ */ o("button", { onClick: () => E(!C), style: j.detailToggle, "aria-expanded": C, children: [
+        /* @__PURE__ */ e("span", { style: j.iconSmall, children: C ? "expand_less" : "expand_more" }),
         "詳細情報（任意）"
       ] }),
-      b && /* @__PURE__ */ o("div", { style: j.detailArea, children: [
+      C && /* @__PURE__ */ o("div", { style: j.detailArea, children: [
         /* @__PURE__ */ e("label", { style: j.label, children: "再現手順:" }),
         /* @__PURE__ */ e(
           "textarea",
           {
-            value: M,
-            onChange: (d) => T(d.target.value),
+            value: T,
+            onChange: (d) => M(d.target.value),
             "aria-label": "再現手順",
             rows: 2,
             style: j.textarea
@@ -909,68 +924,68 @@ const j = {
     fontWeight: 600
   }
 };
-function Nn(n) {
+function qn(n) {
   return n.replace(/`([^`]+)`/g, "$1").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_]+)__/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/_([^_]+)_/g, "$1").replace(/!\[([^\]]*)\]\([^)]*\)/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").trim();
 }
-function On(n) {
+function Kn(n) {
   return n.replace(/(?:^|[ \t])#+[ \t]*$/, "").trim();
 }
-function jn(n) {
+function Gn(n) {
   const r = new qe(), i = [], u = n.split(/\r?\n/);
   let s = null;
   for (const l of u) {
     const p = /^(`{3,}|~{3,})/.exec(l.trim());
     if (p) {
-      const b = p[1][0];
-      s === null ? s = b : s === b && (s = null);
+      const C = p[1][0];
+      s === null ? s = C : s === C && (s = null);
       continue;
     }
     if (s) continue;
     let D = null, f = "";
-    const C = /^ {0,3}(#{2,3})(?:[ \t]+(.*))?$/.exec(l);
-    if (C)
-      D = C[1].length, f = On((C[2] ?? "").trim());
+    const b = /^ {0,3}(#{2,3})(?:[ \t]+(.*))?$/.exec(l);
+    if (b)
+      D = b[1].length, f = Kn((b[2] ?? "").trim());
     else {
-      const b = /^\s{0,3}<h([23])(?:\s[^>]*)?>([\s\S]*?)<\/h\1>\s*$/i.exec(l);
-      b && (D = Number(b[1]), f = b[2].replace(/<[^>]+>/g, "").trim());
+      const C = /^\s{0,3}<h([23])(?:\s[^>]*)?>([\s\S]*?)<\/h\1>\s*$/i.exec(l);
+      C && (D = Number(C[1]), f = C[2].replace(/<[^>]+>/g, "").trim());
     }
     if (D === null) continue;
-    const x = Nn(f);
+    const x = qn(f);
     if (!x) continue;
     const I = r.slug(x);
     i.push({ id: I, text: x, level: D });
   }
   return i;
 }
-function Wn() {
+function Vn() {
   const [n, r] = $({}), [i, u] = $({}), [s, l] = $({}), p = W(/* @__PURE__ */ new Set()), D = W(!0);
   S(() => (D.current = !0, () => {
     D.current = !1;
   }), []);
-  const f = B((b) => n[b], [n]), C = B((b) => i[b] ?? !1, [i]), x = B((b) => s[b] ?? null, [s]), I = B(async (b) => {
-    if (!p.current.has(b)) {
-      p.current.add(b), u((E) => ({ ...E, [b]: !0 })), l((E) => ({ ...E, [b]: null }));
+  const f = B((C) => n[C], [n]), b = B((C) => i[C] ?? !1, [i]), x = B((C) => s[C] ?? null, [s]), I = B(async (C) => {
+    if (!p.current.has(C)) {
+      p.current.add(C), u((E) => ({ ...E, [C]: !0 })), l((E) => ({ ...E, [C]: null }));
       try {
-        const E = await fetch(b);
+        const E = await fetch(C);
         if (!E.ok)
           throw new Error(`Failed to load: ${E.status} ${E.statusText}`);
-        const M = await E.text(), T = jn(M);
+        const T = await E.text(), M = Gn(T);
         if (!D.current) return;
-        r((R) => ({ ...R, [b]: T }));
+        r((R) => ({ ...R, [C]: M }));
       } catch (E) {
-        if (p.current.delete(b), !D.current) return;
-        l((M) => ({
-          ...M,
-          [b]: E instanceof Error ? E : new Error(String(E))
+        if (p.current.delete(C), !D.current) return;
+        l((T) => ({
+          ...T,
+          [C]: E instanceof Error ? E : new Error(String(E))
         }));
       } finally {
-        D.current && u((E) => ({ ...E, [b]: !1 }));
+        D.current && u((E) => ({ ...E, [C]: !1 }));
       }
     }
   }, []);
-  return { getHeadings: f, loadHeadings: I, isLoading: C, getError: x };
+  return { getHeadings: f, loadHeadings: I, isLoading: b, getError: x };
 }
-function qn(n) {
+function Un(n) {
   const r = {}, i = [], u = [...n].sort((l, p) => (l.order ?? 0) - (p.order ?? 0));
   for (const l of u)
     l.category ? (r[l.category] || (r[l.category] = []), r[l.category].push(l)) : i.push(l);
@@ -983,7 +998,7 @@ function Pe(n, r) {
   var i;
   return r ? ((i = n.find((u) => u.path === r)) == null ? void 0 : i.category) ?? null : null;
 }
-function Kn(n) {
+function Xn(n) {
   return n.replace(/\s+/g, "-");
 }
 function $e({
@@ -994,7 +1009,7 @@ function $e({
   activeHeadingId: s = null,
   className: l = ""
 }) {
-  const { groups: p, uncategorized: D } = We(() => qn(n), [n]), { getHeadings: f, loadHeadings: C, isLoading: x, getError: I } = Wn(), [b, E] = $(() => {
+  const { groups: p, uncategorized: D } = We(() => Un(n), [n]), { getHeadings: f, loadHeadings: b, isLoading: x, getError: I } = Vn(), [C, E] = $(() => {
     const h = Pe(n, r), A = {};
     for (const c of p)
       A[c.category] = c.category === h;
@@ -1004,22 +1019,22 @@ function $e({
     const h = Pe(n, r);
     h && E((A) => A[h] ? A : { ...A, [h]: !0 });
   }, [r, n]);
-  const [M, T] = $({}), R = W(/* @__PURE__ */ new Set()), a = B((h) => {
+  const [T, M] = $({}), R = W(/* @__PURE__ */ new Set()), a = B((h) => {
     E((A) => ({ ...A, [h]: !A[h] }));
-  }, []), N = B(
+  }, []), H = B(
     (h) => {
-      T((A) => {
+      M((A) => {
         const c = !(A[h] ?? !1);
-        return c ? (C(h), R.current.delete(h)) : R.current.add(h), { ...A, [h]: c };
+        return c ? (b(h), R.current.delete(h)) : R.current.add(h), { ...A, [h]: c };
       });
     },
-    [C]
+    [b]
   );
   S(() => {
-    !s || !r || R.current.has(r) || (C(r), T((h) => h[r] ? h : { ...h, [r]: !0 }));
-  }, [s, r, C]);
+    !s || !r || R.current.has(r) || (b(r), M((h) => h[r] ? h : { ...h, [r]: !0 }));
+  }, [s, r, b]);
   const q = (h) => {
-    const A = r === h.path, c = M[h.path] ?? !1, w = f(h.path), v = x(h.path), O = I(h.path), z = `manual-toc-headings-${Kn(h.id)}`;
+    const A = r === h.path, c = T[h.path] ?? !1, w = f(h.path), v = x(h.path), O = I(h.path), z = `manual-toc-headings-${Xn(h.id)}`;
     return /* @__PURE__ */ o("li", { children: [
       /* @__PURE__ */ o("div", { style: Y.pageRow, children: [
         /* @__PURE__ */ e(
@@ -1027,7 +1042,7 @@ function $e({
           {
             type: "button",
             onClick: () => {
-              i(h.path), N(h.path);
+              i(h.path), H(h.path);
             },
             "aria-expanded": c,
             "aria-controls": z,
@@ -1044,7 +1059,7 @@ function $e({
           "button",
           {
             type: "button",
-            onClick: () => N(h.path),
+            onClick: () => H(h.path),
             style: Y.toggleHeadingsButton,
             "aria-expanded": c,
             "aria-controls": z,
@@ -1096,7 +1111,7 @@ function $e({
   return /* @__PURE__ */ o("nav", { className: `manual-toc ${l}`, "aria-label": "マニュアル目次", style: Y.nav, children: [
     D.length > 0 && /* @__PURE__ */ e("ul", { style: Y.list, children: D.map(q) }),
     p.map((h, A) => {
-      const c = b[h.category] ?? !1, w = `manual-toc-category-${A}`;
+      const c = C[h.category] ?? !1, w = `manual-toc-category-${A}`;
       return /* @__PURE__ */ o("div", { style: Y.categoryBlock, children: [
         /* @__PURE__ */ o(
           "button",
@@ -1230,7 +1245,7 @@ const Y = {
     color: t.gray500
   }
 };
-function at({
+function st({
   isOpen: n,
   docPath: r,
   onClose: i,
@@ -1240,16 +1255,16 @@ function at({
   showDownloadButton: p = !1,
   copyHostStyles: D = !0,
   items: f,
-  feedbackApiBaseUrl: C,
+  feedbackApiBaseUrl: b,
   feedbackUserType: x,
   feedbackAppVersion: I,
-  onFeedbackSubmitSuccess: b,
+  onFeedbackSubmitSuccess: C,
   onFeedbackSubmitError: E,
-  feedbackDefaultHeight: M = 200,
-  feedbackMinHeight: T = 150,
+  feedbackDefaultHeight: T = 200,
+  feedbackMinHeight: M = 150,
   feedbackMaxHeight: R = 400
 }) {
-  const [a, N] = $(null), [q, h] = $(null), { content: A, loading: c, error: w } = ye(r), { downloadMd: v } = rn(), O = W(!1), [z, _] = $(!1), V = C != null, [K, g] = $(!0), [d, P] = $(!1), X = W(null), ee = W(!1), oe = W(null), ae = W(null), [ie, re] = $(null), se = W(!1), fe = B(async () => {
+  const [a, H] = $(null), [q, h] = $(null), { content: A, loading: c, error: w } = ye(r), { downloadMd: v } = rn(), O = W(!1), [z, _] = $(!1), V = b != null, [K, g] = $(!0), [d, P] = $(!1), X = W(null), ee = W(!1), oe = W(null), ae = W(null), [ie, re] = $(null), se = W(!1), fe = B(async () => {
     if (!window.documentPictureInPicture) {
       console.warn("Document Picture-in-Picture API is not supported");
       return;
@@ -1267,10 +1282,10 @@ function at({
           // 非対応ブラウザではオプションが単に無視されるだけで害はない）。
           preferInitialWindowPlacement: !0
         }), Z = L.document.createElement("style");
-        Z.textContent = Vn(), L.document.head.appendChild(Z), D && Gn(L.document);
+        Z.textContent = Yn(), L.document.head.appendChild(Z), D && Jn(L.document);
         const J = L.document.createElement("div");
-        J.id = "manual-pip-root", L.document.body.appendChild(J), N(L), h(J), L.addEventListener("pagehide", () => {
-          N(null), h(null), i();
+        J.id = "manual-pip-root", L.document.body.appendChild(J), H(L), h(J), L.addEventListener("pagehide", () => {
+          H(null), h(null), i();
         });
       } catch (k) {
         console.error("Failed to open PiP window:", k);
@@ -1279,7 +1294,7 @@ function at({
       }
     }
   }, [l.width, l.height, D, i]), ce = B(() => {
-    a && (a.close(), N(null), h(null));
+    a && (a.close(), H(null), h(null));
   }, [a]);
   S(() => {
     n && !a ? fe() : !n && a && ce();
@@ -1549,7 +1564,7 @@ function at({
             /* @__PURE__ */ e("span", { children: "マニュアルを選択してください" })
           ] })
         ] }),
-        V && /* @__PURE__ */ e("aside", { className: "pip-sidebar", style: { width: "300px" }, children: C != null && /* @__PURE__ */ o(
+        V && /* @__PURE__ */ e("aside", { className: "pip-sidebar", style: { width: "300px" }, children: b != null && /* @__PURE__ */ o(
           "div",
           {
             className: "pip-feedback-section",
@@ -1579,10 +1594,10 @@ function at({
               K && /* @__PURE__ */ e("div", { className: "pip-feedback-content", children: /* @__PURE__ */ e(
                 Xe,
                 {
-                  apiBaseUrl: C,
+                  apiBaseUrl: b,
                   userType: x,
                   appVersion: I,
-                  onSubmitSuccess: b,
+                  onSubmitSuccess: C,
                   onSubmitError: E
                 }
               ) })
@@ -1594,7 +1609,7 @@ function at({
     q
   ) : null;
 }
-function Gn(n) {
+function Jn(n) {
   Array.from(document.styleSheets).forEach((r) => {
     try {
       const i = Array.from(r.cssRules).map((s) => s.cssText).join(`
@@ -1610,7 +1625,7 @@ function Gn(n) {
     }
   });
 }
-function Vn() {
+function Yn() {
   return `
     @import url('${Ue}');
 
@@ -1626,7 +1641,7 @@ function Vn() {
       overflow: hidden;
     }
 
-    ${_n}
+    ${On}
 
     .pip-icon {
       font-family: 'Material Symbols Outlined';
@@ -2104,7 +2119,7 @@ function Vn() {
     }
   `;
 }
-function it({
+function ct({
   items: n,
   onSelect: r,
   activePath: i,
@@ -2116,14 +2131,14 @@ function it({
     Ae() || Ee();
   }, []);
   const p = We(() => {
-    const D = {}, f = [], C = [...n].sort((x, I) => (x.order ?? 0) - (I.order ?? 0));
-    for (const x of C)
+    const D = {}, f = [], b = [...n].sort((x, I) => (x.order ?? 0) - (I.order ?? 0));
+    for (const x of b)
       x.category ? (D[x.category] || (D[x.category] = []), D[x.category].push(x)) : f.push(x);
     return { groups: D, uncategorized: f };
   }, [n]);
   return /* @__PURE__ */ o("nav", { className: `manual-sidebar ${u}`, children: [
     p.uncategorized.length > 0 && /* @__PURE__ */ e("ul", { style: { listStyle: "none", padding: 0, margin: 0 }, children: p.uncategorized.map((D) => /* @__PURE__ */ e(
-      He,
+      Ne,
       {
         item: D,
         isActive: i === D.path,
@@ -2147,21 +2162,21 @@ function it({
           children: D
         }
       ),
-      /* @__PURE__ */ e("ul", { style: { listStyle: "none", padding: 0, margin: 0 }, children: f.map((C) => /* @__PURE__ */ e(
-        He,
+      /* @__PURE__ */ e("ul", { style: { listStyle: "none", padding: 0, margin: 0 }, children: f.map((b) => /* @__PURE__ */ e(
+        Ne,
         {
-          item: C,
-          isActive: i === C.path,
+          item: b,
+          isActive: i === b.path,
           onSelect: r,
           onPiP: s,
           onNewTab: l
         },
-        C.id
+        b.id
       )) })
     ] }, D))
   ] });
 }
-function He({ item: n, isActive: r, onSelect: i, onPiP: u, onNewTab: s }) {
+function Ne({ item: n, isActive: r, onSelect: i, onPiP: u, onNewTab: s }) {
   const l = {
     itemRow: {
       display: "flex",
@@ -2266,7 +2281,7 @@ function He({ item: n, isActive: r, onSelect: i, onPiP: u, onNewTab: s }) {
     ] })
   ] }) });
 }
-function lt({
+function dt({
   path: n,
   onClick: r,
   children: i,
@@ -2289,7 +2304,7 @@ function lt({
     }
   );
 }
-function ut({ docPath: n, className: r = "" }) {
+function pt({ docPath: n, className: r = "" }) {
   const { content: i, loading: u, error: s, reload: l } = ye(n);
   return /* @__PURE__ */ o(
     "article",
@@ -2340,7 +2355,7 @@ function ut({ docPath: n, className: r = "" }) {
     }
   );
 }
-const Un = `
+const Zn = `
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -2579,7 +2594,7 @@ const Un = `
   color: ${t.gray500};
 }
 `;
-function Ne(n, r) {
+function He(n, r) {
   if (n.startsWith("/")) return n;
   const i = r ? r.substring(0, r.lastIndexOf("/") + 1) : "/docs/";
   try {
@@ -2588,7 +2603,7 @@ function Ne(n, r) {
     return i + n;
   }
 }
-function st({
+function gt({
   defaultDocPath: n,
   sidebarPath: r,
   onSidebarNavigate: i,
@@ -2598,20 +2613,20 @@ function st({
   sidebarMaxWidth: p = 800,
   feedbackApiBaseUrl: D,
   feedbackUserType: f,
-  feedbackAppVersion: C,
+  feedbackAppVersion: b,
   feedbackAdminUrl: x,
   feedbackDefaultHeight: I = 350,
-  feedbackMinHeight: b = 200,
+  feedbackMinHeight: C = 200,
   feedbackMaxHeight: E = 600,
-  onFeedbackSubmitSuccess: M,
-  onFeedbackSubmitError: T,
+  onFeedbackSubmitSuccess: T,
+  onFeedbackSubmitError: M,
   items: R
 } = {}) {
-  const [a, N] = $(null), { content: q, loading: h, error: A } = ye(a), c = W(null), w = W(!1), [v, O] = $(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 767px)").matches);
+  const [a, H] = $(null), { content: q, loading: h, error: A } = ye(a), c = W(null), w = W(!1), [v, O] = $(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 767px)").matches);
   S(() => {
     if (typeof window > "u") return;
-    const y = window.matchMedia("(max-width: 767px)"), H = (Q) => O(Q.matches);
-    return y.addEventListener("change", H), () => y.removeEventListener("change", H);
+    const y = window.matchMedia("(max-width: 767px)"), N = (Q) => O(Q.matches);
+    return y.addEventListener("change", N), () => y.removeEventListener("change", N);
   }, []);
   const [z, _] = $(!1), V = W(null), K = W(null), g = W(null);
   S(() => {
@@ -2636,7 +2651,7 @@ function st({
     handleKeyDown: ne
   } = Re({
     defaultSize: I,
-    minSize: b,
+    minSize: C,
     maxSize: E,
     direction: "vertical",
     enabled: k && d
@@ -2659,10 +2674,10 @@ function st({
       le(null);
       return;
     }
-    const H = Array.from(
+    const N = Array.from(
       y.querySelectorAll("h1[id], h2[id], h3[id]")
     );
-    if (H.length === 0) {
+    if (N.length === 0) {
       le(null);
       return;
     }
@@ -2673,7 +2688,7 @@ function st({
           ue.isIntersecting ? Q.add(Ie) : Q.delete(Ie);
         }
         if (Q.size === 0) return;
-        const ge = H.find((ue) => Q.has(ue.id));
+        const ge = N.find((ue) => Q.has(ue.id));
         ge && le((ue) => ue === ge.id ? ue : ge.id);
       },
       {
@@ -2683,21 +2698,21 @@ function st({
         threshold: 0
       }
     );
-    return H.forEach((pe) => he.observe(pe)), le(H[0].id), () => {
+    return N.forEach((pe) => he.observe(pe)), le(N[0].id), () => {
       he.disconnect();
     };
   }, [q, a, h]);
   const Je = r != null || D != null;
   S(() => {
-    const H = new URLSearchParams(window.location.search).get("path");
-    H ? N(H) : n && N(n);
+    const N = new URLSearchParams(window.location.search).get("path");
+    N ? H(N) : n && H(n);
   }, [n]);
   const de = B((y) => {
-    const H = `${window.location.pathname}?path=${encodeURIComponent(y)}`;
-    window.history.pushState({}, "", H), N(y);
+    const N = `${window.location.pathname}?path=${encodeURIComponent(y)}`;
+    window.history.pushState({}, "", N), H(y);
   }, []), Ye = B(
     (y) => {
-      de(Ne(y, a));
+      de(He(y, a));
     },
     [a, de]
   ), ze = B(
@@ -2706,13 +2721,13 @@ function st({
     },
     [de]
   ), Le = B(
-    (y, H) => {
+    (y, N) => {
       var Q;
       if (_(!1), y === a) {
-        (Q = document.getElementById(H)) == null || Q.scrollIntoView({ behavior: "smooth" });
+        (Q = document.getElementById(N)) == null || Q.scrollIntoView({ behavior: "smooth" });
         return;
       }
-      c.current = { path: y, headingId: H }, de(y);
+      c.current = { path: y, headingId: N }, de(y);
     },
     [a, de]
   );
@@ -2727,9 +2742,9 @@ function st({
       return;
     }
     if (!w.current || !q) return;
-    let H = !1, Q, he = 0;
+    let N = !1, Q, he = 0;
     const pe = () => {
-      if (H) return;
+      if (N) return;
       const ge = document.getElementById(y.headingId);
       if (ge) {
         ge.scrollIntoView({ behavior: "smooth" }), c.current = null;
@@ -2738,15 +2753,15 @@ function st({
       he += 1, he < 30 ? Q = requestAnimationFrame(pe) : c.current = null;
     };
     return Q = requestAnimationFrame(pe), () => {
-      H = !0, cancelAnimationFrame(Q);
+      N = !0, cancelAnimationFrame(Q);
     };
   }, [q, a, h]);
   const Ze = B((y) => {
     window.opener && !window.opener.closed && window.opener.postMessage({ type: "manual-app-navigate", path: y }, window.location.origin);
   }, []), Qe = B(
     (y) => {
-      const H = Ne(y, re);
-      ie ? i(H) : ae(H);
+      const N = He(y, re);
+      ie ? i(N) : ae(N);
     },
     [ie, i, re]
   ), en = B(
@@ -2758,21 +2773,21 @@ function st({
   return S(() => {
     const y = () => {
       const Q = new URLSearchParams(window.location.search).get("path");
-      Q && N(Q), _(!1);
+      Q && H(Q), _(!1);
     };
     return window.addEventListener("popstate", y), () => window.removeEventListener("popstate", y);
   }, []), S(() => {
     if (!z) return;
-    const y = (H) => {
-      H.key === "Escape" && _(!1);
+    const y = (N) => {
+      N.key === "Escape" && _(!1);
     };
     return document.addEventListener("keydown", y), () => document.removeEventListener("keydown", y);
   }, [z]), S(() => {
     V.current && (V.current.inert = !z);
   }, [z, v]), S(() => {
-    var H;
+    var N;
     const y = !!R && v && z;
-    K.current && (K.current.inert = y), g.current && (g.current.inert = y), y && ((H = V.current) == null || H.focus());
+    K.current && (K.current.inert = y), g.current && (g.current.inert = y), y && ((N = V.current) == null || N.focus());
   }, [R, v, z]), /* @__PURE__ */ o(
     "div",
     {
@@ -3040,9 +3055,9 @@ function st({
                         {
                           apiBaseUrl: D,
                           userType: f,
-                          appVersion: C,
-                          onSubmitSuccess: M,
-                          onSubmitError: T
+                          appVersion: b,
+                          onSubmitSuccess: T,
+                          onSubmitError: M
                         }
                       ) })
                     ]
@@ -3052,7 +3067,7 @@ function st({
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ e("style", { children: Un })
+        /* @__PURE__ */ e("style", { children: Zn })
       ]
     }
   );
@@ -3279,12 +3294,12 @@ const m = {
 }, je = {
   app: "アプリ",
   manual: "マニュアル"
-}, Xn = {
+}, Qn = {
   open: { label: "open", color: "#F59E0B" },
   in_progress: { label: "対応中", color: "#2563EB" },
   closed: { label: "完了", color: "#059669" }
 };
-function ct({ apiBaseUrl: n, adminKey: r }) {
+function Dt({ apiBaseUrl: n, adminKey: r }) {
   var K;
   const {
     feedbacks: i,
@@ -3294,38 +3309,38 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
     loading: p,
     error: D,
     filters: f,
-    customTags: C,
+    customTags: b,
     setFilters: x,
     setPage: I,
-    updateStatus: b,
+    updateStatus: C,
     remove: E,
-    refresh: M
-  } = an({ apiBaseUrl: n, adminKey: r }), [T, R] = $(null), [a, N] = $(null), [q, h] = $(!1), [A, c] = $(null), w = W(0);
+    refresh: T
+  } = an({ apiBaseUrl: n, adminKey: r }), [M, R] = $(null), [a, H] = $(null), [q, h] = $(!1), [A, c] = $(null), w = W(0);
   S(() => {
     Ae() || Ee();
   }, []);
   const v = Math.max(1, Math.ceil(u / l)), O = B(async (g) => {
-    if (T === g) {
-      R(null), N(null);
+    if (M === g) {
+      R(null), H(null);
       return;
     }
     R(g), h(!0);
     const d = ++w.current;
     try {
-      const P = await pn({ apiBaseUrl: n, adminKey: r, id: g });
+      const P = await gn({ apiBaseUrl: n, adminKey: r, id: g });
       if (w.current !== d) return;
-      N(P);
+      H(P);
     } catch {
       if (w.current !== d) return;
-      N(null);
+      H(null);
     }
     w.current === d && h(!1);
-  }, [T, n, r]), z = B(async (g) => {
-    confirm("削除しますか？") && (await E(g), T === g && (R(null), N(null)));
-  }, [E, T]), _ = B(async (g, d) => {
+  }, [M, n, r]), z = B(async (g) => {
+    confirm("削除しますか？") && (await E(g), M === g && (R(null), H(null)));
+  }, [E, M]), _ = B(async (g, d) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await gn({ apiBaseUrl: n, adminKey: r, feedbackId: g, attachmentId: d }), N((P) => {
+        await Dn({ apiBaseUrl: n, adminKey: r, feedbackId: g, attachmentId: d }), H((P) => {
           var X;
           return !P || P.id !== g ? P : {
             ...P,
@@ -3391,7 +3406,7 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
           ]
         }
       ),
-      C.length > 0 && /* @__PURE__ */ o(
+      b.length > 0 && /* @__PURE__ */ o(
         "select",
         {
           value: f.customTag,
@@ -3400,11 +3415,11 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
           "aria-label": "タグフィルター",
           children: [
             /* @__PURE__ */ e("option", { value: "", children: "全タグ" }),
-            C.map((g) => /* @__PURE__ */ e("option", { value: g, children: g }, g))
+            b.map((g) => /* @__PURE__ */ e("option", { value: g, children: g }, g))
           ]
         }
       ),
-      /* @__PURE__ */ e("button", { onClick: M, style: F.refreshBtn, "aria-label": "更新", children: /* @__PURE__ */ e("span", { style: F.iconSmall, children: "refresh" }) })
+      /* @__PURE__ */ e("button", { onClick: T, style: F.refreshBtn, "aria-label": "更新", children: /* @__PURE__ */ e("span", { style: F.iconSmall, children: "refresh" }) })
     ] }),
     D && /* @__PURE__ */ e("div", { style: F.error, role: "alert", children: D.message.slice(0, 200) }),
     /* @__PURE__ */ o("table", { style: F.table, children: [
@@ -3421,7 +3436,7 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
         !p && i.length === 0 && /* @__PURE__ */ e("tr", { children: /* @__PURE__ */ e("td", { colSpan: 6, style: F.loadingCell, children: "データなし" }) }),
         i.map((g) => {
           var ee;
-          const d = Oe[g.kind] ?? { label: g.kind, color: "#6B7280" }, P = Xn[g.status] ?? { label: g.status, color: "#6B7280" }, X = T === g.id;
+          const d = Oe[g.kind] ?? { label: g.kind, color: "#6B7280" }, P = Qn[g.status] ?? { label: g.status, color: "#6B7280" }, X = M === g.id;
           return /* @__PURE__ */ o("tr", { children: [
             /* @__PURE__ */ e("td", { style: F.td, children: /* @__PURE__ */ e(
               "button",
@@ -3442,7 +3457,7 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
         })
       ] })
     ] }),
-    T !== null && /* @__PURE__ */ e("div", { style: F.detailPanel, id: `feedback-detail-${T}`, role: "region", "aria-label": "フィードバック詳細", children: q ? /* @__PURE__ */ e("div", { children: "読み込み中..." }) : a ? /* @__PURE__ */ o(xe, { children: [
+    M !== null && /* @__PURE__ */ e("div", { style: F.detailPanel, id: `feedback-detail-${M}`, role: "region", "aria-label": "フィードバック詳細", children: q ? /* @__PURE__ */ e("div", { children: "読み込み中..." }) : a ? /* @__PURE__ */ o(xe, { children: [
       /* @__PURE__ */ o("div", { style: F.detailGrid, children: [
         /* @__PURE__ */ o("div", { children: [
           /* @__PURE__ */ e("strong", { children: "種別:" }),
@@ -3539,7 +3554,7 @@ function ct({ apiBaseUrl: n, adminKey: r }) {
           "select",
           {
             value: a.status,
-            onChange: (g) => b(a.id, g.target.value),
+            onChange: (g) => C(a.id, g.target.value),
             style: F.select,
             "aria-label": "ステータス変更",
             children: [
@@ -3803,20 +3818,20 @@ const F = {
 };
 export {
   Se as D,
-  ct as F,
-  fn as I,
+  Dt as F,
+  mn as I,
   t as M,
   Xe as a,
   Ue as b,
-  lt as c,
-  ut as d,
-  at as e,
-  it as f,
-  st as g,
+  dt as c,
+  pt as d,
+  st as e,
+  ct as f,
+  gt as g,
   $e as h,
   be as i,
   Ae as j,
   Ee as l,
-  _n as m,
-  Wn as u
+  On as m,
+  Vn as u
 };
