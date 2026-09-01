@@ -38,20 +38,20 @@ function xn({
   files: n,
   onAdd: r,
   onRemove: a,
-  maxFiles: u = mn,
+  maxFiles: s = mn,
   maxFileSize: c = Fn,
   disabled: i = !1,
   pipDocument: g
 }) {
-  const [h, f] = v(!1), [E, x] = v(null), z = q(null), C = q(0), A = w((s) => {
+  const [h, f] = v(!1), [E, x] = v(null), z = q(null), C = q(0), A = w((u) => {
     x(null);
-    const y = u - n.length;
+    const y = s - n.length;
     if (y <= 0) {
-      x(`最大${u}枚まで添付できます`);
+      x(`最大${s}枚まで添付できます`);
       return;
     }
     const k = [];
-    for (const H of s) {
+    for (const H of u) {
       if (k.length >= y) break;
       if (!Pe.includes(H.type)) {
         x(`${H.name}: 対応していない形式です（PNG/JPEG/WebP/GIF）`);
@@ -64,10 +64,10 @@ function xn({
       k.push(H);
     }
     k.length > 0 && r(k);
-  }, [n.length, u, c, r]), R = w((s) => {
+  }, [n.length, s, c, r]), R = w((u) => {
     var H;
     if (i) return;
-    const y = (H = s.clipboardData) == null ? void 0 : H.items;
+    const y = (H = u.clipboardData) == null ? void 0 : H.items;
     if (!y) return;
     const k = [];
     for (let O = 0; O < y.length; O++) {
@@ -77,34 +77,34 @@ function xn({
         M && k.push(M);
       }
     }
-    k.length > 0 && (s.preventDefault(), A(k));
+    k.length > 0 && (u.preventDefault(), A(k));
   }, [i, A]);
   B(() => (document.addEventListener("paste", R), g == null || g.addEventListener("paste", R), () => {
     document.removeEventListener("paste", R), g == null || g.removeEventListener("paste", R);
   }), [R, g]);
-  const _ = w((s) => {
-    s.preventDefault(), s.stopPropagation(), C.current++, C.current === 1 && f(!0);
-  }, []), T = w((s) => {
-    s.preventDefault(), s.stopPropagation(), C.current--, C.current === 0 && f(!1);
-  }, []), l = w((s) => {
-    s.preventDefault(), s.stopPropagation();
-  }, []), W = w((s) => {
-    if (s.preventDefault(), s.stopPropagation(), C.current = 0, f(!1), i) return;
-    const y = Array.from(s.dataTransfer.files);
+  const _ = w((u) => {
+    u.preventDefault(), u.stopPropagation(), C.current++, C.current === 1 && f(!0);
+  }, []), T = w((u) => {
+    u.preventDefault(), u.stopPropagation(), C.current--, C.current === 0 && f(!1);
+  }, []), l = w((u) => {
+    u.preventDefault(), u.stopPropagation();
+  }, []), W = w((u) => {
+    if (u.preventDefault(), u.stopPropagation(), C.current = 0, f(!1), i) return;
+    const y = Array.from(u.dataTransfer.files);
     A(y);
   }, [i, A]), P = w(() => {
-    var s;
-    i || (s = z.current) == null || s.click();
-  }, [i]), U = w((s) => {
-    const y = s.target.files ? Array.from(s.target.files) : [];
+    var u;
+    i || (u = z.current) == null || u.click();
+  }, [i]), U = w((u) => {
+    const y = u.target.files ? Array.from(u.target.files) : [];
     y.length > 0 && A(y), z.current && (z.current.value = "");
-  }, [A]), p = (s) => s < 1024 ? `${s}B` : s < 1024 * 1024 ? `${(s / 1024).toFixed(0)}KB` : `${(s / (1024 * 1024)).toFixed(1)}MB`;
+  }, [A]), d = (u) => u < 1024 ? `${u}B` : u < 1024 * 1024 ? `${(u / 1024).toFixed(0)}KB` : `${(u / (1024 * 1024)).toFixed(1)}MB`;
   return /* @__PURE__ */ o("div", { className: "debug-field", children: [
     /* @__PURE__ */ o("label", { children: [
       "画像添付（",
       n.length,
       "/",
-      u,
+      s,
       "）"
     ] }),
     /* @__PURE__ */ o(
@@ -118,8 +118,8 @@ function xn({
         onClick: P,
         role: "button",
         tabIndex: 0,
-        onKeyDown: (s) => {
-          (s.key === "Enter" || s.key === " ") && P();
+        onKeyDown: (u) => {
+          (u.key === "Enter" || u.key === " ") && P();
         },
         children: [
           /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "24px", color: Le.gray500 }, children: h ? "file_download" : "add_photo_alternate" }),
@@ -139,24 +139,24 @@ function xn({
       }
     ),
     E && /* @__PURE__ */ e("div", { style: { fontSize: "11px", color: Le.error }, children: E }),
-    n.length > 0 && /* @__PURE__ */ e("div", { className: "debug-thumbnails", children: n.map((s, y) => /* @__PURE__ */ e(
+    n.length > 0 && /* @__PURE__ */ e("div", { className: "debug-thumbnails", children: n.map((u, y) => /* @__PURE__ */ e(
       yn,
       {
-        file: s,
+        file: u,
         onRemove: () => a(y),
-        formatSize: p
+        formatSize: d
       },
-      `${s.name}-${s.size}-${y}`
+      `${u.name}-${u.size}-${y}`
     )) })
   ] });
 }
 function yn({ file: n, onRemove: r, formatSize: a }) {
-  const [u, c] = v(null);
+  const [s, c] = v(null);
   return B(() => {
     const i = URL.createObjectURL(n);
     return c(i), () => URL.revokeObjectURL(i);
   }, [n]), /* @__PURE__ */ o("div", { className: "debug-thumbnail", children: [
-    u && /* @__PURE__ */ e("img", { src: u, alt: n.name, className: "debug-thumbnail-img" }),
+    s && /* @__PURE__ */ e("img", { src: s, alt: n.name, className: "debug-thumbnail-img" }),
     /* @__PURE__ */ e(
       "button",
       {
@@ -195,12 +195,12 @@ class Ge {
    *   A unique slug string
    */
   slug(r, a) {
-    const u = this;
+    const s = this;
     let c = En(r, a === !0);
     const i = c;
-    for (; Cn.call(u.occurrences, c); )
-      u.occurrences[i]++, c = i + "-" + u.occurrences[i];
-    return u.occurrences[c] = 0, c;
+    for (; Cn.call(s.occurrences, c); )
+      s.occurrences[i]++, c = i + "-" + s.occurrences[i];
+    return s.occurrences[c] = 0, c;
   }
   /**
    * Reset - Forget all previous slugs
@@ -270,8 +270,8 @@ function Bn(n) {
   let a = -1;
   for (; ++a < n.length; )
     r[a] = Xe(n[a]);
-  return ke(u);
-  function u(...c) {
+  return ke(s);
+  function s(...c) {
     let i = -1;
     for (; ++i < r.length; )
       if (r[i].apply(this, c)) return !0;
@@ -284,11 +284,11 @@ function vn(n) {
     n
   );
   return ke(a);
-  function a(u) {
+  function a(s) {
     const c = (
       /** @type {Record<string, unknown>} */
       /** @type {unknown} */
-      u
+      s
     );
     let i;
     for (i in n)
@@ -304,11 +304,11 @@ function Sn(n) {
 }
 function ke(n) {
   return r;
-  function r(a, u, c) {
+  function r(a, s, c) {
     return !!(zn(a) && n.call(
       this,
       a,
-      typeof u == "number" ? u : void 0,
+      typeof s == "number" ? s : void 0,
       c || void 0
     ));
   }
@@ -320,10 +320,10 @@ function zn(n) {
   return n !== null && typeof n == "object" && "type" in n;
 }
 const Ye = [], Ln = !0, He = !1, In = "skip";
-function Rn(n, r, a, u) {
+function Rn(n, r, a, s) {
   let c;
-  typeof r == "function" && typeof a != "function" ? (u = a, a = r) : c = r;
-  const i = Xe(c), g = u ? -1 : 1;
+  typeof r == "function" && typeof a != "function" ? (s = a, a = r) : c = r;
+  const i = Xe(c), g = s ? -1 : 1;
   h(n, void 0, [])();
   function h(f, E, x) {
     const z = (
@@ -353,7 +353,7 @@ function Rn(n, r, a, u) {
           f
         );
         if (l.children && A[0] !== In)
-          for (_ = (u ? l.children.length : -1) + g, T = x.concat(l); _ > -1 && _ < l.children.length; ) {
+          for (_ = (s ? l.children.length : -1) + g, T = x.concat(l); _ > -1 && _ < l.children.length; ) {
             const W = l.children[_];
             if (R = h(W, _, T)(), R[0] === He)
               return R;
@@ -367,9 +367,9 @@ function Rn(n, r, a, u) {
 function Tn(n) {
   return Array.isArray(n) ? n : typeof n == "number" ? [Ln, n] : n == null ? Ye : [n];
 }
-function Mn(n, r, a, u) {
+function Mn(n, r, a, s) {
   let c, i, g;
-  i = r, g = a, c = u, Rn(n, i, h, c);
+  i = r, g = a, c = s, Rn(n, i, h, c);
   function h(f, E) {
     const x = E[E.length - 1], z = x ? x.children.indexOf(f) : void 0;
     return g(f, z, x);
@@ -378,8 +378,8 @@ function Mn(n, r, a, u) {
 const _n = {}, Oe = new Ge();
 function Pn(n) {
   const a = (n || _n).prefix || "";
-  return function(u) {
-    Oe.reset(), Mn(u, "element", function(c) {
+  return function(s) {
+    Oe.reset(), Mn(s, "element", function(c) {
       An(c) && !c.properties.id && (c.properties.id = a + Oe.slug(wn(c)));
     });
   };
@@ -508,21 +508,21 @@ function we({
   content: n,
   className: r = "",
   onLinkClick: a,
-  onAppLinkClick: u
+  onAppLinkClick: s
 }) {
   const c = {
     a: ({ href: i, children: g, ...h }) => {
       const f = i ? On(i) : null;
-      return f !== null && u ? /* @__PURE__ */ e(
+      return f !== null && s ? /* @__PURE__ */ e(
         "span",
         {
           role: "link",
           tabIndex: 0,
           onClick: (E) => {
-            E.preventDefault(), E.stopPropagation(), u(f);
+            E.preventDefault(), E.stopPropagation(), s(f);
           },
           onKeyDown: (E) => {
-            (E.key === "Enter" || E.key === " ") && (E.preventDefault(), u(f));
+            (E.key === "Enter" || E.key === " ") && (E.preventDefault(), s(f));
           },
           style: {
             color: "#043E80",
@@ -645,7 +645,7 @@ function Ze({
   apiBaseUrl: n,
   userType: r,
   appVersion: a,
-  onSubmitSuccess: u,
+  onSubmitSuccess: s,
   onSubmitError: c
 }) {
   const { submitting: i, submitFeedback: g } = on({
@@ -671,7 +671,7 @@ function Ze({
       };
     }
   }, [n]);
-  const [f, E] = v(null), [x, z] = v(""), [C, A] = v(!1), [R, _] = v(""), [T, l] = v(""), [W, P] = v([]), [U, p] = v(!1), [s, y] = v(null), k = q(), H = q(!1);
+  const [f, E] = v(null), [x, z] = v(""), [C, A] = v(!1), [R, _] = v(""), [T, l] = v(""), [W, P] = v([]), [U, d] = v(!1), [u, y] = v(null), k = q(), H = q(!1);
   B(() => () => {
     k.current && clearTimeout(k.current);
   }, []);
@@ -706,18 +706,18 @@ ${T.trim()}`));
           } catch (ue) {
             console.error("Failed to upload attachment:", ue);
           }
-      E(null), z(""), _(""), l(""), A(!1), P([]), y(null), (ae = h.current) == null || ae.clear(), p(!0), k.current && clearTimeout(k.current), k.current = setTimeout(() => p(!1), 3e3), u == null || u(L);
+      E(null), z(""), _(""), l(""), A(!1), P([]), y(null), (ae = h.current) == null || ae.clear(), d(!0), k.current && clearTimeout(k.current), k.current = setTimeout(() => d(!1), 3e3), s == null || s(L);
     } else
       y(Z), c == null || c(Z ?? new Error("Unknown error"));
     H.current = !1;
-  }, [f, x, R, T, W, n, g, u, c]), M = w(
+  }, [f, x, R, T, W, n, g, s, c]), M = w(
     (D) => {
       (D.metaKey || D.ctrlKey) && D.key === "Enter" && O && (D.preventDefault(), X());
     },
     [O, X]
   ), j = w((D) => {
     P(($) => [...$, ...D]);
-  }, []), d = w((D) => {
+  }, []), p = w((D) => {
     P(($) => $.filter((L, Z) => Z !== D));
   }, []);
   return /* @__PURE__ */ o("div", { style: K.container, children: [
@@ -757,7 +757,7 @@ ${T.trim()}`));
       {
         files: W,
         onAdd: j,
-        onRemove: d,
+        onRemove: p,
         maxFiles: 3,
         disabled: i
       }
@@ -796,9 +796,9 @@ ${T.trim()}`));
         )
       ] })
     ] }),
-    s && /* @__PURE__ */ o("div", { style: K.errorMsg, role: "alert", children: [
+    u && /* @__PURE__ */ o("div", { style: K.errorMsg, role: "alert", children: [
       /* @__PURE__ */ e("span", { style: K.iconSmall, children: "warning" }),
-      s.message.slice(0, 200)
+      u.message.slice(0, 200)
     ] }),
     /* @__PURE__ */ e("div", { style: K.submitRow, children: /* @__PURE__ */ e("button", { onClick: X, disabled: !O, style: {
       ...K.submitButton,
@@ -931,9 +931,9 @@ function Gn(n) {
   return n.replace(/(?:^|[ \t])#+[ \t]*$/, "").trim();
 }
 function Un(n) {
-  const r = new Ge(), a = [], u = n.split(/\r?\n/);
+  const r = new Ge(), a = [], s = n.split(/\r?\n/);
   let c = null;
-  for (const i of u) {
+  for (const i of s) {
     const g = /^(`{3,}|~{3,})/.exec(i.trim());
     if (g) {
       const C = g[1][0];
@@ -958,13 +958,13 @@ function Un(n) {
   return a;
 }
 function Xn() {
-  const [n, r] = v({}), [a, u] = v({}), [c, i] = v({}), g = q(/* @__PURE__ */ new Set()), h = q(!0);
+  const [n, r] = v({}), [a, s] = v({}), [c, i] = v({}), g = q(/* @__PURE__ */ new Set()), h = q(!0);
   B(() => (h.current = !0, () => {
     h.current = !1;
   }), []);
   const f = w((C) => n[C], [n]), E = w((C) => a[C] ?? !1, [a]), x = w((C) => c[C] ?? null, [c]), z = w(async (C) => {
     if (!g.current.has(C)) {
-      g.current.add(C), u((A) => ({ ...A, [C]: !0 })), i((A) => ({ ...A, [C]: null }));
+      g.current.add(C), s((A) => ({ ...A, [C]: !0 })), i((A) => ({ ...A, [C]: null }));
       try {
         const A = await fetch(C);
         if (!A.ok)
@@ -979,15 +979,15 @@ function Xn() {
           [C]: A instanceof Error ? A : new Error(String(A))
         }));
       } finally {
-        h.current && u((A) => ({ ...A, [C]: !1 }));
+        h.current && s((A) => ({ ...A, [C]: !1 }));
       }
     }
   }, []);
   return { getHeadings: f, loadHeadings: z, isLoading: E, getError: x };
 }
 function Yn(n) {
-  const r = {}, a = [], u = [...n].sort((i, g) => (i.order ?? 0) - (g.order ?? 0));
-  for (const i of u)
+  const r = {}, a = [], s = [...n].sort((i, g) => (i.order ?? 0) - (g.order ?? 0));
+  for (const i of s)
     i.category ? (r[i.category] || (r[i.category] = []), r[i.category].push(i)) : a.push(i);
   return { groups: Object.entries(r).map(([i, g]) => ({
     category: i,
@@ -996,46 +996,51 @@ function Yn(n) {
 }
 function Ne(n, r) {
   var a;
-  return r ? ((a = n.find((u) => u.path === r)) == null ? void 0 : a.category) ?? null : null;
+  return r ? ((a = n.find((s) => s.path === r)) == null ? void 0 : a.category) ?? null : null;
 }
-function Jn(n) {
+function Jn(n, r) {
+  if (r)
+    return n.find((a) => a.path === r);
+}
+function Zn(n) {
   return n.replace(/\s+/g, "-");
 }
 function Ie({
   items: n,
   activePath: r,
   onSelectPage: a,
-  onSelectHeading: u,
+  onSelectHeading: s,
   activeHeadingId: c = null,
   defaultExpandCategories: i = "active",
   className: g = ""
 }) {
   const { groups: h, uncategorized: f } = Ve(() => Yn(n), [n]), { getHeadings: E, loadHeadings: x, isLoading: z, getError: C } = Xn(), [A, R] = v(() => {
-    const p = Ne(n, r), s = {};
+    const d = Ne(n, r), u = {};
     for (const y of h)
-      s[y.category] = i === "all" || y.category === p;
-    return s;
+      u[y.category] = i === "all" || y.category === d;
+    return u;
   });
   B(() => {
-    const p = Ne(n, r);
-    p && R((s) => s[p] ? s : { ...s, [p]: !0 });
+    const d = Ne(n, r);
+    d && R((u) => u[d] ? u : { ...u, [d]: !0 });
   }, [r, n]);
-  const [_, T] = v({}), l = q(/* @__PURE__ */ new Set()), W = w((p) => {
-    R((s) => ({ ...s, [p]: !s[p] }));
+  const [_, T] = v({}), l = q(/* @__PURE__ */ new Set()), W = w((d) => {
+    R((u) => ({ ...u, [d]: !u[d] }));
   }, []), P = w(
-    (p) => {
-      T((s) => {
-        const y = !(s[p] ?? !1);
-        return y ? (x(p), l.current.delete(p)) : l.current.add(p), { ...s, [p]: y };
+    (d) => {
+      T((u) => {
+        const y = !(u[d] ?? !1);
+        return y ? (x(d), l.current.delete(d)) : l.current.add(d), { ...u, [d]: y };
       });
     },
     [x]
   );
   B(() => {
-    !c || !r || l.current.has(r) || (x(r), T((p) => p[r] ? p : { ...p, [r]: !0 }));
-  }, [c, r, x]);
-  const U = (p) => {
-    const s = r === p.path, y = _[p.path] ?? !1, k = E(p.path), H = z(p.path), O = C(p.path), X = `manual-toc-headings-${Jn(p.id)}`;
+    var d;
+    !c || !r || (d = Jn(n, r)) != null && d.hideHeadingsOutline || l.current.has(r) || (x(r), T((u) => u[r] ? u : { ...u, [r]: !0 }));
+  }, [c, r, n, x]);
+  const U = (d) => {
+    const u = r === d.path, y = !d.hideHeadingsOutline && (_[d.path] ?? !1), k = E(d.path), H = z(d.path), O = C(d.path), X = `manual-toc-headings-${Zn(d.id)}`;
     return /* @__PURE__ */ o("li", { children: [
       /* @__PURE__ */ o("div", { style: J.pageRow, children: [
         /* @__PURE__ */ e(
@@ -1043,28 +1048,28 @@ function Ie({
           {
             type: "button",
             onClick: () => {
-              a(p.path), P(p.path);
+              a(d.path), d.hideHeadingsOutline || P(d.path);
             },
-            "aria-expanded": y,
-            "aria-controls": X,
+            "aria-expanded": d.hideHeadingsOutline ? void 0 : y,
+            "aria-controls": d.hideHeadingsOutline ? void 0 : X,
             style: {
               ...J.pageButton,
-              background: s ? "#e3f2fd" : "transparent",
-              color: s ? t.primary : t.gray700,
-              borderLeft: s ? `3px solid ${t.primary}` : "3px solid transparent"
+              background: u ? "#e3f2fd" : "transparent",
+              color: u ? t.primary : t.gray700,
+              borderLeft: u ? `3px solid ${t.primary}` : "3px solid transparent"
             },
-            children: p.title
+            children: d.title
           }
         ),
-        /* @__PURE__ */ e(
+        !d.hideHeadingsOutline && /* @__PURE__ */ e(
           "button",
           {
             type: "button",
-            onClick: () => P(p.path),
+            onClick: () => P(d.path),
             style: J.toggleHeadingsButton,
             "aria-expanded": y,
             "aria-controls": X,
-            "aria-label": y ? `${p.title} の見出しを閉じる` : `${p.title} の見出しを開く`,
+            "aria-label": y ? `${d.title} の見出しを閉じる` : `${d.title} の見出しを開く`,
             title: y ? "見出しを閉じる" : "見出しを開く",
             children: /* @__PURE__ */ e("span", { style: J.chevronIcon, children: y ? "expand_less" : "expand_more" })
           }
@@ -1075,20 +1080,20 @@ function Ie({
         !H && O && /* @__PURE__ */ e("li", { style: { ...J.headingStatus, color: t.error }, children: "見出しの読み込みに失敗しました" }),
         !H && !O && k && k.length === 0 && /* @__PURE__ */ e("li", { style: J.headingStatus, children: "見出しなし" }),
         !H && !O && (k == null ? void 0 : k.map((M) => {
-          const j = M.level === 3, d = s && c === M.id;
+          const j = M.level === 3, p = u && c === M.id;
           return /* @__PURE__ */ e("li", { children: /* @__PURE__ */ o(
             "button",
             {
               type: "button",
-              onClick: () => u(p.path, M.id),
+              onClick: () => s(d.path, M.id),
               style: {
                 ...J.headingButton,
                 paddingLeft: j ? "38px" : "20px",
                 fontSize: j ? "12px" : "13px",
-                color: d ? t.primary : j ? t.gray500 : t.gray700,
-                background: d ? "#e3f2fd" : "transparent",
-                borderLeft: d ? `2px solid ${t.primary}` : "2px solid transparent",
-                fontWeight: d ? 600 : 400
+                color: p ? t.primary : j ? t.gray500 : t.gray700,
+                background: p ? "#e3f2fd" : "transparent",
+                borderLeft: p ? `2px solid ${t.primary}` : "2px solid transparent",
+                fontWeight: p ? 600 : 400
               },
               children: [
                 /* @__PURE__ */ e(
@@ -1097,7 +1102,7 @@ function Ie({
                     style: {
                       ...J.headingDot,
                       ...j ? J.headingDotSub : null,
-                      ...d ? { background: t.primary } : null
+                      ...p ? { background: t.primary } : null
                     }
                   }
                 ),
@@ -1107,29 +1112,29 @@ function Ie({
           ) }, M.id);
         }))
       ] })
-    ] }, p.id);
+    ] }, d.id);
   };
   return /* @__PURE__ */ o("nav", { className: `manual-toc ${g}`, "aria-label": "マニュアル目次", style: J.nav, children: [
     f.length > 0 && /* @__PURE__ */ e("ul", { style: J.list, children: f.map(U) }),
-    h.map((p, s) => {
-      const y = A[p.category] ?? !1, k = `manual-toc-category-${s}`;
+    h.map((d, u) => {
+      const y = A[d.category] ?? !1, k = `manual-toc-category-${u}`;
       return /* @__PURE__ */ o("div", { style: J.categoryBlock, children: [
         /* @__PURE__ */ o(
           "button",
           {
             type: "button",
-            onClick: () => W(p.category),
+            onClick: () => W(d.category),
             style: J.categoryButton,
             "aria-expanded": y,
             "aria-controls": k,
             children: [
               /* @__PURE__ */ e("span", { style: J.categoryChevron, "aria-hidden": "true", children: y ? "expand_more" : "chevron_right" }),
-              /* @__PURE__ */ e("span", { children: p.category })
+              /* @__PURE__ */ e("span", { children: d.category })
             ]
           }
         ),
-        y && /* @__PURE__ */ e("ul", { id: k, style: J.list, children: p.items.map(U) })
-      ] }, p.category);
+        y && /* @__PURE__ */ e("ul", { id: k, style: J.list, children: d.items.map(U) })
+      ] }, d.category);
     })
   ] });
 }
@@ -1245,12 +1250,12 @@ const J = {
     fontSize: "12px",
     color: t.gray500
   }
-}, Zn = 200;
-function pt({
+}, Qn = 200;
+function gt({
   isOpen: n,
   docPath: r,
   onClose: a,
-  onNavigate: u,
+  onNavigate: s,
   onAppNavigate: c,
   initialSize: i = { width: 420, height: 550 },
   showDownloadButton: g = !1,
@@ -1265,7 +1270,7 @@ function pt({
   feedbackMinHeight: _ = 150,
   feedbackMaxHeight: T = 400
 }) {
-  const [l, W] = v(null), [P, U] = v(null), { content: p, loading: s, error: y } = Ae(r), { downloadMd: k } = an(), H = q(!1), [O, X] = v(!1), M = E != null, [j, d] = v(!0), [D, $] = v(!1), L = q(null), Z = q(null), ae = q(!1), le = q(null), ue = q(null), [he, oe] = v(null), ie = q(!1), fe = w(async () => {
+  const [l, W] = v(null), [P, U] = v(null), { content: d, loading: u, error: y } = Ae(r), { downloadMd: k } = an(), H = q(!1), [O, X] = v(!1), M = E != null, [j, p] = v(!0), [D, $] = v(!1), L = q(null), Z = q(null), ae = q(!1), le = q(null), ue = q(null), [he, oe] = v(null), ie = q(!1), fe = w(async () => {
     if (!window.documentPictureInPicture) {
       console.warn("Document Picture-in-Picture API is not supported");
       return;
@@ -1283,7 +1288,7 @@ function pt({
           // 非対応ブラウザではオプションが単に無視されるだけで害はない）。
           preferInitialWindowPlacement: !0
         }), Q = I.document.createElement("style");
-        Q.textContent = et(), I.document.head.appendChild(Q), h && Qn(I.document);
+        Q.textContent = nt(), I.document.head.appendChild(Q), h && et(I.document);
         const Y = I.document.createElement("div");
         Y.id = "manual-pip-root", I.document.body.appendChild(Y), W(I), U(Y), I.addEventListener("pagehide", () => {
           W(null), U(null), a();
@@ -1302,12 +1307,12 @@ function pt({
   }, [n, l, fe, me]);
   const ye = w(
     (S) => {
-      if (u) {
+      if (s) {
         const V = r ? r.substring(0, r.lastIndexOf("/") + 1) : "/docs/", I = S.startsWith("/") ? S : V + S;
-        u(I);
+        s(I);
       }
     },
-    [r, u]
+    [r, s]
   );
   B(() => {
     if (!l || l.closed || !c) return;
@@ -1358,14 +1363,14 @@ function pt({
   }, [te]), be = w(() => {
     te(), Z.current = setTimeout(() => {
       Z.current = null, $(!1);
-    }, Zn);
+    }, Qn);
   }, [te]);
   B(() => te, [te]);
   const $e = w(
     (S) => {
-      $(!1), u == null || u(S);
+      $(!1), s == null || s(S);
     },
-    [u]
+    [s]
   ), Fe = w(
     (S, V) => {
       if ($(!1), S === r) {
@@ -1375,9 +1380,9 @@ function pt({
         }
         return;
       }
-      L.current = { path: S, headingId: V }, u == null || u(S);
+      L.current = { path: S, headingId: V }, s == null || s(S);
     },
-    [r, l, u]
+    [r, l, s]
   );
   B(() => {
     const S = L.current;
@@ -1385,11 +1390,11 @@ function pt({
       ae.current = !1;
       return;
     }
-    if (s) {
+    if (u) {
       ae.current = !0;
       return;
     }
-    if (!ae.current || !l || l.closed || !p) return;
+    if (!ae.current || !l || l.closed || !d) return;
     let V = !1, I, Q = 0;
     const Y = () => {
       if (V || l.closed) return;
@@ -1403,12 +1408,12 @@ function pt({
     return I = l.requestAnimationFrame(Y), () => {
       V = !0, l.closed || l.cancelAnimationFrame(I);
     };
-  }, [p, r, s, l]), B(() => {
+  }, [d, r, u, l]), B(() => {
     ie.current = !1;
   }, [r]), B(() => {
-    s && (ie.current = !0);
-  }, [s]), B(() => {
-    if (!l || l.closed || !p || !ie.current) {
+    u && (ie.current = !0);
+  }, [u]), B(() => {
+    if (!l || l.closed || !d || !ie.current) {
       oe(null);
       return;
     }
@@ -1443,7 +1448,7 @@ function pt({
     return V.forEach((Y) => Q.observe(Y)), oe(V[0].id), () => {
       Q.disconnect();
     };
-  }, [p, r, l, s]), B(() => {
+  }, [d, r, l, u]), B(() => {
     if (!l || l.closed || !D) return;
     const S = (V) => {
       V.key === "Escape" && $(!1);
@@ -1557,7 +1562,7 @@ function pt({
           )
         ] }),
         /* @__PURE__ */ o("main", { className: "pip-content", ref: ue, children: [
-          s && /* @__PURE__ */ o("div", { className: "pip-loading", children: [
+          u && /* @__PURE__ */ o("div", { className: "pip-loading", children: [
             /* @__PURE__ */ e("span", { className: "pip-icon pip-spin", children: "progress_activity" }),
             /* @__PURE__ */ e("span", { children: "読み込み中..." })
           ] }),
@@ -1568,15 +1573,15 @@ function pt({
               /* @__PURE__ */ e("div", { className: "pip-error-detail", children: y.message })
             ] })
           ] }),
-          p && /* @__PURE__ */ e(
+          d && /* @__PURE__ */ e(
             we,
             {
-              content: p,
+              content: d,
               onLinkClick: ye,
               onAppLinkClick: c
             }
           ),
-          !s && !y && !p && /* @__PURE__ */ o("div", { className: "pip-empty", children: [
+          !u && !y && !d && /* @__PURE__ */ o("div", { className: "pip-empty", children: [
             /* @__PURE__ */ e("span", { className: "pip-icon pip-icon-large", children: "description" }),
             /* @__PURE__ */ e("span", { children: "マニュアルを選択してください" })
           ] })
@@ -1598,7 +1603,7 @@ function pt({
                 /* @__PURE__ */ o(
                   "button",
                   {
-                    onClick: () => d(!j),
+                    onClick: () => p(!j),
                     className: "pip-toggle-btn",
                     "aria-label": j ? "フィードバックを閉じる" : "フィードバックを開く",
                     children: [
@@ -1626,14 +1631,14 @@ function pt({
     P
   ) : null;
 }
-function Qn(n) {
+function et(n) {
   Array.from(document.styleSheets).forEach((r) => {
     try {
       const a = Array.from(r.cssRules).map((c) => c.cssText).join(`
 `);
       if (!a) return;
-      const u = n.createElement("style");
-      u.textContent = a, n.head.appendChild(u);
+      const s = n.createElement("style");
+      s.textContent = a, n.head.appendChild(s);
     } catch {
       if (r.href) {
         const a = n.createElement("link");
@@ -1642,7 +1647,7 @@ function Qn(n) {
     }
   });
 }
-function et() {
+function nt() {
   return `
     @import url('${Je}');
 
@@ -2136,11 +2141,11 @@ function et() {
     }
   `;
 }
-function gt({
+function Dt({
   items: n,
   onSelect: r,
   activePath: a,
-  className: u = "",
+  className: s = "",
   onPiP: c,
   onNewTab: i
 }) {
@@ -2153,7 +2158,7 @@ function gt({
       x.category ? (h[x.category] || (h[x.category] = []), h[x.category].push(x)) : f.push(x);
     return { groups: h, uncategorized: f };
   }, [n]);
-  return /* @__PURE__ */ o("nav", { className: `manual-sidebar ${u}`, children: [
+  return /* @__PURE__ */ o("nav", { className: `manual-sidebar ${s}`, children: [
     g.uncategorized.length > 0 && /* @__PURE__ */ e("ul", { style: { listStyle: "none", padding: 0, margin: 0 }, children: g.uncategorized.map((h) => /* @__PURE__ */ e(
       je,
       {
@@ -2193,7 +2198,7 @@ function gt({
     ] }, h))
   ] });
 }
-function je({ item: n, isActive: r, onSelect: a, onPiP: u, onNewTab: c }) {
+function je({ item: n, isActive: r, onSelect: a, onPiP: s, onNewTab: c }) {
   const i = {
     itemRow: {
       display: "flex",
@@ -2259,11 +2264,11 @@ function je({ item: n, isActive: r, onSelect: a, onPiP: u, onNewTab: c }) {
       }
     ),
     /* @__PURE__ */ o("div", { style: i.actionButtons, children: [
-      u && /* @__PURE__ */ e(
+      s && /* @__PURE__ */ e(
         "button",
         {
           onClick: (g) => {
-            g.stopPropagation(), u(n.path);
+            g.stopPropagation(), s(n.path);
           },
           style: i.actionBtn,
           title: "PiPで開く",
@@ -2298,11 +2303,11 @@ function je({ item: n, isActive: r, onSelect: a, onPiP: u, onNewTab: c }) {
     ] })
   ] }) });
 }
-function Dt({
+function ht({
   path: n,
   onClick: r,
   children: a,
-  className: u = ""
+  className: s = ""
 }) {
   return /* @__PURE__ */ e(
     "a",
@@ -2311,7 +2316,7 @@ function Dt({
       onClick: (i) => {
         i.preventDefault(), r(n);
       },
-      className: `manual-link ${u}`,
+      className: `manual-link ${s}`,
       style: {
         color: "#1976d2",
         textDecoration: "underline",
@@ -2321,8 +2326,8 @@ function Dt({
     }
   );
 }
-function ht({ docPath: n, className: r = "" }) {
-  const { content: a, loading: u, error: c, reload: i } = Ae(n);
+function ft({ docPath: n, className: r = "" }) {
+  const { content: a, loading: s, error: c, reload: i } = Ae(n);
   return /* @__PURE__ */ o(
     "article",
     {
@@ -2333,7 +2338,7 @@ function ht({ docPath: n, className: r = "" }) {
         padding: "24px"
       },
       children: [
-        u && /* @__PURE__ */ e("div", { style: { textAlign: "center", padding: "40px", color: "#666" }, children: "読み込み中..." }),
+        s && /* @__PURE__ */ e("div", { style: { textAlign: "center", padding: "40px", color: "#666" }, children: "読み込み中..." }),
         c && /* @__PURE__ */ o(
           "div",
           {
@@ -2372,7 +2377,7 @@ function ht({ docPath: n, className: r = "" }) {
     }
   );
 }
-const nt = `
+const tt = `
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -2620,11 +2625,11 @@ function We(n, r) {
     return a + n;
   }
 }
-function ft({
+function mt({
   defaultDocPath: n,
   sidebarPath: r,
   onSidebarNavigate: a,
-  onSidebarAppNavigate: u,
+  onSidebarAppNavigate: s,
   sidebarDefaultWidth: c = 400,
   sidebarMinWidth: i = 250,
   sidebarMaxWidth: g = 800,
@@ -2641,13 +2646,13 @@ function ft({
   defaultExpandCategories: l,
   onAppNavigate: W
 } = {}) {
-  const [P, U] = v(null), { content: p, loading: s, error: y } = Ae(P), k = q(null), H = q(!1), [O, X] = v(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 767px)").matches);
+  const [P, U] = v(null), { content: d, loading: u, error: y } = Ae(P), k = q(null), H = q(!1), [O, X] = v(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 767px)").matches);
   B(() => {
     if (typeof window > "u") return;
     const b = window.matchMedia("(max-width: 767px)"), N = (ne) => X(ne.matches);
     return b.addEventListener("change", N), () => b.removeEventListener("change", N);
   }, []);
-  const [M, j] = v(!1), d = q(null), D = q(null), $ = q(null);
+  const [M, j] = v(!1), p = q(null), D = q(null), $ = q(null);
   B(() => {
     j(!1);
   }, [O]);
@@ -2686,10 +2691,10 @@ function ft({
   }, [ie]), B(() => {
     de.current = !1;
   }, [P]), B(() => {
-    s && (de.current = !0);
-  }, [s]), B(() => {
+    u && (de.current = !0);
+  }, [u]), B(() => {
     const b = G.current;
-    if (!b || !p || !de.current) {
+    if (!b || !d || !de.current) {
       ce(null);
       return;
     }
@@ -2720,7 +2725,7 @@ function ft({
     return N.forEach((ge) => xe.observe(ge)), ce(N[0].id), () => {
       xe.disconnect();
     };
-  }, [p, P, s]);
+  }, [d, P, u]);
   const Ce = r != null || h != null;
   B(() => {
     const N = new URLSearchParams(window.location.search).get("path");
@@ -2756,11 +2761,11 @@ function ft({
       H.current = !1;
       return;
     }
-    if (s) {
+    if (u) {
       H.current = !0;
       return;
     }
-    if (!H.current || !p) return;
+    if (!H.current || !d) return;
     let N = !1, ne, xe = 0;
     const ge = () => {
       if (N) return;
@@ -2774,7 +2779,7 @@ function ft({
     return ne = requestAnimationFrame(ge), () => {
       N = !0, cancelAnimationFrame(ne);
     };
-  }, [p, P, s]);
+  }, [d, P, u]);
   const en = w(
     (b) => {
       window.opener && !window.opener.closed ? window.opener.postMessage({ type: "manual-app-navigate", path: b }, window.location.origin) : W == null || W(b);
@@ -2788,9 +2793,9 @@ function ft({
     [oe, a, ie]
   ), tn = w(
     (b) => {
-      u == null || u(b);
+      s == null || s(b);
     },
-    [u]
+    [s]
   );
   return B(() => {
     const b = () => {
@@ -2805,11 +2810,11 @@ function ft({
     };
     return document.addEventListener("keydown", b), () => document.removeEventListener("keydown", b);
   }, [M]), B(() => {
-    d.current && (d.current.inert = !M);
+    p.current && (p.current.inert = !M);
   }, [M, O]), B(() => {
     var N;
     const b = !!T && O && M;
-    D.current && (D.current.inert = b), $.current && ($.current.inert = b), b && ((N = d.current) == null || N.focus());
+    D.current && (D.current.inert = b), $.current && ($.current.inert = b), b && ((N = p.current) == null || N.focus());
   }, [T, O, M]), /* @__PURE__ */ o(
     "div",
     {
@@ -2889,7 +2894,7 @@ function ft({
             /* @__PURE__ */ o(
               "div",
               {
-                ref: d,
+                ref: p,
                 className: `manual-toc-panel${M ? " manual-toc-panel-open" : ""}`,
                 role: "dialog",
                 "aria-label": "目次",
@@ -2925,7 +2930,7 @@ function ft({
           ] }),
           /* @__PURE__ */ o("div", { ref: $, style: { display: "contents" }, children: [
             /* @__PURE__ */ e("main", { ref: G, style: m.mainPane, children: /* @__PURE__ */ o("div", { style: m.mainContent, children: [
-              s && /* @__PURE__ */ o("div", { style: m.loading, children: [
+              u && /* @__PURE__ */ o("div", { style: m.loading, children: [
                 /* @__PURE__ */ e("span", { style: { ...m.icon, animation: "spin 1s linear infinite" }, children: "progress_activity" }),
                 /* @__PURE__ */ e("span", { children: "読み込み中..." })
               ] }),
@@ -2936,15 +2941,15 @@ function ft({
                   /* @__PURE__ */ e("div", { style: m.errorDetail, children: y.message })
                 ] })
               ] }),
-              p && /* @__PURE__ */ e(
+              d && /* @__PURE__ */ e(
                 we,
                 {
-                  content: p,
+                  content: d,
                   onLinkClick: Qe,
                   onAppLinkClick: en
                 }
               ),
-              !s && !y && !p && !P && /* @__PURE__ */ o("div", { style: m.empty, children: [
+              !u && !y && !d && !P && /* @__PURE__ */ o("div", { style: m.empty, children: [
                 /* @__PURE__ */ e("span", { style: { ...m.icon, fontSize: "64px", opacity: 0.5 }, children: "description" }),
                 /* @__PURE__ */ e("span", { children: "マニュアルが指定されていません" })
               ] })
@@ -3091,7 +3096,7 @@ function ft({
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ e("style", { children: nt })
+        /* @__PURE__ */ e("style", { children: tt })
       ]
     }
   );
@@ -3318,16 +3323,16 @@ const m = {
 }, Ke = {
   app: "アプリ",
   manual: "マニュアル"
-}, tt = {
+}, rt = {
   open: { label: "open", color: "#F59E0B" },
   in_progress: { label: "対応中", color: "#2563EB" },
   closed: { label: "完了", color: "#059669" }
 };
-function mt({ apiBaseUrl: n, adminKey: r }) {
+function Ft({ apiBaseUrl: n, adminKey: r }) {
   var j;
   const {
     feedbacks: a,
-    total: u,
+    total: s,
     page: c,
     limit: i,
     loading: g,
@@ -3339,19 +3344,19 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
     updateStatus: C,
     remove: A,
     refresh: R
-  } = un({ apiBaseUrl: n, adminKey: r }), [_, T] = v(null), [l, W] = v(null), [P, U] = v(!1), [p, s] = v(null), y = q(0);
+  } = un({ apiBaseUrl: n, adminKey: r }), [_, T] = v(null), [l, W] = v(null), [P, U] = v(!1), [d, u] = v(null), y = q(0);
   B(() => {
     ve() || Be();
   }, []);
-  const k = Math.max(1, Math.ceil(u / i)), H = w(async (d) => {
-    if (_ === d) {
+  const k = Math.max(1, Math.ceil(s / i)), H = w(async (p) => {
+    if (_ === p) {
       T(null), W(null);
       return;
     }
-    T(d), U(!0);
+    T(p), U(!0);
     const D = ++y.current;
     try {
-      const $ = await hn({ apiBaseUrl: n, adminKey: r, id: d });
+      const $ = await hn({ apiBaseUrl: n, adminKey: r, id: p });
       if (y.current !== D) return;
       W($);
     } catch {
@@ -3359,14 +3364,14 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
       W(null);
     }
     y.current === D && U(!1);
-  }, [_, n, r]), O = w(async (d) => {
-    confirm("削除しますか？") && (await A(d), _ === d && (T(null), W(null)));
-  }, [A, _]), X = w(async (d, D) => {
+  }, [_, n, r]), O = w(async (p) => {
+    confirm("削除しますか？") && (await A(p), _ === p && (T(null), W(null)));
+  }, [A, _]), X = w(async (p, D) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await fn({ apiBaseUrl: n, adminKey: r, feedbackId: d, attachmentId: D }), W(($) => {
+        await fn({ apiBaseUrl: n, adminKey: r, feedbackId: p, attachmentId: D }), W(($) => {
           var L;
-          return !$ || $.id !== d ? $ : {
+          return !$ || $.id !== p ? $ : {
             ...$,
             attachments: (L = $.attachments) == null ? void 0 : L.filter((Z) => Z.id !== D)
           };
@@ -3374,12 +3379,12 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
       } catch ($) {
         console.error("Failed to delete attachment:", $);
       }
-  }, [n, r]), M = w((d) => {
+  }, [n, r]), M = w((p) => {
     try {
       const D = new URL(n);
-      return `${D.origin}${D.pathname.replace(/\/$/, "")}/attachments/${d}`;
+      return `${D.origin}${D.pathname.replace(/\/$/, "")}/attachments/${p}`;
     } catch {
-      return `${n}/attachments/${d}`;
+      return `${n}/attachments/${p}`;
     }
   }, [n]);
   return /* @__PURE__ */ o("div", { style: F.container, children: [
@@ -3389,7 +3394,7 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
         "select",
         {
           value: f.status,
-          onChange: (d) => x({ status: d.target.value }),
+          onChange: (p) => x({ status: p.target.value }),
           style: F.select,
           "aria-label": "ステータスフィルター",
           children: [
@@ -3404,7 +3409,7 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
         "select",
         {
           value: f.kind,
-          onChange: (d) => x({ kind: d.target.value }),
+          onChange: (p) => x({ kind: p.target.value }),
           style: F.select,
           "aria-label": "種別フィルター",
           children: [
@@ -3420,7 +3425,7 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
         "select",
         {
           value: f.target,
-          onChange: (d) => x({ target: d.target.value }),
+          onChange: (p) => x({ target: p.target.value }),
           style: F.select,
           "aria-label": "対象フィルター",
           children: [
@@ -3434,12 +3439,12 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
         "select",
         {
           value: f.customTag,
-          onChange: (d) => x({ customTag: d.target.value }),
+          onChange: (p) => x({ customTag: p.target.value }),
           style: F.select,
           "aria-label": "タグフィルター",
           children: [
             /* @__PURE__ */ e("option", { value: "", children: "全タグ" }),
-            E.map((d) => /* @__PURE__ */ e("option", { value: d, children: d }, d))
+            E.map((p) => /* @__PURE__ */ e("option", { value: p, children: p }, p))
           ]
         }
       ),
@@ -3458,26 +3463,26 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
       /* @__PURE__ */ o("tbody", { children: [
         g && /* @__PURE__ */ e("tr", { children: /* @__PURE__ */ e("td", { colSpan: 6, style: F.loadingCell, children: "読み込み中..." }) }),
         !g && a.length === 0 && /* @__PURE__ */ e("tr", { children: /* @__PURE__ */ e("td", { colSpan: 6, style: F.loadingCell, children: "データなし" }) }),
-        a.map((d) => {
+        a.map((p) => {
           var Z;
-          const D = qe[d.kind] ?? { label: d.kind, color: "#6B7280" }, $ = tt[d.status] ?? { label: d.status, color: "#6B7280" }, L = _ === d.id;
+          const D = qe[p.kind] ?? { label: p.kind, color: "#6B7280" }, $ = rt[p.status] ?? { label: p.status, color: "#6B7280" }, L = _ === p.id;
           return /* @__PURE__ */ o("tr", { children: [
             /* @__PURE__ */ e("td", { style: F.td, children: /* @__PURE__ */ e(
               "button",
               {
-                onClick: () => H(d.id),
+                onClick: () => H(p.id),
                 style: F.rowButton,
                 "aria-expanded": L,
-                "aria-controls": L ? `feedback-detail-${d.id}` : void 0,
-                children: (Z = d.createdAt) == null ? void 0 : Z.slice(5, 16).replace("T", " ")
+                "aria-controls": L ? `feedback-detail-${p.id}` : void 0,
+                children: (Z = p.createdAt) == null ? void 0 : Z.slice(5, 16).replace("T", " ")
               }
             ) }),
             /* @__PURE__ */ e("td", { style: F.td, children: /* @__PURE__ */ e("span", { style: { ...F.badge, backgroundColor: D.color }, children: D.label }) }),
-            /* @__PURE__ */ e("td", { style: F.td, children: d.target ? Ke[d.target] ?? d.target : "-" }),
-            /* @__PURE__ */ e("td", { style: { ...F.td, maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: d.message.slice(0, 80) }),
+            /* @__PURE__ */ e("td", { style: F.td, children: p.target ? Ke[p.target] ?? p.target : "-" }),
+            /* @__PURE__ */ e("td", { style: { ...F.td, maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: p.message.slice(0, 80) }),
             /* @__PURE__ */ e("td", { style: F.td, children: /* @__PURE__ */ e("span", { style: { color: $.color, fontWeight: 600, fontSize: "12px" }, children: $.label }) }),
-            /* @__PURE__ */ e("td", { style: F.td, children: (d.attachmentCount ?? 0) > 0 && /* @__PURE__ */ e("span", { style: { ...F.iconSmall, fontSize: "14px", color: "#6B7280" }, title: `${d.attachmentCount}枚`, children: "image" }) })
-          ] }, d.id);
+            /* @__PURE__ */ e("td", { style: F.td, children: (p.attachmentCount ?? 0) > 0 && /* @__PURE__ */ e("span", { style: { ...F.iconSmall, fontSize: "14px", color: "#6B7280" }, title: `${p.attachmentCount}枚`, children: "image" }) })
+          ] }, p.id);
         })
       ] })
     ] }),
@@ -3550,35 +3555,35 @@ function mt({ apiBaseUrl: n, adminKey: r }) {
           l.attachments.length,
           "件):"
         ] }),
-        /* @__PURE__ */ e("div", { style: F.attachmentGrid, children: l.attachments.map((d) => /* @__PURE__ */ o("div", { style: F.attachmentThumb, children: [
+        /* @__PURE__ */ e("div", { style: F.attachmentGrid, children: l.attachments.map((p) => /* @__PURE__ */ o("div", { style: F.attachmentThumb, children: [
           /* @__PURE__ */ e(
             "img",
             {
-              src: M(d.filename),
-              alt: d.original_name,
+              src: M(p.filename),
+              alt: p.original_name,
               style: F.attachmentImg,
-              onClick: () => s(M(d.filename))
+              onClick: () => u(M(p.filename))
             }
           ),
           /* @__PURE__ */ e(
             "button",
             {
-              onClick: () => X(l.id, d.id),
+              onClick: () => X(l.id, p.id),
               style: F.attachmentRemoveBtn,
               "aria-label": "画像を削除",
               children: /* @__PURE__ */ e("span", { style: { ...F.iconSmall, fontSize: "14px" }, children: "close" })
             }
           ),
-          /* @__PURE__ */ e("div", { style: F.attachmentInfo, children: d.original_name.length > 12 ? d.original_name.slice(0, 12) + "..." : d.original_name })
-        ] }, d.id)) })
+          /* @__PURE__ */ e("div", { style: F.attachmentInfo, children: p.original_name.length > 12 ? p.original_name.slice(0, 12) + "..." : p.original_name })
+        ] }, p.id)) })
       ] }),
-      p && /* @__PURE__ */ e("div", { style: F.overlay, onClick: () => s(null), children: /* @__PURE__ */ e("img", { src: p, alt: "拡大画像", style: F.enlargedImg }) }),
+      d && /* @__PURE__ */ e("div", { style: F.overlay, onClick: () => u(null), children: /* @__PURE__ */ e("img", { src: d, alt: "拡大画像", style: F.enlargedImg }) }),
       /* @__PURE__ */ o("div", { style: F.detailActions, children: [
         /* @__PURE__ */ o(
           "select",
           {
             value: l.status,
-            onChange: (d) => C(l.id, d.target.value),
+            onChange: (p) => C(l.id, p.target.value),
             style: F.select,
             "aria-label": "ステータス変更",
             children: [
@@ -3842,16 +3847,16 @@ const F = {
 };
 export {
   Le as D,
-  mt as F,
+  Ft as F,
   xn as I,
   t as M,
   Ze as a,
   Je as b,
-  Dt as c,
-  ht as d,
-  pt as e,
-  gt as f,
-  ft as g,
+  ht as c,
+  ft as d,
+  gt as e,
+  Dt as f,
+  mt as g,
   Ie as h,
   we as i,
   ve as j,

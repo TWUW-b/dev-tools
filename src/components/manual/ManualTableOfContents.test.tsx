@@ -121,3 +121,84 @@ describe('ManualTableOfContents defaultExpandCategories', () => {
     expect(screen.getByRole('button', { name: 'ページB' })).toBeInTheDocument();
   });
 });
+
+/**
+ * hideHeadingsOutline (2026-08-31 追加)。
+ *
+ * 経緯: TOP ページ本文の h2/h3 見出しが実際のカテゴリ名と同じ文言になっている場合、
+ * 「見出しを開く」トグルを開くとサイドバー内に同じカテゴリ名が二重に表示されてしまう
+ * （本文見出し一覧 と 実際のカテゴリ一覧 が並んで同じ文言を繰り返す）。
+ * hideHeadingsOutline: true の項目は見出しトグル自体を出さないことでこれを防ぐ。
+ */
+describe('ManualTableOfContents hideHeadingsOutline', () => {
+  const ITEM_WITH_HIDDEN_OUTLINE: ManualItem = {
+    id: 'top',
+    title: 'マニュアル TOP',
+    path: '/docs/top.md',
+    order: 1,
+    hideHeadingsOutline: true,
+  };
+  const NORMAL_ITEM: ManualItem = {
+    id: 'page-a',
+    title: 'ページA',
+    path: '/docs/page-a.md',
+    category: 'カテゴリ',
+    order: 2,
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('## カテゴリ\n\n本文'),
+    });
+  });
+
+  it('hideHeadingsOutline: true の項目には「見出しを開く」トグルが表示されない', () => {
+    render(
+      <ManualTableOfContents
+        items={[ITEM_WITH_HIDDEN_OUTLINE, NORMAL_ITEM]}
+        activePath={null}
+        onSelectPage={vi.fn()}
+        onSelectHeading={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'マニュアル TOP の見出しを開く' })).not.toBeInTheDocument();
+    // 通常項目（カテゴリを開かないと表示されない）以外は変わらず存在することの対照
+    expect(screen.getByRole('button', { name: 'マニュアル TOP' })).toBeInTheDocument();
+  });
+
+  it('hideHeadingsOutline: true の項目でもページ選択自体は動く（onSelectPage が呼ばれる）', async () => {
+    const user = userEvent.setup();
+    const onSelectPage = vi.fn();
+
+    render(
+      <ManualTableOfContents
+        items={[ITEM_WITH_HIDDEN_OUTLINE]}
+        activePath={null}
+        onSelectPage={onSelectPage}
+        onSelectHeading={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'マニュアル TOP' }));
+
+    expect(onSelectPage).toHaveBeenCalledWith('/docs/top.md');
+  });
+
+  it('hideHeadingsOutline: true のページがアクティブでも、スクロールスパイによる見出し自動展開は起きない', () => {
+    render(
+      <ManualTableOfContents
+        items={[ITEM_WITH_HIDDEN_OUTLINE]}
+        activePath="/docs/top.md"
+        onSelectPage={vi.fn()}
+        onSelectHeading={vi.fn()}
+        activeHeadingId="カテゴリ"
+      />
+    );
+
+    // 見出しトグル自体が存在しないので、見出しリスト（「カテゴリ」という見出しテキスト）も出ない
+    expect(screen.queryByText('カテゴリ')).not.toBeInTheDocument();
+  });
+});

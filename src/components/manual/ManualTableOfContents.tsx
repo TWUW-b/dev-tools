@@ -38,6 +38,11 @@ function findCategoryForPath(items: ManualItem[], path?: string | null): string 
   return items.find((item) => item.path === path)?.category ?? null;
 }
 
+function findItemForPath(items: ManualItem[], path?: string | null): ManualItem | undefined {
+  if (!path) return undefined;
+  return items.find((item) => item.path === path);
+}
+
 /** DOM id として安全な文字列に変換（空白文字を除去） */
 function toDomId(value: string): string {
   return value.replace(/\s+/g, '-');
@@ -116,16 +121,19 @@ export function ManualTableOfContents({
   // ただし、ユーザーが明示的に閉じたページ（manuallyCollapsedRef）は対象外にする。
   // でないと、閉じた直後に次の見出しへスクロールしただけで再展開されてしまい、
   // 「クリックする度に開閉が切り替わるトグル動作」（要件3）が維持できない。
+  // hideHeadingsOutline のページはそもそも見出しトグルを描画しないため対象外。
   useEffect(() => {
     if (!activeHeadingId || !activePath) return;
+    if (findItemForPath(items, activePath)?.hideHeadingsOutline) return;
     if (manuallyCollapsedRef.current.has(activePath)) return;
     loadHeadings(activePath);
     setExpandedPages((prev) => (prev[activePath] ? prev : { ...prev, [activePath]: true }));
-  }, [activeHeadingId, activePath, loadHeadings]);
+  }, [activeHeadingId, activePath, items, loadHeadings]);
 
   const renderPage = (item: ManualItem) => {
     const isActive = activePath === item.path;
-    const isExpanded = expandedPages[item.path] ?? false;
+    // hideHeadingsOutline のページは見出しトグル自体を出さないため、常に「閉」扱いにする。
+    const isExpanded = !item.hideHeadingsOutline && (expandedPages[item.path] ?? false);
     const headings = getHeadings(item.path);
     const loading = isLoading(item.path);
     const error = getError(item.path);
@@ -138,10 +146,10 @@ export function ManualTableOfContents({
             type="button"
             onClick={() => {
               onSelectPage(item.path);
-              togglePageHeadings(item.path);
+              if (!item.hideHeadingsOutline) togglePageHeadings(item.path);
             }}
-            aria-expanded={isExpanded}
-            aria-controls={headingsListId}
+            aria-expanded={item.hideHeadingsOutline ? undefined : isExpanded}
+            aria-controls={item.hideHeadingsOutline ? undefined : headingsListId}
             style={{
               ...styles.pageButton,
               background: isActive ? '#e3f2fd' : 'transparent',
@@ -151,17 +159,22 @@ export function ManualTableOfContents({
           >
             {item.title}
           </button>
-          <button
-            type="button"
-            onClick={() => togglePageHeadings(item.path)}
-            style={styles.toggleHeadingsButton}
-            aria-expanded={isExpanded}
-            aria-controls={headingsListId}
-            aria-label={isExpanded ? `${item.title} の見出しを閉じる` : `${item.title} の見出しを開く`}
-            title={isExpanded ? '見出しを閉じる' : '見出しを開く'}
-          >
-            <span style={styles.chevronIcon}>{isExpanded ? 'expand_less' : 'expand_more'}</span>
-          </button>
+          {/* hideHeadingsOutline: 本文の h2/h3 とサイドバーの実カテゴリ一覧が同じ文言になる
+              ページ（TOP ページ想定）向けに、見出しトグルそのものを出さない
+              （出すとサイドバー内でカテゴリ名が二重に表示されてしまうため。2026-08-31）。 */}
+          {!item.hideHeadingsOutline && (
+            <button
+              type="button"
+              onClick={() => togglePageHeadings(item.path)}
+              style={styles.toggleHeadingsButton}
+              aria-expanded={isExpanded}
+              aria-controls={headingsListId}
+              aria-label={isExpanded ? `${item.title} の見出しを閉じる` : `${item.title} の見出しを開く`}
+              title={isExpanded ? '見出しを閉じる' : '見出しを開く'}
+            >
+              <span style={styles.chevronIcon}>{isExpanded ? 'expand_less' : 'expand_more'}</span>
+            </button>
+          )}
         </div>
 
         {isExpanded && (

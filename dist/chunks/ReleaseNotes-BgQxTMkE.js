@@ -6,7 +6,7 @@ import { d as Tt, a as Bt } from "./useFeedbackAdminMode-DpbrwKWq.js";
 import { r as Se } from "./releaseNotesApi-BahuRlM7.js";
 import { createPortal as _t } from "react-dom";
 import { m as Et } from "./feedbackLogCapture-DUBfVREg.js";
-import { I as pt, D as s, i as Ee, b as Wt, M as K } from "./FeedbackAdmin-Dznvvw4p.js";
+import { I as pt, D as s, i as Ee, b as Wt, M as K } from "./FeedbackAdmin-BxdAnyxC.js";
 import { c as Nt } from "./logCapture-Bkuy8MSd.js";
 function Mt(t) {
   return t.split(`
