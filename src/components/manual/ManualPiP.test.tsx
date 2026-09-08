@@ -18,6 +18,7 @@ import type { ManualItem } from '../../types';
 
 const ITEMS: ManualItem[] = [
   { id: 'page-a', title: 'ページA', path: '/docs/page-a.md', order: 1 },
+  { id: 'page-b', title: 'ページB', path: '/docs/page-b.md', order: 2 },
 ];
 
 function installFakeDocumentPictureInPicture() {
@@ -122,5 +123,90 @@ describe('ManualPiP 目次パネルのホバー開閉', () => {
     fireEvent.click(btn);
 
     expect(btn).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+/**
+ * ヘッダーの戻るボタン (1.4.11)。
+ *
+ * PiP はブラウザの戻る操作が効かず、目次や本文リンクで別ページへ移ったあとは
+ * 目次から辿り直すしかなかった。直前に見ていたページへ 1 つ戻れるようにする。
+ */
+describe('ManualPiP の戻るボタン', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    installFakeDocumentPictureInPicture();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('# ページ\n\n本文'),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    document.getElementById('manual-pip-root')?.remove();
+    delete (window as unknown as { documentPictureInPicture?: unknown }).documentPictureInPicture;
+  });
+
+  it('開いた直後は戻り先が無いので押せない', async () => {
+    render(
+      <ManualPiP isOpen docPath="/docs/page-a.md" onClose={vi.fn()} items={ITEMS} copyHostStyles={false} />
+    );
+
+    const back = await screen.findByRole('button', { name: '前のページに戻る' });
+    expect(back).toBeDisabled();
+  });
+
+  it('別ページへ移ると押せるようになり、押すと直前のページへ戻る', async () => {
+    const onNavigate = vi.fn();
+    const { rerender } = render(
+      <ManualPiP
+        isOpen
+        docPath="/docs/page-a.md"
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+        items={ITEMS}
+        copyHostStyles={false}
+      />
+    );
+
+    await screen.findByRole('button', { name: '前のページに戻る' });
+
+    // 目次や本文リンクでの遷移 = 親が docPath を差し替える
+    rerender(
+      <ManualPiP
+        isOpen
+        docPath="/docs/page-b.md"
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+        items={ITEMS}
+        copyHostStyles={false}
+      />
+    );
+
+    const back = await screen.findByRole('button', { name: '前のページに戻る' });
+    await waitFor(() => expect(back).toBeEnabled());
+
+    fireEvent.click(back);
+
+    expect(onNavigate).toHaveBeenCalledWith('/docs/page-a.md');
+  });
+
+  it('戻ったあとは戻り先が無くなる（戻る操作で履歴を積み直さない）', async () => {
+    const onNavigate = vi.fn();
+    const props = { isOpen: true, onClose: vi.fn(), onNavigate, items: ITEMS, copyHostStyles: false };
+
+    const { rerender } = render(<ManualPiP {...props} docPath="/docs/page-a.md" />);
+    await screen.findByRole('button', { name: '前のページに戻る' });
+
+    rerender(<ManualPiP {...props} docPath="/docs/page-b.md" />);
+    const back = await screen.findByRole('button', { name: '前のページに戻る' });
+    await waitFor(() => expect(back).toBeEnabled());
+
+    fireEvent.click(back);
+    // 親が docPath を戻す
+    rerender(<ManualPiP {...props} docPath="/docs/page-a.md" />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '前のページに戻る' })).toBeDisabled());
   });
 });

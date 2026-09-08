@@ -75,6 +75,16 @@ export function ManualPiP({
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
   const { content, loading, error } = useManualLoader(docPath);
   const { downloadMd } = useManualDownload();
+  /**
+   * PiP 内で見たページの履歴 (1.4.11)。目次や本文中のリンクで別ページへ移ったあと、
+   * 直前に読んでいたページへ戻れるようにする。PiP はブラウザの戻る操作が使えず、
+   * 目次から辿り直すしかなかった。
+   * docPath は制御 props なので、履歴の積み上げは docPath の変化を見て行う。
+   */
+  const [backStack, setBackStack] = useState<string[]>([]);
+  const previousDocPathRef = useRef<string | null>(null);
+  /** 戻る操作による docPath 変化を履歴に積み直さないための一時フラグ */
+  const isGoingBackRef = useRef(false);
   const isOpeningRef = useRef(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -295,6 +305,38 @@ export function ManualPiP({
 
   // アンマウント時に保留中のクローズタイマーが残らないようにする
   useEffect(() => cancelTocHoverClose, [cancelTocHoverClose]);
+
+  // docPath が変わったら、直前のページを履歴に積む
+  useEffect(() => {
+    const previous = previousDocPathRef.current;
+    previousDocPathRef.current = docPath;
+
+    if (!previous || previous === docPath) return;
+    if (isGoingBackRef.current) {
+      // 戻る操作で発生した変化。積み直すと同じページを往復するだけになる
+      isGoingBackRef.current = false;
+      return;
+    }
+    setBackStack((stack) => [...stack, previous]);
+  }, [docPath]);
+
+  // PiP を閉じたら履歴も捨てる (次に開いたときは「戻る先が無い」状態から始める)
+  useEffect(() => {
+    if (!isOpen) {
+      setBackStack([]);
+      previousDocPathRef.current = null;
+    }
+  }, [isOpen]);
+
+  /** ヘッダーの戻るボタン。1 つ前に見ていたページへ戻る */
+  const handleBack = useCallback(() => {
+    if (backStack.length === 0) return;
+    const target = backStack[backStack.length - 1];
+    isGoingBackRef.current = true;
+    setBackStack((stack) => stack.slice(0, -1));
+    setIsTocOpen(false);
+    onNavigate?.(target);
+  }, [backStack, onNavigate]);
 
   // 目次パネル: ページ選択
   const handleTocSelectPage = useCallback(
@@ -533,6 +575,15 @@ export function ManualPiP({
               <span className="pip-icon">menu</span>
             </button>
           )}
+          <button
+            onClick={handleBack}
+            className="pip-back-btn"
+            aria-label="前のページに戻る"
+            title="前のページに戻る"
+            disabled={backStack.length === 0}
+          >
+            <span className="pip-icon">arrow_back</span>
+          </button>
           <span className="pip-icon">menu_book</span>
           <span className="pip-title">マニュアル</span>
         </div>
@@ -861,6 +912,36 @@ function getPipStyles(): string {
     .pip-menu-btn:focus {
       outline: 2px solid ${COLORS.secondary};
       outline-offset: 2px;
+    }
+
+    /* 戻るボタン (1.4.11)。目次ボタンと同じ当たり判定で、
+       戻り先が無いときは押せないことが分かるよう薄くする */
+    .pip-back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: ${COLORS.white};
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+
+    .pip-back-btn:hover:not(:disabled) {
+      background: ${COLORS.tertiary};
+    }
+
+    .pip-back-btn:focus {
+      outline: 2px solid ${COLORS.secondary};
+      outline-offset: 2px;
+    }
+
+    .pip-back-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
     }
 
     /* ボディ */
