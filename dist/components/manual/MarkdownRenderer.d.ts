@@ -5,4 +5,4 @@ import type { MarkdownRendererProps } from '../../types';
  * - app:/...リンク → onAppLinkClick（メイン画面遷移）
  * - その他 → 新しいタブで開く
  */
-export declare function MarkdownRenderer({ content, className, onLinkClick, onAppLinkClick, }: MarkdownRendererProps): import("react/jsx-runtime").JSX.Element;
+export declare function MarkdownRenderer({ content, className, onLinkClick, onAppLinkClick, disableImageZoom, }: MarkdownRendererProps): import("react/jsx-runtime").JSX.Element;

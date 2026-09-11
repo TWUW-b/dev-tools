@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 /**
@@ -82,5 +82,137 @@ describe('MarkdownRenderer app リンク', () => {
     render(<MarkdownRenderer content={'<a href="javascript:alert(1)">危険</a>'} />);
 
     expect(screen.getByText('危険')).toHaveAttribute('href', '');
+  });
+});
+
+/**
+ * 本文中の画像のクリック拡大（ライトボックス）。
+ *
+ * マニュアルの画像はスクリーンショットが主で、本文の幅に収まった状態では
+ * 画面内の文字が読めない。クリックで拡大できるようにした（v1.4.12）。
+ */
+describe('MarkdownRenderer 画像の拡大表示', () => {
+  const md = '![物件一覧の画面](/img/properties.png)';
+
+  it('画像自身がクリック対象になり、ラッパー要素は増えない', () => {
+    // ホストのマニュアル CSS は `.manual-shot img { width: 100% }` のように
+    // 「コンテナの直下の img」を前提に書かれている。間に要素を挟むと画像の幅が変わり、
+    // 画像に重ねた注記マーカーの位置がずれるため、DOM 構造を変えないことを固定する。
+    const { container } = render(<MarkdownRenderer content={md} />);
+
+    const zoom = screen.getByRole('button', { name: '物件一覧の画面（クリックで拡大）' });
+    expect(zoom.tagName).toBe('IMG');
+    expect(zoom).toHaveAttribute('src', '/img/properties.png');
+    expect(zoom.parentElement?.tagName).toBe('P');
+    expect(container.querySelectorAll('.manual-markdown p > *')).toHaveLength(1);
+  });
+
+  it('クリックすると拡大ダイアログに同じ画像が表示される', () => {
+    render(<MarkdownRenderer content={md} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '物件一覧の画面（クリックで拡大）' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(within(dialog).getByRole('img')).toHaveAttribute('src', '/img/properties.png');
+  });
+
+  it('Escape で拡大ダイアログが閉じる', () => {
+    render(<MarkdownRenderer content={md} />);
+    fireEvent.click(screen.getByRole('button', { name: '物件一覧の画面（クリックで拡大）' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('背景クリックで拡大ダイアログが閉じる', () => {
+    render(<MarkdownRenderer content={md} />);
+    fireEvent.click(screen.getByRole('button', { name: '物件一覧の画面（クリックで拡大）' }));
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('閉じると元の画像へフォーカスが戻る', () => {
+    render(<MarkdownRenderer content={md} />);
+    const zoom = screen.getByRole('button', { name: '物件一覧の画面（クリックで拡大）' });
+    zoom.focus();
+    fireEvent.click(zoom);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(zoom).toHaveFocus();
+  });
+
+  it('生 HTML の img に書いた class / style は失われない', () => {
+    render(
+      <MarkdownRenderer content={'<img src="/img/a.png" alt="図" class="shot-img" style="border:1px solid red">'} />
+    );
+
+    const img = screen.getByRole('button', { name: '図（クリックで拡大）' });
+    expect(img).toHaveClass('shot-img');
+    expect(img).toHaveStyle({ border: '1px solid red' });
+  });
+
+  it('画像に重ねた注記は拡大表示にも同じ位置で複製される', () => {
+    render(
+      <MarkdownRenderer
+        content={
+          '<div class="manual-shot"><img src="/img/step.png" alt="保存ボタン">' +
+          '<div class="manual-mark" style="position:absolute;left:5.5%;top:76%"></div></div>'
+        }
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '保存ボタン（クリックで拡大）' }));
+
+    const mark = screen.getByRole('dialog').querySelector('.manual-mark');
+    expect(mark).not.toBeNull();
+    expect(mark).toHaveStyle({ left: '5.5%', top: '76%' });
+  });
+
+  it('別ウィンドウ（PiP）へ描画されても、その document の Escape で閉じる', () => {
+    // ManualPiP は Document Picture-in-Picture の別ウィンドウへ描画される。
+    // window / document を直接掴むと、PiP 側のキー操作を拾えない。
+    // 別 document（実際の PiP と同じく window を持つもの）として iframe を使う
+    const frame = document.createElement('iframe');
+    document.body.appendChild(frame);
+    const pipDoc = frame.contentDocument as Document;
+    const container = pipDoc.createElement('div');
+    pipDoc.body.appendChild(container);
+
+    render(<MarkdownRenderer content={md} />, { container, baseElement: pipDoc.body });
+
+    const zoom = pipDoc.querySelector('img[data-zoomable]') as HTMLImageElement;
+    fireEvent.click(zoom);
+    expect(pipDoc.querySelector('[role="dialog"]')).not.toBeNull();
+
+    fireEvent.keyDown(pipDoc, { key: 'Escape' });
+
+    expect(pipDoc.querySelector('[role="dialog"]')).toBeNull();
+    frame.remove();
+  });
+
+  it('リンクの中の画像はリンク遷移を優先し、拡大しない', () => {
+    render(<MarkdownRenderer content={'[![図](/img/a.png)](https://example.com)'} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '図（クリックで拡大）' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('disableImageZoom を指定すると画像はそのまま表示される', () => {
+    render(<MarkdownRenderer content={md} disableImageZoom />);
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/img/properties.png');
+    expect(img).not.toHaveAttribute('data-zoomable');
+
+    fireEvent.click(img);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

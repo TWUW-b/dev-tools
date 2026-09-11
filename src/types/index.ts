@@ -464,6 +464,27 @@ export interface UseManualLoaderReturn {
   reload: () => void;
 }
 
+/** ImageLightbox プロパティ */
+export interface ImageLightboxProps {
+  /** 表示する画像の URL */
+  src: string;
+  /** 代替テキスト（未指定時は空文字） */
+  alt?: string;
+  /**
+   * 画像下に出すキャプション。
+   * 未指定時は alt を使う。null を渡すとキャプションを出さない。
+   */
+  caption?: string | null;
+  /**
+   * 画像に重ねた注記（絶対配置の要素）を持つ親要素。
+   * 指定すると、その中の絶対配置の子要素を複製して拡大画像の上にも同じ位置で重ねる。
+   * 「ここを押す」を四角で囲うタイプのマニュアルで、拡大すると囲みが消える問題への対応。
+   */
+  overlaySource?: HTMLElement | null;
+  /** 閉じる操作（背景クリック / ×ボタン / Escape）で呼ばれる */
+  onClose: () => void;
+}
+
 /** MarkdownRenderer プロパティ */
 export interface MarkdownRendererProps {
   /** Markdownコンテンツ */
@@ -474,6 +495,11 @@ export interface MarkdownRendererProps {
   onLinkClick?: (path: string) => void;
   /** アプリリンククリック時のハンドラ（app:/...リンク用） */
   onAppLinkClick?: (path: string) => void;
+  /**
+   * 本文中の画像のクリック拡大（ライトボックス）を無効にする。
+   * 既定は false（クリックで拡大できる）。
+   */
+  disableImageZoom?: boolean;
 }
 
 /** ManualPiP プロパティ */

@@ -678,6 +678,21 @@ import { MarkdownRenderer } from '@twuw-b/dev-tools/manual';
 | `app:/` リンク | `onAppLinkClick` を呼び出し（メイン画面遷移） |
 | その他の URL | 新しいタブで開く |
 
+#### 画像のクリック拡大
+
+本文中の画像（Markdown の `![]()` と生 HTML の `<img>` の両方）はクリックで拡大表示されます。
+
+- 閉じる: 背景クリック / × ボタン / Escape
+- 「実寸で表示」で等倍表示に切り替え（画面からはみ出す分はスクロール）。画像自身のクリックでも切り替わる
+- キャプションは `title` 属性、無ければ `alt` を使う
+- リンクの中の画像（`[![alt](img)](url)`）はリンク遷移を優先し、拡大しない
+- 画像に注記を重ねている場合（`.manual-shot` + 絶対配置の `.manual-mark` のような構成）は、
+  注記も同じ位置・比率で拡大表示に複製される
+- `disableImageZoom` で無効化できる
+
+DOM 構造は従来のまま（`<img>` をラッパー要素で包まない）です。ホスト側の
+`.manual-shot img { width: 100% }` のような CSS や、画像に重ねた注記の位置指定を壊さないためです。
+
 #### Props
 
 | Prop | 型 | 必須 | 説明 |
@@ -686,6 +701,34 @@ import { MarkdownRenderer } from '@twuw-b/dev-tools/manual';
 | `className` | `string` | | 追加の CSS クラス名 |
 | `onLinkClick` | `(path: string) => void` | | `.md` リンククリック時のハンドラ |
 | `onAppLinkClick` | `(path: string) => void` | | `app:/` リンククリック時のハンドラ |
+| `disableImageZoom` | `boolean` | | 画像のクリック拡大を無効にする（既定 `false`） |
+
+### ImageLightbox
+
+画像の拡大表示（ライトボックス）単体。`MarkdownRenderer` と `ReleaseNotes` が内部で使っていますが、
+独自の画像一覧などから直接使うこともできます。
+
+```typescript
+import { ImageLightbox } from '@twuw-b/dev-tools';
+
+{zoomed && (
+  <ImageLightbox src={zoomed.url} alt={zoomed.alt} caption={zoomed.caption} onClose={() => setZoomed(null)} />
+)}
+```
+
+`position: fixed` で描画先の document をそのまま覆う実装のため、ManualPiP のような
+別ウィンドウ（Document Picture-in-Picture）の中でもそのウィンドウ内に表示されます
+（Escape・スクロールロックも描画先の document に対して行います）。
+
+#### Props
+
+| Prop | 型 | 必須 | 説明 |
+|------|------|------|------|
+| `src` | `string` | ✓ | 画像 URL |
+| `alt` | `string` | | 代替テキスト |
+| `caption` | `string \| null` | | 画像下のキャプション（未指定時は `alt`、`null` で非表示） |
+| `overlaySource` | `HTMLElement \| null` | | 画像に重ねた注記を持つ親要素。中の絶対配置要素を複製して重ねる |
+| `onClose` | `() => void` | ✓ | 閉じる操作で呼ばれる |
 
 ### FeedbackForm
 

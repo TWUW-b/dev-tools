@@ -14,6 +14,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useReleaseNotes } from '../hooks/useReleaseNotes';
+import { ImageLightbox } from './ImageLightbox';
 import { MANUAL_COLORS } from '../styles/colors';
 import type { ReleaseCategory, ReleaseNote, ReleaseNoteItem, ReleaseNoteMedia, ReleaseNotesProps } from '../types';
 
@@ -77,14 +78,7 @@ export function ReleaseNotes({
       .filter((n) => n.items.length > 0);
   }, [notes, filter]);
 
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightbox(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lightbox]);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
 
   return (
     <div className={className} style={{ maxWidth: '820px', margin: '0 auto', fontSize: '14px', color: '#111827', ...style }}>
@@ -148,39 +142,12 @@ export function ReleaseNotes({
       )}
 
       {lightbox && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setLightbox(null)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 2147483000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
-          }}
-        >
-          <button
-            type="button"
-            aria-label="閉じる"
-            onClick={() => setLightbox(null)}
-            style={{
-              position: 'absolute', top: '12px', right: '16px', background: 'none', border: 'none',
-              color: '#FFF', fontSize: '32px', lineHeight: 1, cursor: 'pointer',
-            }}
-          >
-            ×
-          </button>
-          <figure style={{ margin: 0, maxWidth: '100%', maxHeight: '100%' }} onClick={(e) => e.stopPropagation()}>
-            <img
-              src={lightbox.url}
-              alt={lightbox.caption ?? ''}
-              style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px', background: '#FFF', display: 'block' }}
-            />
-            {lightbox.caption && (
-              <figcaption style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)', fontSize: '12px', marginTop: '8px' }}>
-                {lightbox.caption}
-              </figcaption>
-            )}
-          </figure>
-        </div>
+        <ImageLightbox
+          src={lightbox.url}
+          alt={lightbox.caption ?? ''}
+          caption={lightbox.caption}
+          onClose={closeLightbox}
+        />
       )}
     </div>
   );
