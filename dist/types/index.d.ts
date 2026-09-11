@@ -305,6 +305,18 @@ export interface ManualItem {
     category?: string;
     /** 表示順（オプション） */
     order?: number;
+    /**
+     * true にすると、目次サイドバー上でこの項目の「見出しを開く」トグル（本文の h2/h3 を
+     * サブリストとして表示する機能）を出さない（デフォルト false = 従来どおり表示する）。
+     *
+     * 2026-08-31: TOP ページ（各カテゴリへの案内文が本文にある「今やりたいことを選んで
+     * ください」的なランディングページ）で使うことを想定して追加。本文の見出しが
+     * カテゴリ名と同じ文言になっている場合、見出しトグルを開くとカテゴリ名がサイドバー内に
+     * 二重に表示されてしまう（本文見出しの一覧 と 実際のカテゴリ一覧 が並んで同じ文言を
+     * 繰り返す）。本文側は見出しのまま（可読性・アクセシビリティのため）残しつつ、
+     * サイドバー側の重複表示だけを抑制したい場合に指定する。
+     */
+    hideHeadingsOutline?: boolean;
 }
 /** PiP状態 */
 export interface PiPState {
@@ -385,6 +397,21 @@ export interface ManualTabPageProps {
     defaultDocPath?: string;
     /** マニュアル項目リスト。指定時のみ左側に階層目次サイドバーが常時表示される（未指定時は既存の見た目・挙動のまま） */
     items?: ManualItem[];
+    /**
+     * 目次サイドバーのカテゴリ初期開閉状態。
+     * - 'active'（デフォルト、既存挙動）: 現在表示中のページを含むカテゴリのみ開く
+     * - 'all': 全カテゴリを初期状態から開く
+     */
+    defaultExpandCategories?: 'active' | 'all';
+    /**
+     * 本文（Markdown）内の app: リンククリック時のハンドラ。
+     * `window.open()` でこのページを開いた場合は従来どおり window.opener への
+     * postMessage（{ type: 'manual-app-navigate', path }）が優先される。
+     * window.opener が無い場合（直接 URL アクセス・ブックマーク等）のフォールバックとして、
+     * 指定時はこのコールバックが呼ばれる（2026-08-31: /manual-view 直接アクセス時に
+     * app: リンクが無反応だった不具合の修正）。
+     */
+    onAppNavigate?: (path: string) => void;
 }
 /** マニュアルローダー戻り値 */
 export interface UseManualLoaderReturn {
@@ -397,6 +424,26 @@ export interface UseManualLoaderReturn {
     /** 再読み込み */
     reload: () => void;
 }
+/** ImageLightbox プロパティ */
+export interface ImageLightboxProps {
+    /** 表示する画像の URL */
+    src: string;
+    /** 代替テキスト（未指定時は空文字） */
+    alt?: string;
+    /**
+     * 画像下に出すキャプション。
+     * 未指定時は alt を使う。null を渡すとキャプションを出さない。
+     */
+    caption?: string | null;
+    /**
+     * 画像に重ねた注記（絶対配置の要素）を持つ親要素。
+     * 指定すると、その中の絶対配置の子要素を複製して拡大画像の上にも同じ位置で重ねる。
+     * 「ここを押す」を四角で囲うタイプのマニュアルで、拡大すると囲みが消える問題への対応。
+     */
+    overlaySource?: HTMLElement | null;
+    /** 閉じる操作（背景クリック / ×ボタン / Escape）で呼ばれる */
+    onClose: () => void;
+}
 /** MarkdownRenderer プロパティ */
 export interface MarkdownRendererProps {
     /** Markdownコンテンツ */
@@ -407,6 +454,11 @@ export interface MarkdownRendererProps {
     onLinkClick?: (path: string) => void;
     /** アプリリンククリック時のハンドラ（app:/...リンク用） */
     onAppLinkClick?: (path: string) => void;
+    /**
+     * 本文中の画像のクリック拡大（ライトボックス）を無効にする。
+     * 既定は false（クリックで拡大できる）。
+     */
+    disableImageZoom?: boolean;
 }
 /** ManualPiP プロパティ */
 export interface ManualPiPProps {
@@ -495,6 +547,12 @@ export interface ManualTableOfContentsProps {
     onSelectHeading: (path: string, headingId: string) => void;
     /** 現在ビューポート内で読まれている見出しの id（スクロールスパイ用。指定時にハイライトする） */
     activeHeadingId?: string | null;
+    /**
+     * カテゴリの初期開閉状態。
+     * - 'active'（デフォルト、既存挙動）: 現在表示中のページを含むカテゴリのみ開く
+     * - 'all': 全カテゴリを初期状態から開く
+     */
+    defaultExpandCategories?: 'active' | 'all';
     /** 追加のクラス名 */
     className?: string;
 }

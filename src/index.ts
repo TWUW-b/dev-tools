@@ -6,6 +6,9 @@ export type { DevToolsProps } from './components/DevTools';
 
 // Release Notes（@TWUWB-003）
 export { ReleaseNotes } from './components/ReleaseNotes';
+
+// 画像の拡大表示（MarkdownRenderer / ReleaseNotes が内部で使う。単体でも使える）
+export { ImageLightbox } from './components/ImageLightbox';
 export { useReleaseNotes } from './hooks/useReleaseNotes';
 export type { UseReleaseNotesOptions, UseReleaseNotesReturn } from './hooks/useReleaseNotes';
 export { releaseNotesApi, fetchReleaseNotesFeed } from './utils/releaseNotesApi';
@@ -99,6 +102,7 @@ export type {
   PiPState,
   UseManualPiPReturn,
   UseManualLoaderReturn,
+  ImageLightboxProps,
   MarkdownRendererProps,
   ManualPiPProps,
   ManualSidebarProps,

@@ -6,9 +6,9 @@ import { d as Tt, a as Bt } from "./useFeedbackAdminMode-DpbrwKWq.js";
 import { r as Se } from "./releaseNotesApi-BahuRlM7.js";
 import { createPortal as _t } from "react-dom";
 import { m as Et } from "./feedbackLogCapture-DUBfVREg.js";
-import { I as pt, D as s, i as Ee, b as Wt, M as K } from "./FeedbackAdmin-BRArLHpv.js";
-import { c as Nt } from "./logCapture-Bkuy8MSd.js";
-function Mt(t) {
+import { k as pt, D as s, i as Ee, b as Wt, M as K, I as Nt } from "./FeedbackAdmin-B5RaEkkF.js";
+import { c as Mt } from "./logCapture-Bkuy8MSd.js";
+function Lt(t) {
   return t.split(`
 `).map((r) => r.trim()).filter((r) => r.startsWith("- ")).map((r) => r.slice(2).trim()).filter(Boolean);
 }
@@ -23,10 +23,10 @@ function At({ notes: t, updateStatus: r }) {
     } finally {
       l(null);
     }
-  }, [r]), A = q((m, I) => {
+  }, [r]), L = q((m, I) => {
     x((_) => {
-      const S = _[m] ?? /* @__PURE__ */ new Set(), E = new Set(S);
-      return E.has(I) ? E.delete(I) : E.add(I), { ..._, [m]: E };
+      const S = _[m] ?? /* @__PURE__ */ new Set(), W = new Set(S);
+      return W.has(I) ? W.delete(I) : W.add(I), { ..._, [m]: W };
     });
   }, []);
   return /* @__PURE__ */ n("div", { className: "debug-manage", children: [
@@ -52,7 +52,7 @@ function At({ notes: t, updateStatus: r }) {
       ] })
     ] }) }),
     d.length === 0 ? /* @__PURE__ */ e("div", { className: "debug-empty", children: "該当するノートはありません" }) : d.map((m) => {
-      const I = Mt(m.latest_comment || ""), _ = b[m.id] ?? /* @__PURE__ */ new Set(), S = I.length > 0 && _.size === I.length, E = I.length > 0;
+      const I = Lt(m.latest_comment || ""), _ = b[m.id] ?? /* @__PURE__ */ new Set(), S = I.length > 0 && _.size === I.length, W = I.length > 0;
       return /* @__PURE__ */ n("div", { className: "debug-checklist-card", children: [
         /* @__PURE__ */ n(
           "div",
@@ -94,14 +94,14 @@ function At({ notes: t, updateStatus: r }) {
             ]
           }
         ),
-        y.has(m.id) && /* @__PURE__ */ e(ye, { children: E && /* @__PURE__ */ n("div", { className: "debug-checklist-items", children: [
+        y.has(m.id) && /* @__PURE__ */ e(ye, { children: W && /* @__PURE__ */ n("div", { className: "debug-checklist-items", children: [
           I.map((h, C) => /* @__PURE__ */ n("label", { className: "debug-checklist-item", children: [
             /* @__PURE__ */ e(
               "input",
               {
                 type: "checkbox",
                 checked: _.has(C),
-                onChange: () => A(m.id, C)
+                onChange: () => L(m.id, C)
               }
             ),
             /* @__PURE__ */ e("span", { className: _.has(C) ? "debug-checklist-done" : "", children: h })
@@ -127,12 +127,12 @@ function At({ notes: t, updateStatus: r }) {
     })
   ] });
 }
-const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g, onRunningCasesChange: z }, b) {
-  const [x, y] = v([]), [T, d] = v(/* @__PURE__ */ new Set()), [k, A] = v(/* @__PURE__ */ new Set()), [m, I] = v({}), [_, S] = v({}), [E, h] = v(null), [C, c] = v(null), F = ge("");
+const Dt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g, onRunningCasesChange: z }, b) {
+  const [x, y] = v([]), [T, d] = v(/* @__PURE__ */ new Set()), [k, L] = v(/* @__PURE__ */ new Set()), [m, I] = v({}), [_, S] = v({}), [W, h] = v(null), [C, c] = v(null), O = ge("");
   ie(() => {
     if (!r || r.length === 0) return;
     const w = JSON.stringify(r);
-    if (w === F.current) return;
+    if (w === O.current) return;
     let u = !1;
     return (async () => {
       try {
@@ -144,7 +144,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
         try {
           const f = await oe.getTestTree(i);
           if (u) return;
-          y(f), F.current = w;
+          y(f), O.current = w;
           const D = {};
           for (const B of f)
             for (const R of B.capabilities)
@@ -158,7 +158,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
       u = !0;
     };
   }, [r, i]);
-  const N = q(async () => {
+  const F = q(async () => {
     try {
       const w = await oe.getTestTree(i);
       y(w);
@@ -172,7 +172,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
       c({ type: "error", text: "データの更新に失敗しました" });
     }
   }, [i]);
-  St(b, () => ({ refresh: N }), [N]), ie(() => {
+  St(b, () => ({ refresh: F }), [F]), ie(() => {
     if (!z) return;
     const w = [];
     for (const u of x)
@@ -183,7 +183,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
       }
     z(w);
   }, [k, x, z]);
-  const L = q(async (w, u, f) => {
+  const A = q(async (w, u, f) => {
     const D = `${w}/${u}`;
     h(D), c(null);
     try {
@@ -214,15 +214,15 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
           for (const p of R.files)
             try {
               await oe.uploadAttachment(i, ee, p);
-            } catch (O) {
-              console.warn("Failed to upload attachment:", O);
+            } catch (j) {
+              console.warn("Failed to upload attachment:", j);
             }
       }
       if (X.capability) {
         y((ee) => ee.map((p) => p.domain !== w ? p : {
           ...p,
           capabilities: p.capabilities.map(
-            (O) => O.capability === u ? X.capability : O
+            (j) => j.capability === u ? X.capability : j
           )
         }));
         const Q = { ...m };
@@ -239,13 +239,13 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
     } finally {
       h(null);
     }
-  }, [m, _, i, l, g]), j = q((w) => {
+  }, [m, _, i, l, g]), N = q((w) => {
     d((u) => {
       const f = new Set(u);
       return f.has(w) ? f.delete(w) : f.add(w), f;
     });
-  }, []), G = q((w) => {
-    A((u) => {
+  }, []), U = q((w) => {
+    L((u) => {
       const f = new Set(u);
       return f.has(w) ? f.delete(w) : f.add(w), f;
     });
@@ -258,7 +258,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
         {
           "data-testid": `domain-toggle-${w.domain}`,
           className: "debug-tree-toggle",
-          onClick: () => j(w.domain),
+          onClick: () => N(w.domain),
           children: [
             /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: T.has(w.domain) ? "expand_more" : "chevron_right" }),
             /* @__PURE__ */ e("span", { className: "debug-tree-label", children: w.domain })
@@ -273,7 +273,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
             {
               "data-testid": `cap-toggle-${f}`,
               className: "debug-tree-toggle debug-tree-cap-toggle",
-              onClick: () => G(f),
+              onClick: () => U(f),
               children: [
                 /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "18px" }, children: D ? "expand_more" : "chevron_right" }),
                 /* @__PURE__ */ e("span", { className: "debug-tree-label", children: u.capability }),
@@ -429,7 +429,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
                       };
                     });
                   },
-                  disabled: E !== null
+                  disabled: W !== null
                 }
               )
             ] }),
@@ -440,9 +440,9 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
                 {
                   "data-testid": `cap-submit-${f}`,
                   className: "debug-btn debug-btn-primary debug-cap-submit",
-                  onClick: () => L(w.domain, u.capability, u.cases),
-                  disabled: E !== null || a === 0,
-                  children: E === f ? /* @__PURE__ */ n("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" }, children: [
+                  onClick: () => A(w.domain, u.capability, u.cases),
+                  disabled: W !== null || a === 0,
+                  children: W === f ? /* @__PURE__ */ n("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" }, children: [
                     /* @__PURE__ */ e("span", { style: {
                       display: "inline-block",
                       width: "14px",
@@ -463,7 +463,7 @@ const Lt = kt(function({ testCases: r, env: i, logCapture: l, onNotesRefresh: g,
     ] }, w.domain)) })
   ] });
 });
-function Dt({
+function jt({
   items: t,
   defaultPath: r,
   onNavigate: i,
@@ -500,18 +500,18 @@ function Dt({
     ] })
   ] });
 }
-function jt(t) {
-  const { meta: r, body: i } = Ot(t), l = i.split(`
+function Ot(t) {
+  const { meta: r, body: i } = Pt(t), l = i.split(`
 `), g = {
     title: r.title,
     warning: r.warning,
     projects: []
   };
-  let z = [], b = null, x = null, y = null, T = !1, d = [], k = [], A = [];
+  let z = [], b = null, x = null, y = null, T = !1, d = [], k = [], L = [];
   const m = () => {
-    if (A.length === 0) return;
-    const h = Pt(A);
-    A = [], h && (y ? y.table = h : k.push(...Ht(h)));
+    if (L.length === 0) return;
+    const h = Ht(L);
+    L = [], h && (y ? y.table = h : k.push(...qt(h)));
   }, I = () => {
     if (m(), y && k.length > 0) {
       const h = k.join(`
@@ -547,59 +547,59 @@ ${h}`);
   for (let h = 0; h < l.length; h++) {
     const C = l[h], c = C.trim();
     if (/^\|.*\|$/.test(c)) {
-      A.push(c);
+      L.push(c);
       continue;
-    } else A.length > 0 && m();
+    } else L.length > 0 && m();
     if (/^---+$/.test(c)) continue;
-    const F = /^#\s+(.+)$/.exec(C);
-    if (F) {
+    const O = /^#\s+(.+)$/.exec(C);
+    if (O) {
       S();
-      const j = F[1].trim();
-      j === "共通" || /^(common|shared)$/i.test(j) ? b = { name: "共通", envs: [], common: [] } : b = { name: j, envs: [], common: [] };
+      const N = O[1].trim();
+      N === "共通" || /^(common|shared)$/i.test(N) ? b = { name: "共通", envs: [], common: [] } : b = { name: N, envs: [], common: [] };
       continue;
     }
-    const N = /^##\s+(.+)$/.exec(C);
-    if (N) {
+    const F = /^##\s+(.+)$/.exec(C);
+    if (F) {
       _(), b || (b = { name: "共通", envs: [], common: [] });
-      const j = N[1].trim();
-      if (/前提|注意|注記|note|備考/i.test(j)) {
-        y = { label: j, entries: [] }, T = !0;
+      const N = F[1].trim();
+      if (/前提|注意|注記|note|備考/i.test(N)) {
+        y = { label: N, entries: [] }, T = !0;
         continue;
       }
-      const G = /^(.+?)\s*\/\s*(.+)$/.exec(j);
-      if (G)
-        x = Ge(G[1].trim()), y = { label: G[2].trim(), entries: [] };
+      const U = /^(.+?)\s*\/\s*(.+)$/.exec(N);
+      if (U)
+        x = Ge(U[1].trim()), y = { label: U[2].trim(), entries: [] };
       else {
-        const Z = Ge(j.replace(/環境$/, "").trim());
-        Z && /^(dev|staging|stg|prod|production|local|test)$/i.test(Z) ? (x = Z, y = { label: "アカウント", entries: [] }) : (x = null, y = { label: j, entries: [] });
+        const Z = Ge(N.replace(/環境$/, "").trim());
+        Z && /^(dev|staging|stg|prod|production|local|test)$/i.test(Z) ? (x = Z, y = { label: "アカウント", entries: [] }) : (x = null, y = { label: N, entries: [] });
       }
       continue;
     }
     if (b && !y) {
-      const j = /^phase\s*:\s*(.+)$/i.exec(c);
-      if (j) {
-        b.phase = j[1].trim();
+      const N = /^phase\s*:\s*(.+)$/i.exec(c);
+      if (N) {
+        b.phase = N[1].trim();
         continue;
       }
     }
-    const L = /^\s*-\s+([^:]+?):\s*(.+)$/.exec(C);
-    if (L && y && !T) {
-      const j = L[1].trim(), G = L[2].trim().replace(/^`|`$/g, "");
+    const A = /^\s*-\s+([^:]+?):\s*(.+)$/.exec(C);
+    if (A && y && !T) {
+      const N = A[1].trim(), U = A[2].trim().replace(/^`|`$/g, "");
       y.entries.push({
-        key: j,
-        value: G,
-        kind: qt(j, G)
+        key: N,
+        value: U,
+        kind: Vt(N, U)
       });
       continue;
     }
     c === "" && k.length === 0 || (y ? k.push(C) : b || z.push(C));
   }
   S();
-  const E = z.join(`
+  const W = z.join(`
 `).trim();
-  return E && (g.preamble = E), g;
+  return W && (g.preamble = W), g;
 }
-function Ot(t) {
+function Pt(t) {
   const r = /^---\n([\s\S]*?)\n---\n?/.exec(t);
   if (!r) return { meta: {}, body: t };
   const i = {};
@@ -612,7 +612,7 @@ function Ot(t) {
   }
   return { meta: i, body: t.slice(r[0].length) };
 }
-function Pt(t) {
+function Ht(t) {
   if (t.length < 2) return null;
   const r = (g) => g.replace(/^\|/, "").replace(/\|$/, "").split("|").map((z) => z.trim()), i = r(t[0]);
   if (!/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/.test(t[1]))
@@ -620,7 +620,7 @@ function Pt(t) {
   const l = t.slice(2).map(r);
   return { headers: i, rows: l };
 }
-function Ht(t) {
+function qt(t) {
   const r = ["| " + t.headers.join(" | ") + " |"];
   r.push("| " + t.headers.map(() => "---").join(" | ") + " |");
   for (const i of t.rows) r.push("| " + i.join(" | ") + " |");
@@ -630,7 +630,7 @@ function Ge(t) {
   const r = t.toLowerCase();
   return /^(staging|stg)$/.test(r) ? "staging" : /^(prod|production|本番)$/.test(r) ? "prod" : /^(dev|development|開発)$/.test(r) ? "dev" : /^(local|ローカル)$/.test(r) ? "local" : /^(test|テスト)$/.test(r) ? "test" : t;
 }
-function qt(t, r) {
+function Vt(t, r) {
   const i = t.toLowerCase();
   return /pass|pwd|password|パスワード/.test(i) ? "password" : /url|link|endpoint/.test(i) || /^https?:\/\//.test(r) ? "url" : /mail|email|メール/.test(i) || /^[^\s@]+@[^\s@]+$/.test(r) ? "email" : /user|id|name|account|ユーザー/.test(i) ? "user" : "text";
 }
@@ -659,8 +659,8 @@ async function ut(t, r = typeof document < "u" ? document : null) {
   }
 }
 const Oe = zt(null);
-function Vt({ md: t, pipDocument: r = null }) {
-  const i = ve(() => jt(t), [t]), [l, g] = v(
+function Ut({ md: t, pipDocument: r = null }) {
+  const i = ve(() => Ot(t), [t]), [l, g] = v(
     () => new Set(i.projects.map((b) => b.name))
   ), z = q((b) => {
     g((x) => {
@@ -694,7 +694,7 @@ function Vt({ md: t, pipDocument: r = null }) {
     i.preamble && /* @__PURE__ */ e("div", { style: { marginBottom: "10px", fontSize: "12px" }, children: /* @__PURE__ */ e(Ee, { content: i.preamble }) }),
     i.projects.length === 0 && /* @__PURE__ */ e("div", { className: "debug-empty", children: "環境情報が空です" }),
     i.projects.map((b) => /* @__PURE__ */ e(
-      Ut,
+      Gt,
       {
         project: b,
         isExpanded: l.has(b.name),
@@ -704,7 +704,7 @@ function Vt({ md: t, pipDocument: r = null }) {
     ))
   ] }) });
 }
-function Ut({
+function Gt({
   project: t,
   isExpanded: r,
   onToggle: i
@@ -807,7 +807,7 @@ function Ut({
 function Je({ section: t }) {
   return /* @__PURE__ */ n("div", { style: { marginBottom: "10px" }, children: [
     /* @__PURE__ */ e("div", { style: { fontSize: "12px", fontWeight: 600, color: s.gray700, marginBottom: "4px" }, children: t.label }),
-    t.entries.length > 0 && /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: t.entries.map((r, i) => /* @__PURE__ */ e(Gt, { entry: r }, i)) }),
+    t.entries.length > 0 && /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: t.entries.map((r, i) => /* @__PURE__ */ e(Jt, { entry: r }, i)) }),
     t.table && /* @__PURE__ */ e("div", { style: { marginTop: "6px", overflowX: "auto" }, children: /* @__PURE__ */ n("table", { style: { width: "100%", fontSize: "11px", borderCollapse: "collapse" }, children: [
       /* @__PURE__ */ e("thead", { children: /* @__PURE__ */ e("tr", { children: t.table.headers.map((r, i) => /* @__PURE__ */ e(
         "th",
@@ -823,7 +823,7 @@ function Je({ section: t }) {
         i
       )) }) }),
       /* @__PURE__ */ e("tbody", { children: t.table.rows.map((r, i) => /* @__PURE__ */ e("tr", { children: r.map((l, g) => /* @__PURE__ */ e(
-        Jt,
+        Zt,
         {
           value: l,
           header: t.table.headers[g] ?? ""
@@ -834,7 +834,7 @@ function Je({ section: t }) {
     t.extraMd && /* @__PURE__ */ e("div", { style: { marginTop: "6px", fontSize: "12px" }, children: /* @__PURE__ */ e(Ee, { content: t.extraMd }) })
   ] });
 }
-function Gt({ entry: t }) {
+function Jt({ entry: t }) {
   const r = dt(Oe), [i, l] = v(!1), [g, z] = v(!1), b = async () => {
     await ut(t.value, r) && (z(!0), setTimeout(() => z(!1), 1200));
   }, x = t.kind === "password", y = x && !i ? "•".repeat(Math.min(t.value.length, 10)) : t.value, T = t.kind === "url" ? "link" : t.kind === "email" ? "mail" : t.kind === "password" ? "key" : t.kind === "user" ? "person" : "label";
@@ -898,7 +898,7 @@ function Gt({ entry: t }) {
     }
   );
 }
-function Jt({ value: t, header: r }) {
+function Zt({ value: t, header: r }) {
   const i = dt(Oe), l = /pass|pwd|パスワード/i.test(r), g = /^https?:\/\//.test(t), z = /^[^\s@]+@[^\s@]+$/.test(t), [b, x] = v(!1), [y, T] = v(!1), d = async () => {
     await ut(t, i) && (T(!0), setTimeout(() => T(!1), 1200));
   }, k = l && !b ? "•".repeat(Math.min(t.length, 10)) : t;
@@ -913,7 +913,7 @@ function Jt({ value: t, header: r }) {
       },
       children: /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
         g ? /* @__PURE__ */ e("a", { href: t, target: "_blank", rel: "noopener noreferrer", style: { color: s.primary, flex: 1 }, children: t }) : z ? /* @__PURE__ */ e("span", { style: { flex: 1 }, children: t }) : /* @__PURE__ */ e("span", { style: { flex: 1 }, children: k }),
-        l && /* @__PURE__ */ e("button", { type: "button", onClick: () => x((A) => !A), style: me, title: b ? "隠す" : "表示", children: /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "12px" }, children: b ? "visibility_off" : "visibility" }) }),
+        l && /* @__PURE__ */ e("button", { type: "button", onClick: () => x((L) => !L), style: me, title: b ? "隠す" : "表示", children: /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "12px" }, children: b ? "visibility_off" : "visibility" }) }),
         /* @__PURE__ */ e(
           "button",
           {
@@ -982,7 +982,7 @@ const Ze = {
     display: "flex",
     flexDirection: "column"
   }
-}, Zt = `
+}, Qt = `
   * {
     margin: 0;
     padding: 0;
@@ -1985,10 +1985,10 @@ function xt() {
     }
   `;
 }
-function Qt() {
-  return `${Zt}${xt()}`;
+function Yt() {
+  return `${Qt}${xt()}`;
 }
-function Yt({
+function Kt({
   apiBaseUrl: t,
   env: r = "dev",
   onSave: i,
@@ -2001,10 +2001,10 @@ function Yt({
   onManualNavigate: T,
   onManualAppNavigate: d,
   environmentsMd: k,
-  triggerOffset: A
+  triggerOffset: L
 }) {
   var He, qe;
-  const [m, I] = v(null), [_, S] = v(null), [E, h] = v(!1), C = ge(!1), [c, F] = v("record"), N = z && z.length > 0, L = x && x.length > 0, j = !!k && k.trim().length > 0, [G, Z] = v(""), [re, ne] = v(""), [H, w] = v(""), [u, f] = v(!1), [D, B] = v(!1), [R, M] = v(!1), [a, P] = v(!1), [J, X] = v(!1), [Q, ee] = v([]), [p, O] = v(null), [te, de] = v([]), [xe, Ce] = v(!1), Fe = ge(null);
+  const [m, I] = v(null), [_, S] = v(null), [W, h] = v(!1), C = ge(!1), [c, O] = v("record"), F = z && z.length > 0, A = x && x.length > 0, N = !!k && k.trim().length > 0, [U, Z] = v(""), [re, ne] = v(""), [H, w] = v(""), [u, f] = v(!1), [D, B] = v(!1), [R, M] = v(!1), [a, P] = v(!1), [J, X] = v(!1), [Q, ee] = v([]), [p, j] = v(null), [te, de] = v([]), [xe, Ce] = v(!1), Fe = ge(null);
   ie(() => {
     t && je(t);
   }, [t]);
@@ -2012,8 +2012,8 @@ function Yt({
   Te.current = Re;
   const o = q(async () => {
     var ce;
-    const U = typeof window < "u" && ((ce = window.matchMedia) == null ? void 0 : ce.call(window, "(max-width: 768px)").matches);
-    if (!window.documentPictureInPicture || U) {
+    const G = typeof window < "u" && ((ce = window.matchMedia) == null ? void 0 : ce.call(window, "(max-width: 768px)").matches);
+    if (!window.documentPictureInPicture || G) {
       window.documentPictureInPicture || console.warn("Document Picture-in-Picture API is not supported"), h(!0);
       return;
     }
@@ -2026,7 +2026,7 @@ function Yt({
         }), pe = ae.document.createElement("link");
         pe.rel = "stylesheet", pe.href = Wt, ae.document.head.appendChild(pe);
         const ke = ae.document.createElement("style");
-        ke.textContent = Qt(), ae.document.head.appendChild(ke);
+        ke.textContent = Yt(), ae.document.head.appendChild(ke);
         const Y = ae.document.createElement("div");
         Y.id = "debug-panel-root", ae.document.body.appendChild(Y), I(ae), S(Y), h(!0), ae.addEventListener("pagehide", () => {
           I(null), S(null), h(!1), l == null || l();
@@ -2041,22 +2041,22 @@ function Yt({
     m ? m.close() : (h(!1), l == null || l());
   }, [m, l]), V = ge(m);
   V.current = m, ie(() => () => {
-    var U;
-    (U = V.current) == null || U.close();
+    var G;
+    (G = V.current) == null || G.close();
   }, []), ie(() => {
     if (typeof document > "u" || document.getElementById("twuw-debug-panel-styles")) return;
-    const U = document.createElement("style");
-    U.id = "twuw-debug-panel-styles", U.textContent = xt(), document.head.appendChild(U);
+    const G = document.createElement("style");
+    G.id = "twuw-debug-panel-styles", G.textContent = xt(), document.head.appendChild(G);
   }, []);
   const le = q(() => {
-    Z(""), ne(""), w(""), ee([]), B(!1), M(!1), P(!1), X(!1), O(null);
+    Z(""), ne(""), w(""), ee([]), B(!1), M(!1), P(!1), X(!1), j(null);
   }, []), Me = q(async () => {
     var ke;
-    if (!G.trim()) {
-      O({ type: "error", text: "内容は必須です" });
+    if (!U.trim()) {
+      j({ type: "error", text: "内容は必須です" });
       return;
     }
-    f(!0), O(null);
+    f(!0), j(null);
     const ce = ((b == null ? void 0 : b.getNetworkLogs()) ?? []).map((Y) => {
       const he = {
         timestamp: Y.timestamp,
@@ -2066,7 +2066,7 @@ function Yt({
       }, Ve = ["POST", "PUT", "DELETE", "PATCH"].includes(Y.method);
       return Ve && (Y.requestBody !== void 0 && (he.requestBody = Y.requestBody), Y.responseBody !== void 0 && (he.responseBody = Y.responseBody)), !Ve && R && Y.responseBody !== void 0 && (he.responseBody = Y.responseBody), a && Y.duration != null && (he.duration = Y.duration), J && (Y.requestHeaders && (he.requestHeaders = Y.requestHeaders), Y.responseHeaders && (he.responseHeaders = Y.responseHeaders)), he;
     }), ae = {
-      content: G.trim(),
+      content: U.trim(),
       userLog: re ? Et(re) : void 0,
       severity: H || void 0,
       testCaseIds: te.length > 0 ? te : void 0,
@@ -2085,20 +2085,20 @@ function Yt({
           for (const Y of Q)
             await oe.uploadAttachment(r, pe.id, Y);
         } catch (Y) {
-          console.warn("Failed to upload some attachments:", Y), O({ type: "success", text: "保存しました（一部画像のアップロードに失敗）" }), f(!1);
+          console.warn("Failed to upload some attachments:", Y), j({ type: "success", text: "保存しました（一部画像のアップロードに失敗）" }), f(!1);
           return;
         }
-      O({ type: "success", text: "保存しました" }), i == null || i(pe), setTimeout(() => {
+      j({ type: "success", text: "保存しました" }), i == null || i(pe), setTimeout(() => {
         le();
       }, 1500);
     } else
-      O({ type: "error", text: ((ke = Te.current) == null ? void 0 : ke.message) || "保存に失敗しました" });
+      j({ type: "error", text: ((ke = Te.current) == null ? void 0 : ke.message) || "保存に失敗しました" });
     f(!1);
-  }, [G, re, H, te, Q, R, a, J, Ie, i, le, b, r]), wt = q(async () => {
-    var U;
+  }, [U, re, H, te, Q, R, a, J, Ie, i, le, b, r]), wt = q(async () => {
+    var G;
     Ce(!0);
     try {
-      c === "manage" ? we() : c === "test" && await ((U = Fe.current) == null ? void 0 : U.refresh());
+      c === "manage" ? we() : c === "test" && await ((G = Fe.current) == null ? void 0 : G.refresh());
     } finally {
       Ce(!1);
     }
@@ -2139,7 +2139,7 @@ function Yt({
         {
           className: `debug-tab ${c === "record" ? "active" : ""}`,
           onClick: () => {
-            F("record"), O(null);
+            O("record"), j(null);
           },
           children: "記録"
         }
@@ -2148,31 +2148,31 @@ function Yt({
         "button",
         {
           className: `debug-tab ${c === "manage" ? "active" : ""}`,
-          onClick: () => F("manage"),
+          onClick: () => O("manage"),
           children: "管理"
+        }
+      ),
+      F && /* @__PURE__ */ e(
+        "button",
+        {
+          className: `debug-tab ${c === "test" ? "active" : ""}`,
+          onClick: () => O("test"),
+          children: "テスト"
+        }
+      ),
+      A && /* @__PURE__ */ e(
+        "button",
+        {
+          className: `debug-tab ${c === "manual" ? "active" : ""}`,
+          onClick: () => O("manual"),
+          children: "マニュアル"
         }
       ),
       N && /* @__PURE__ */ e(
         "button",
         {
-          className: `debug-tab ${c === "test" ? "active" : ""}`,
-          onClick: () => F("test"),
-          children: "テスト"
-        }
-      ),
-      L && /* @__PURE__ */ e(
-        "button",
-        {
-          className: `debug-tab ${c === "manual" ? "active" : ""}`,
-          onClick: () => F("manual"),
-          children: "マニュアル"
-        }
-      ),
-      j && /* @__PURE__ */ e(
-        "button",
-        {
           className: `debug-tab ${c === "env" ? "active" : ""}`,
-          onClick: () => F("env"),
+          onClick: () => O("env"),
           children: "環境"
         }
       )
@@ -2199,7 +2199,7 @@ function Yt({
               /* @__PURE__ */ e("span", { className: "debug-icon", style: { fontSize: "14px" }, children: "science" }),
               /* @__PURE__ */ n("span", { children: [
                 "実行中: ",
-                te.map((U) => `#${U}`).join(", ")
+                te.map((G) => `#${G}`).join(", ")
               ] }),
               /* @__PURE__ */ e(
                 "button",
@@ -2229,7 +2229,7 @@ function Yt({
             {
               id: "debug-severity",
               value: H,
-              onChange: (U) => w(U.target.value),
+              onChange: (G) => w(G.target.value),
               children: [
                 /* @__PURE__ */ e("option", { value: "", children: "未設定" }),
                 /* @__PURE__ */ e("option", { value: "critical", children: "Critical" }),
@@ -2246,8 +2246,8 @@ function Yt({
             "textarea",
             {
               id: "debug-content",
-              value: G,
-              onChange: (U) => Z(U.target.value),
+              value: U,
+              onChange: (G) => Z(G.target.value),
               placeholder: "詳細な説明",
               rows: 4,
               maxLength: 4e3
@@ -2261,7 +2261,7 @@ function Yt({
             {
               id: "debug-log",
               value: re,
-              onChange: (U) => ne(U.target.value),
+              onChange: (G) => ne(G.target.value),
               placeholder: "状況や気づいたことを自由に記入",
               rows: 3,
               maxLength: 2e4
@@ -2273,8 +2273,8 @@ function Yt({
           pt,
           {
             files: Q,
-            onAdd: (U) => ee((ce) => [...ce, ...U]),
-            onRemove: (U) => ee((ce) => ce.filter((ae, pe) => pe !== U)),
+            onAdd: (G) => ee((ce) => [...ce, ...G]),
+            onRemove: (G) => ee((ce) => ce.filter((ae, pe) => pe !== G)),
             disabled: u,
             pipDocument: ((He = V.current) == null ? void 0 : He.document) ?? null
           }
@@ -2298,7 +2298,7 @@ function Yt({
               {
                 type: "checkbox",
                 checked: R,
-                onChange: (U) => M(U.target.checked)
+                onChange: (G) => M(G.target.checked)
               }
             ),
             "GETレスポンスを含める"
@@ -2309,7 +2309,7 @@ function Yt({
               {
                 type: "checkbox",
                 checked: a,
-                onChange: (U) => P(U.target.checked)
+                onChange: (G) => P(G.target.checked)
               }
             ),
             "通信時間を含める"
@@ -2320,7 +2320,7 @@ function Yt({
               {
                 type: "checkbox",
                 checked: J,
-                onChange: (U) => X(U.target.checked)
+                onChange: (G) => X(G.target.checked)
               }
             ),
             "ヘッダーを含める"
@@ -2328,8 +2328,8 @@ function Yt({
         ] })
       ] }),
       c === "manage" && /* @__PURE__ */ e(At, { notes: We, updateStatus: Ne }),
-      c === "manual" && L && /* @__PURE__ */ e(
-        Dt,
+      c === "manual" && A && /* @__PURE__ */ e(
+        jt,
         {
           items: x,
           defaultPath: y,
@@ -2337,9 +2337,9 @@ function Yt({
           onAppNavigate: d
         }
       ),
-      c === "env" && j && /* @__PURE__ */ e(Vt, { md: k, pipDocument: ((qe = V.current) == null ? void 0 : qe.document) ?? null }),
-      c === "test" && N && /* @__PURE__ */ e(
-        Lt,
+      c === "env" && N && /* @__PURE__ */ e(Ut, { md: k, pipDocument: ((qe = V.current) == null ? void 0 : qe.document) ?? null }),
+      c === "test" && F && /* @__PURE__ */ e(
+        Dt,
         {
           ref: Fe,
           testCases: z,
@@ -2366,7 +2366,7 @@ function Yt({
       ] }) : "保存" })
     ] })
   ] });
-  return _ ? _t(Pe, _) : E ? /* @__PURE__ */ e("div", { style: Ze.overlay, children: /* @__PURE__ */ e("div", { style: Ze.panel, children: Pe }) }) : /* @__PURE__ */ e("button", { onClick: o, style: gt(A), "aria-label": "デバッグノートを開く", children: /* @__PURE__ */ n("span", { style: { fontSize: "13px", fontWeight: 600, lineHeight: 1.2, textAlign: "center" }, children: [
+  return _ ? _t(Pe, _) : W ? /* @__PURE__ */ e("div", { style: Ze.overlay, children: /* @__PURE__ */ e("div", { style: Ze.panel, children: Pe }) }) : /* @__PURE__ */ e("button", { onClick: o, style: gt(L), "aria-label": "デバッグノートを開く", children: /* @__PURE__ */ n("span", { style: { fontSize: "13px", fontWeight: 600, lineHeight: 1.2, textAlign: "center" }, children: [
     "バグ",
     /* @__PURE__ */ e("br", {}),
     "記録"
@@ -2393,7 +2393,7 @@ function se({ size: t = 16, color: r }) {
     /* @__PURE__ */ e("style", { children: "@keyframes debug-notes-spin { to { transform: rotate(360deg); } }" })
   ] });
 }
-function W({ name: t, size: r = 20, color: i }) {
+function E({ name: t, size: r = 20, color: i }) {
   return /* @__PURE__ */ e(
     "span",
     {
@@ -2408,7 +2408,7 @@ function W({ name: t, size: r = 20, color: i }) {
     }
   );
 }
-const Kt = {
+const Xt = {
   passed: "#22c55e",
   passedBg: "#f0fdf4",
   fail: "#ef4444",
@@ -2417,7 +2417,7 @@ const Kt = {
   retestBg: "#fffbeb",
   untested: "#e5e7eb",
   untestedBg: "#f9fafb"
-}, Xt = {
+}, en = {
   passed: "#4ade80",
   passedBg: "#064e3b",
   fail: "#f87171",
@@ -2427,8 +2427,8 @@ const Kt = {
   untested: "#475569",
   untestedBg: "#1e293b"
 };
-function en({ domains: t, colors: r, isDarkMode: i }) {
-  const l = i ? Xt : Kt;
+function tn({ domains: t, colors: r, isDarkMode: i }) {
+  const l = i ? en : Xt;
   return t.length === 0 ? /* @__PURE__ */ e("div", { style: {
     padding: "40px",
     textAlign: "center",
@@ -2446,7 +2446,7 @@ function en({ domains: t, colors: r, isDarkMode: i }) {
       gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
       gap: "16px"
     }, children: t.map((g) => /* @__PURE__ */ e(
-      tn,
+      nn,
       {
         domain: g,
         colors: r,
@@ -2500,7 +2500,7 @@ function en({ domains: t, colors: r, isDarkMode: i }) {
     ] })
   ] });
 }
-function tn({ domain: t, colors: r, tc: i }) {
+function nn({ domain: t, colors: r, tc: i }) {
   return /* @__PURE__ */ n("div", { style: {
     background: r.bg,
     border: `1px solid ${r.border}`,
@@ -2528,7 +2528,7 @@ function tn({ domain: t, colors: r, tc: i }) {
       ] })
     ] }),
     /* @__PURE__ */ e("div", { style: { display: "flex", flexDirection: "column", gap: "10px" }, children: t.capabilities.map((l) => /* @__PURE__ */ e(
-      nn,
+      rn,
       {
         cap: l,
         colors: r,
@@ -2538,7 +2538,7 @@ function tn({ domain: t, colors: r, tc: i }) {
     )) })
   ] });
 }
-function nn({ cap: t, colors: r, tc: i }) {
+function rn({ cap: t, colors: r, tc: i }) {
   const l = t.status === "fail" ? i.fail : t.status === "retest" ? i.retest : t.status === "passed" ? i.passed : i.untested, g = t.status === "fail" ? i.failBg : t.status === "retest" ? i.retestBg : t.status === "passed" ? i.passedBg : i.untestedBg;
   return /* @__PURE__ */ n("div", { style: {
     borderLeft: `4px solid ${l}`,
@@ -2584,41 +2584,41 @@ function nn({ cap: t, colors: r, tc: i }) {
     ] })
   ] });
 }
-const rn = {
+const an = {
   passed: "#22c55e",
   fail: "#ef4444",
   retest: "#f59e0b",
   untested: "#9ca3af"
-}, an = {
+}, on = {
   passed: "#4ade80",
   fail: "#f87171",
   retest: "#fbbf24",
   untested: "#64748b"
 };
-function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
-  const g = i ? an : rn, [z, b] = v(/* @__PURE__ */ new Set()), [x, y] = v(/* @__PURE__ */ new Set());
+function ln({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
+  const g = i ? on : an, [z, b] = v(/* @__PURE__ */ new Set()), [x, y] = v(/* @__PURE__ */ new Set());
   ie(() => {
     b((S) => {
-      const E = new Set(S);
-      return t.forEach((h) => E.add(h.domain)), E;
+      const W = new Set(S);
+      return t.forEach((h) => W.add(h.domain)), W;
     });
   }, [t]);
-  const [T, d] = v("all"), [k, A] = v(!1), m = (S) => {
-    b((E) => {
-      const h = new Set(E);
+  const [T, d] = v("all"), [k, L] = v(!1), m = (S) => {
+    b((W) => {
+      const h = new Set(W);
       return h.has(S) ? h.delete(S) : h.add(S), h;
     });
   }, I = (S) => {
-    y((E) => {
-      const h = new Set(E);
+    y((W) => {
+      const h = new Set(W);
       return h.has(S) ? h.delete(S) : h.add(S), h;
     });
   }, _ = ve(() => t.map((S) => {
-    const E = S.capabilities.filter((h) => {
-      const C = h.passed === h.total && h.total > 0, c = h.failed > 0 || h.openIssues > 0, F = h.passed < h.total;
-      return !(T === "passed" && !C || T === "fail" && !c || T === "incomplete" && !F || k && C && h.openIssues === 0);
+    const W = S.capabilities.filter((h) => {
+      const C = h.passed === h.total && h.total > 0, c = h.failed > 0 || h.openIssues > 0, O = h.passed < h.total;
+      return !(T === "passed" && !C || T === "fail" && !c || T === "incomplete" && !O || k && C && h.openIssues === 0);
     });
-    return E.length === 0 ? null : { ...S, capabilities: E };
+    return W.length === 0 ? null : { ...S, capabilities: W };
   }).filter((S) => S !== null), [t, T, k]);
   return t.length === 0 ? null : /* @__PURE__ */ n("div", { children: [
     /* @__PURE__ */ e("h3", { style: {
@@ -2669,7 +2669,7 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
           {
             type: "checkbox",
             checked: k,
-            onChange: (S) => A(S.target.checked),
+            onChange: (S) => L(S.target.checked),
             style: { accentColor: r.primary }
           }
         ),
@@ -2681,8 +2681,8 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
       borderRadius: "12px",
       overflow: "hidden"
     }, children: [
-      _.map((S, E) => {
-        const h = z.has(S.domain), C = S.capabilities.reduce((N, L) => N + L.total, 0), c = S.capabilities.reduce((N, L) => N + L.passed, 0), F = C > 0 ? Math.round(c / C * 100) : 0;
+      _.map((S, W) => {
+        const h = z.has(S.domain), C = S.capabilities.reduce((F, A) => F + A.total, 0), c = S.capabilities.reduce((F, A) => F + A.passed, 0), O = C > 0 ? Math.round(c / C * 100) : 0;
         return /* @__PURE__ */ n("div", { children: [
           /* @__PURE__ */ n(
             "div",
@@ -2695,7 +2695,7 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                 background: r.bgSecondary,
                 cursor: "pointer",
                 borderBottom: `1px solid ${r.border}`,
-                borderTop: E > 0 ? `1px solid ${r.border}` : "none",
+                borderTop: W > 0 ? `1px solid ${r.border}` : "none",
                 gap: "8px",
                 userSelect: "none"
               },
@@ -2716,19 +2716,19 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                   "/",
                   C,
                   " ",
-                  F,
+                  O,
                   "%"
                 ] })
               ]
             }
           ),
-          h && S.capabilities.map((N) => {
-            const L = `${S.domain}/${N.capability}`, j = x.has(L), G = N.passed === N.total && N.total > 0, Z = N.cases.some((f) => f.last === "fail" && f.openIssues > 0), re = N.cases.some((f) => f.last === "fail" && f.openIssues === 0), ne = !Z && re, H = Z, w = G ? "●" : H ? "▲" : ne ? "◆" : "○", u = G ? g.passed : H ? g.fail : ne ? g.retest : g.untested;
+          h && S.capabilities.map((F) => {
+            const A = `${S.domain}/${F.capability}`, N = x.has(A), U = F.passed === F.total && F.total > 0, Z = F.cases.some((f) => f.last === "fail" && f.openIssues > 0), re = F.cases.some((f) => f.last === "fail" && f.openIssues === 0), ne = !Z && re, H = Z, w = U ? "●" : H ? "▲" : ne ? "◆" : "○", u = U ? g.passed : H ? g.fail : ne ? g.retest : g.untested;
             return /* @__PURE__ */ n("div", { children: [
               /* @__PURE__ */ n(
                 "div",
                 {
-                  onClick: () => I(L),
+                  onClick: () => I(A),
                   style: {
                     display: "flex",
                     alignItems: "center",
@@ -2746,17 +2746,17 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                       fontWeight: 500,
                       color: r.text,
                       flex: 1
-                    }, children: N.capability }),
+                    }, children: F.capability }),
                     /* @__PURE__ */ n("span", { style: {
                       fontSize: "12px",
                       color: r.textMuted,
                       fontVariantNumeric: "tabular-nums"
                     }, children: [
-                      N.passed,
+                      F.passed,
                       "/",
-                      N.total
+                      F.total
                     ] }),
-                    G && /* @__PURE__ */ e("span", { style: {
+                    U && /* @__PURE__ */ e("span", { style: {
                       fontSize: "11px",
                       color: g.passed,
                       fontWeight: 600
@@ -2771,7 +2771,7 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                       color: g.retest,
                       fontWeight: 600
                     }, children: "retest" }),
-                    N.openIssues > 0 && /* @__PURE__ */ n("span", { style: {
+                    F.openIssues > 0 && /* @__PURE__ */ n("span", { style: {
                       fontSize: "11px",
                       padding: "2px 8px",
                       borderRadius: "10px",
@@ -2779,14 +2779,14 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                       color: g.fail,
                       fontWeight: 600
                     }, children: [
-                      N.openIssues,
+                      F.openIssues,
                       "件"
                     ] })
                   ]
                 }
               ),
-              j && N.cases.map((f) => /* @__PURE__ */ e(
-                ln,
+              N && F.cases.map((f) => /* @__PURE__ */ e(
+                sn,
                 {
                   c: f,
                   tc: g,
@@ -2795,7 +2795,7 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
                 },
                 f.caseId
               ))
-            ] }, L);
+            ] }, A);
           })
         ] }, S.domain);
       }),
@@ -2808,7 +2808,7 @@ function on({ tree: t, colors: r, isDarkMode: i, onNavigateToNote: l }) {
     ] })
   ] });
 }
-function ln({ c: t, tc: r, colors: i, onNavigateToNote: l }) {
+function sn({ c: t, tc: r, colors: i, onNavigateToNote: l }) {
   const g = t.last === "fail" && t.openIssues === 0, z = t.last === "pass" ? "●" : g ? "◆" : t.last === "fail" ? "▲" : "○", b = t.last === "pass" ? r.passed : g ? r.retest : t.last === "fail" ? r.fail : r.untested;
   return /* @__PURE__ */ n("div", { style: {
     display: "flex",
@@ -2849,41 +2849,41 @@ function ln({ c: t, tc: r, colors: i, onNavigateToNote: l }) {
     )
   ] });
 }
-const sn = 3e4;
-function dn({ env: t, colors: r, isDarkMode: i, onNavigateToNote: l, refreshKey: g }) {
+const dn = 3e4;
+function cn({ env: t, colors: r, isDarkMode: i, onNavigateToNote: l, refreshKey: g }) {
   const [z, b] = v([]), [x, y] = v(!0), [T, d] = v(null), k = ge(0);
   ie(() => {
     let m = !1;
     const I = ++k.current, _ = async () => {
       try {
-        const E = await oe.getTestTree(t);
-        !m && k.current === I && (b(E), d(null));
-      } catch (E) {
-        !m && k.current === I && d(E instanceof Error ? E.message : "Failed to fetch test tree");
+        const W = await oe.getTestTree(t);
+        !m && k.current === I && (b(W), d(null));
+      } catch (W) {
+        !m && k.current === I && d(W instanceof Error ? W.message : "Failed to fetch test tree");
       } finally {
         !m && k.current === I && y(!1);
       }
     };
     y(!0), _();
-    const S = setInterval(_, sn);
+    const S = setInterval(_, dn);
     return () => {
       m = !0, clearInterval(S);
     };
   }, [t, g]);
-  const A = ve(() => z.map((m) => {
-    let I = 0, _ = 0, S = 0, E = !1;
+  const L = ve(() => z.map((m) => {
+    let I = 0, _ = 0, S = 0, W = !1;
     const h = m.capabilities.map((c) => {
-      const F = c.total - c.passed - c.failed;
-      I += c.total, _ += c.passed, S += c.failed, (c.failed > 0 || c.openIssues > 0) && (E = !0);
-      const N = c.passed === c.total && c.total > 0, L = c.cases.some((Z) => Z.last === "fail" && Z.openIssues > 0), j = c.cases.some((Z) => Z.last === "fail" && Z.openIssues === 0), G = N ? "passed" : L ? "fail" : j ? "retest" : "incomplete";
+      const O = c.total - c.passed - c.failed;
+      I += c.total, _ += c.passed, S += c.failed, (c.failed > 0 || c.openIssues > 0) && (W = !0);
+      const F = c.passed === c.total && c.total > 0, A = c.cases.some((Z) => Z.last === "fail" && Z.openIssues > 0), N = c.cases.some((Z) => Z.last === "fail" && Z.openIssues === 0), U = F ? "passed" : A ? "fail" : N ? "retest" : "incomplete";
       return {
         capability: c.capability,
         total: c.total,
         passed: c.passed,
         failed: c.failed,
-        untested: F < 0 ? 0 : F,
+        untested: O < 0 ? 0 : O,
         openIssues: c.openIssues,
-        status: G,
+        status: U,
         cases: c.cases
       };
     }), C = I - _ - S;
@@ -2893,7 +2893,7 @@ function dn({ env: t, colors: r, isDarkMode: i, onNavigateToNote: l, refreshKey:
       passed: _,
       failed: S,
       untested: C < 0 ? 0 : C,
-      hasIssues: E,
+      hasIssues: W,
       capabilities: h
     };
   }), [z]);
@@ -2921,15 +2921,15 @@ function dn({ env: t, colors: r, isDarkMode: i, onNavigateToNote: l, refreshKey:
     flex: 1
   }, children: /* @__PURE__ */ n("div", { style: { maxWidth: "1200px" }, children: [
     /* @__PURE__ */ e(
-      en,
+      tn,
       {
-        domains: A,
+        domains: L,
         colors: r,
         isDarkMode: i
       }
     ),
     /* @__PURE__ */ e(
-      on,
+      ln,
       {
         tree: z,
         colors: r,
@@ -2971,13 +2971,13 @@ const Be = {
   request: { label: "要望", icon: "lightbulb" },
   share: { label: "共有", icon: "share" },
   other: { label: "その他", icon: "more_horiz" }
-}, cn = {
+}, pn = {
   bug: "#EF4444",
   question: "#3B82F6",
   request: "#10B981",
   share: "#6B7280",
   other: "#8B5CF6"
-}, Ae = {
+}, Le = {
   app: "アプリ",
   manual: "マニュアル"
 }, Qe = [
@@ -2986,7 +2986,7 @@ const Be = {
   { value: "closed", label: "完了" }
 ];
 function Ye(t) {
-  const r = cn[t] ?? "#6B7280";
+  const r = pn[t] ?? "#6B7280";
   return {
     fontSize: "11px",
     padding: "4px 10px",
@@ -3024,7 +3024,7 @@ function Ke(t, r) {
     gap: "4px"
   };
 }
-function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: g }) {
+function un({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: g }) {
   var X, Q, ee;
   const {
     feedbacks: z,
@@ -3034,42 +3034,42 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
     loading: T,
     error: d,
     filters: k,
-    customTags: A,
+    customTags: L,
     setFilters: m,
     setPage: I,
     updateStatus: _,
     remove: S,
-    refresh: E
-  } = Bt({ apiBaseUrl: t, adminKey: r }), [h, C] = v(null), [c, F] = v(null), [N, L] = v(!1), [j, G] = v(null), [Z, re] = v(null), ne = ge(0), H = ge(g);
+    refresh: W
+  } = Bt({ apiBaseUrl: t, adminKey: r }), [h, C] = v(null), [c, O] = v(null), [F, A] = v(!1), [N, U] = v(null), [Z, re] = v(null), ne = ge(0), H = ge(g);
   ie(() => {
-    g !== H.current && (H.current = g, E());
-  }, [g, E]);
+    g !== H.current && (H.current = g, W());
+  }, [g, W]);
   const w = Math.max(1, Math.ceil(b / y)), u = q(async (p) => {
     if (h === p) return;
-    C(p), L(!0), F(null);
-    const O = ++ne.current;
+    C(p), A(!0), O(null);
+    const j = ++ne.current;
     try {
       const te = await Ft({ apiBaseUrl: t, adminKey: r, id: p });
-      if (ne.current !== O) return;
-      F(te);
+      if (ne.current !== j) return;
+      O(te);
     } catch {
-      if (ne.current !== O) return;
-      F(null);
+      if (ne.current !== j) return;
+      O(null);
     }
-    ne.current === O && L(!1);
-  }, [h, t, r]), f = q(async (p, O) => {
-    await _(p, O) && (c == null ? void 0 : c.id) === p && F((de) => de ? { ...de, status: O } : null);
+    ne.current === j && A(!1);
+  }, [h, t, r]), f = q(async (p, j) => {
+    await _(p, j) && (c == null ? void 0 : c.id) === p && O((de) => de ? { ...de, status: j } : null);
   }, [_, c == null ? void 0 : c.id]), D = q(async (p) => {
     if (!confirm("このフィードバックを削除しますか？")) return;
-    await S(p) && h === p && (C(null), F(null));
-  }, [S, h]), B = q(async (p, O) => {
+    await S(p) && h === p && (C(null), O(null));
+  }, [S, h]), B = q(async (p, j) => {
     if (confirm("この画像を削除しますか？"))
       try {
-        await It({ apiBaseUrl: t, adminKey: r, feedbackId: p, attachmentId: O }), F((te) => {
+        await It({ apiBaseUrl: t, adminKey: r, feedbackId: p, attachmentId: j }), O((te) => {
           var de;
           return !te || te.id !== p ? te : {
             ...te,
-            attachments: (de = te.attachments) == null ? void 0 : de.filter((xe) => xe.id !== O)
+            attachments: (de = te.attachments) == null ? void 0 : de.filter((xe) => xe.id !== j)
           };
         });
       } catch (te) {
@@ -3077,8 +3077,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
       }
   }, [t, r]), R = q((p) => {
     try {
-      const O = new URL(t);
-      return `${O.origin}${O.pathname.replace(/\/$/, "")}/attachments/${p}`;
+      const j = new URL(t);
+      return `${j.origin}${j.pathname.replace(/\/$/, "")}/attachments/${p}`;
     } catch {
       return `${t}/attachments/${p}`;
     }
@@ -3086,8 +3086,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
     re(p);
     try {
       await Rt({ apiBaseUrl: t, adminKey: r, format: p });
-    } catch (O) {
-      console.error("Export failed:", O);
+    } catch (j) {
+      console.error("Export failed:", j);
     } finally {
       re(null);
     }
@@ -3182,7 +3182,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             ]
           }
         ),
-        A.length > 0 && /* @__PURE__ */ n(
+        L.length > 0 && /* @__PURE__ */ n(
           "select",
           {
             value: k.customTag,
@@ -3200,7 +3200,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             },
             children: [
               /* @__PURE__ */ e("option", { value: "", children: "全タグ" }),
-              A.map((p) => /* @__PURE__ */ e("option", { value: p, children: p }, p))
+              L.map((p) => /* @__PURE__ */ e("option", { value: p, children: p }, p))
             ]
           }
         )
@@ -3219,11 +3219,11 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           fontSize: "13px"
         }, children: d.message }),
         !T && z.length === 0 && /* @__PURE__ */ n("div", { style: { padding: "40px", textAlign: "center", color: i.textMuted }, children: [
-          /* @__PURE__ */ e(W, { name: "inbox", size: 40 }),
+          /* @__PURE__ */ e(E, { name: "inbox", size: 40 }),
           /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "フィードバックがありません" })
         ] }),
         z.map((p) => {
-          const O = Be[p.kind] ?? { label: p.kind, icon: "help" }, te = h === p.id;
+          const j = Be[p.kind] ?? { label: p.kind, icon: "help" }, te = h === p.id;
           return /* @__PURE__ */ n(
             "div",
             {
@@ -3245,8 +3245,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                     p.id
                   ] }),
                   /* @__PURE__ */ n("span", { style: Ye(p.kind), children: [
-                    /* @__PURE__ */ e(W, { name: O.icon, size: 12 }),
-                    O.label
+                    /* @__PURE__ */ e(E, { name: j.icon, size: 12 }),
+                    j.label
                   ] }),
                   /* @__PURE__ */ e("span", { style: Ke(p.status, i), children: p.status === "open" ? "Open" : p.status === "in_progress" ? "対応中" : "完了" }),
                   p.target && /* @__PURE__ */ e("span", { style: {
@@ -3256,7 +3256,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                     background: i.bgTertiary,
                     color: i.textSecondary,
                     fontWeight: 500
-                  }, children: Ae[p.target] ?? p.target }),
+                  }, children: Le[p.target] ?? p.target }),
                   p.customTag && /* @__PURE__ */ e("span", { style: {
                     fontSize: "11px",
                     padding: "4px 8px",
@@ -3284,7 +3284,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                   fontSize: "12px",
                   color: i.textMuted
                 }, children: [
-                  /* @__PURE__ */ e("span", { children: un(p.createdAt) }),
+                  /* @__PURE__ */ e("span", { children: gn(p.createdAt) }),
                   p.pageUrl && /* @__PURE__ */ n(ye, { children: [
                     /* @__PURE__ */ e("span", { style: { margin: "0 2px" }, children: "·" }),
                     /* @__PURE__ */ n("span", { style: {
@@ -3301,7 +3301,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                       whiteSpace: "nowrap",
                       maxWidth: "180px"
                     }, children: [
-                      /* @__PURE__ */ e(W, { name: "link", size: 12 }),
+                      /* @__PURE__ */ e(E, { name: "link", size: 12 }),
                       p.pageUrl
                     ] })
                   ] }),
@@ -3314,7 +3314,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                       fontSize: "11px",
                       color: i.textMuted
                     }, children: [
-                      /* @__PURE__ */ e(W, { name: "image", size: 12 }),
+                      /* @__PURE__ */ e(E, { name: "image", size: 12 }),
                       p.attachmentCount
                     ] })
                   ] })
@@ -3348,7 +3348,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
               fontSize: "13px",
               boxShadow: `0 1px 3px ${i.border}`
             },
-            children: /* @__PURE__ */ e(W, { name: "chevron_left", size: 16 })
+            children: /* @__PURE__ */ e(E, { name: "chevron_left", size: 16 })
           }
         ),
         /* @__PURE__ */ n("span", { style: { fontSize: "13px", color: i.textSecondary }, children: [
@@ -3371,7 +3371,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
               fontSize: "13px",
               boxShadow: `0 1px 3px ${i.border}`
             },
-            children: /* @__PURE__ */ e(W, { name: "chevron_right", size: 16 })
+            children: /* @__PURE__ */ e(E, { name: "chevron_right", size: 16 })
           }
         )
       ] }),
@@ -3385,22 +3385,22 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
         color: i.textMuted
       }, children: [
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(W, { name: "description", size: 16 }),
+          /* @__PURE__ */ e(E, { name: "description", size: 16 }),
           b,
           " 件"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(W, { name: "error", size: 16, color: i.warning }),
+          /* @__PURE__ */ e(E, { name: "error", size: 16, color: i.warning }),
           a.open,
           " Open"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(W, { name: "pending", size: 16, color: i.primary }),
+          /* @__PURE__ */ e(E, { name: "pending", size: 16, color: i.primary }),
           a.inProgress,
           " 対応中"
         ] }),
         /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-          /* @__PURE__ */ e(W, { name: "check_circle", size: 16, color: i.success }),
+          /* @__PURE__ */ e(E, { name: "check_circle", size: 16, color: i.success }),
           a.closed,
           " 完了"
         ] })
@@ -3412,16 +3412,16 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
       padding: "32px",
       background: i.bg
     }, children: [
-      h && N && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: i.textMuted }, children: [
+      h && F && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: i.textMuted }, children: [
         /* @__PURE__ */ e(se, { size: 32, color: i.primary }),
         /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "読み込み中..." })
       ] }),
-      h && !N && c && /* @__PURE__ */ n("div", { style: { maxWidth: "800px" }, children: [
+      h && !F && c && /* @__PURE__ */ n("div", { style: { maxWidth: "800px" }, children: [
         /* @__PURE__ */ n("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }, children: [
           /* @__PURE__ */ n("div", { style: { flex: 1 }, children: [
             /* @__PURE__ */ n("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", flexWrap: "wrap" }, children: [
               /* @__PURE__ */ n("span", { style: Ye(c.kind), children: [
-                /* @__PURE__ */ e(W, { name: ((X = Be[c.kind]) == null ? void 0 : X.icon) ?? "help", size: 14 }),
+                /* @__PURE__ */ e(E, { name: ((X = Be[c.kind]) == null ? void 0 : X.icon) ?? "help", size: 14 }),
                 ((Q = Be[c.kind]) == null ? void 0 : Q.label) ?? c.kind
               ] }),
               /* @__PURE__ */ e("span", { style: Ke(c.status, i), children: c.status === "open" ? "Open" : c.status === "in_progress" ? "対応中" : "完了" }),
@@ -3432,7 +3432,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                 background: i.bgTertiary,
                 color: i.textSecondary,
                 fontWeight: 500
-              }, children: Ae[c.target] ?? c.target }),
+              }, children: Le[c.target] ?? c.target }),
               c.customTag && /* @__PURE__ */ e("span", { style: {
                 fontSize: "11px",
                 padding: "4px 10px",
@@ -3492,7 +3492,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                   gap: "6px"
                 },
                 children: [
-                  /* @__PURE__ */ e(W, { name: "delete", size: 16 }),
+                  /* @__PURE__ */ e(E, { name: "delete", size: 16 }),
                   "削除"
                 ]
               }
@@ -3506,8 +3506,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           marginBottom: "32px"
         }, children: [
           /* @__PURE__ */ e(fe, { icon: "category", label: "種別", value: ((ee = Be[c.kind]) == null ? void 0 : ee.label) ?? c.kind, colors: i }),
-          /* @__PURE__ */ e(fe, { icon: "ads_click", label: "対象", value: c.target ? Ae[c.target] ?? c.target : "-", colors: i }),
-          /* @__PURE__ */ e(fe, { icon: "schedule", label: "日時", value: gn(c.createdAt), colors: i }),
+          /* @__PURE__ */ e(fe, { icon: "ads_click", label: "対象", value: c.target ? Le[c.target] ?? c.target : "-", colors: i }),
+          /* @__PURE__ */ e(fe, { icon: "schedule", label: "日時", value: xn(c.createdAt), colors: i }),
           c.pageUrl && /* @__PURE__ */ e(fe, { icon: "link", label: "URL", value: c.pageUrl, isLink: !0, colors: i }),
           c.userType && /* @__PURE__ */ e(fe, { icon: "person", label: "ユーザー", value: c.userType, colors: i }),
           c.appVersion && /* @__PURE__ */ e(fe, { icon: "inventory_2", label: "バージョン", value: c.appVersion, colors: i })
@@ -3521,8 +3521,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "12px"
-        }, children: Object.entries(c.environment).map(([p, O]) => /* @__PURE__ */ e(fe, { icon: "info", label: p, value: String(O), colors: i }, p)) }) }),
-        c.consoleLogs && c.consoleLogs.length > 0 && /* @__PURE__ */ e(ze, { icon: "terminal", title: `コンソールログ (${c.consoleLogs.length}件)`, colors: i, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: P }, children: c.consoleLogs.map((p, O) => /* @__PURE__ */ n("div", { style: {
+        }, children: Object.entries(c.environment).map(([p, j]) => /* @__PURE__ */ e(fe, { icon: "info", label: p, value: String(j), colors: i }, p)) }) }),
+        c.consoleLogs && c.consoleLogs.length > 0 && /* @__PURE__ */ e(ze, { icon: "terminal", title: `コンソールログ (${c.consoleLogs.length}件)`, colors: i, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: P }, children: c.consoleLogs.map((p, j) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
           borderBottom: `1px solid ${J}`,
           fontSize: "12px",
@@ -3543,8 +3543,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             marginTop: "1px"
           }, children: p.level }),
           /* @__PURE__ */ e("span", { style: { color: "#E2E8F0", lineHeight: 1.5, wordBreak: "break-all" }, children: p.message })
-        ] }, O)) }) }),
-        c.networkLogs && c.networkLogs.length > 0 && /* @__PURE__ */ e(ze, { icon: "wifi", title: `ネットワークログ (${c.networkLogs.length}件)`, colors: i, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: P }, children: c.networkLogs.map((p, O) => /* @__PURE__ */ n("div", { style: {
+        ] }, j)) }) }),
+        c.networkLogs && c.networkLogs.length > 0 && /* @__PURE__ */ e(ze, { icon: "wifi", title: `ネットワークログ (${c.networkLogs.length}件)`, colors: i, children: /* @__PURE__ */ e("div", { style: { borderRadius: "12px", overflow: "hidden", background: P }, children: c.networkLogs.map((p, j) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
           borderBottom: `1px solid ${J}`,
           fontSize: "12px",
@@ -3557,7 +3557,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           /* @__PURE__ */ e("span", { style: { color: p.status >= 400 ? "#F87171" : "#34D399", fontWeight: 600, flexShrink: 0 }, children: p.status }),
           /* @__PURE__ */ e("span", { style: { color: "#E2E8F0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: p.url }),
           /* @__PURE__ */ e("span", { style: { color: "#64748B", flexShrink: 0 }, children: p.duration != null ? `${p.duration}ms` : "-" })
-        ] }, O)) }) }),
+        ] }, j)) }) }),
         c.attachments && c.attachments.length > 0 && /* @__PURE__ */ e(ze, { icon: "image", title: `添付画像 (${c.attachments.length}件)`, colors: i, children: /* @__PURE__ */ e("div", { style: {
           display: "flex",
           gap: "12px",
@@ -3582,7 +3582,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                 cursor: "pointer",
                 display: "block"
               },
-              onClick: () => G(R(p.filename))
+              onClick: () => U(R(p.filename))
             }
           ),
           /* @__PURE__ */ e(
@@ -3606,7 +3606,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                 padding: 0
               },
               title: "画像を削除",
-              children: /* @__PURE__ */ e(W, { name: "close", size: 14 })
+              children: /* @__PURE__ */ e(E, { name: "close", size: 14 })
             }
           ),
           /* @__PURE__ */ e("div", { style: {
@@ -3618,10 +3618,10 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             whiteSpace: "nowrap"
           }, children: p.original_name })
         ] }, p.id)) }) }),
-        j && /* @__PURE__ */ e(
+        N && /* @__PURE__ */ e(
           "div",
           {
-            onClick: () => G(null),
+            onClick: () => U(null),
             style: {
               position: "fixed",
               top: 0,
@@ -3638,7 +3638,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             children: /* @__PURE__ */ e(
               "img",
               {
-                src: j,
+                src: N,
                 alt: "拡大画像",
                 style: {
                   maxWidth: "90vw",
@@ -3651,8 +3651,8 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           }
         )
       ] }),
-      h && !N && !c && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: i.textMuted }, children: [
-        /* @__PURE__ */ e(W, { name: "error_outline", size: 48 }),
+      h && !F && !c && /* @__PURE__ */ n("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: i.textMuted }, children: [
+        /* @__PURE__ */ e(E, { name: "error_outline", size: 48 }),
         /* @__PURE__ */ e("div", { style: { marginTop: "12px", fontSize: "16px" }, children: "詳細の取得に失敗しました" })
       ] }),
       !h && /* @__PURE__ */ n("div", { style: {
@@ -3682,7 +3682,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
             justifyContent: "center",
             gap: "8px"
           }, children: [
-            /* @__PURE__ */ e(W, { name: "analytics", size: 18 }),
+            /* @__PURE__ */ e(E, { name: "analytics", size: 18 }),
             "フィードバック概要"
           ] }),
           /* @__PURE__ */ n("div", { style: {
@@ -3736,7 +3736,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
                 transition: "all 0.2s"
               },
               children: [
-                Z === p ? /* @__PURE__ */ e(se, { size: 14, color: i.text }) : /* @__PURE__ */ e(W, { name: "download", size: 16 }),
+                Z === p ? /* @__PURE__ */ e(se, { size: 14, color: i.text }) : /* @__PURE__ */ e(E, { name: "download", size: 16 }),
                 p.toUpperCase()
               ]
             },
@@ -3744,7 +3744,7 @@ function pn({ apiBaseUrl: t, adminKey: r, colors: i, isDarkMode: l, refreshKey: 
           )) })
         ] }),
         /* @__PURE__ */ n("div", { style: { textAlign: "center" }, children: [
-          /* @__PURE__ */ e(W, { name: "arrow_back", size: 48 }),
+          /* @__PURE__ */ e(E, { name: "arrow_back", size: 48 }),
           /* @__PURE__ */ e("div", { style: { fontSize: "16px", fontWeight: 500, marginTop: "12px" }, children: "フィードバックを選択してください" }),
           /* @__PURE__ */ e("div", { style: { fontSize: "13px", marginTop: "6px" }, children: "左のリストから選択すると詳細が表示されます" })
         ] })
@@ -3766,7 +3766,7 @@ function fe({ icon: t, label: r, value: i, isLink: l, colors: g }) {
       alignItems: "center",
       gap: "6px"
     }, children: [
-      /* @__PURE__ */ e(W, { name: t, size: 16 }),
+      /* @__PURE__ */ e(E, { name: t, size: 16 }),
       r
     ] }),
     /* @__PURE__ */ e("div", { style: {
@@ -3789,16 +3789,16 @@ function ze({ icon: t, title: r, children: i, colors: l }) {
       alignItems: "center",
       gap: "8px"
     }, children: [
-      /* @__PURE__ */ e(W, { name: t, size: 18 }),
+      /* @__PURE__ */ e(E, { name: t, size: 18 }),
       r
     ] }),
     i
   ] });
 }
-function un(t) {
+function gn(t) {
   return mt(t);
 }
-function gn(t) {
+function xn(t) {
   return bt(t);
 }
 const yt = {
@@ -3825,7 +3825,7 @@ const yt = {
   medium: "#F59E0B",
   low: "#3B82F6",
   link: "#6366F1"
-}, xn = {
+}, hn = {
   primary: "#818CF8",
   primaryLight: "#1E1B4B",
   primaryDark: "#A5B4FC",
@@ -3849,17 +3849,17 @@ const yt = {
   medium: "#FBBF24",
   low: "#60A5FA",
   link: "#818CF8"
-}, hn = {
+}, fn = {
   fix: "直したこと",
   improve: "使いやすくしたこと",
   feature: "新しくできること"
 };
-function fn(t) {
+function bn(t) {
   const r = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
   return r ? `${Number(r[1])}年${Number(r[2])}月${Number(r[3])}日` : t;
 }
-function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g = 0 }) {
-  const z = { apiBaseUrl: t, env: r, adminKey: i }, [b, x] = v([]), [y, T] = v(null), [d, k] = v(!0), [A, m] = v(null), [I, _] = v(null), [S, E] = v(/* @__PURE__ */ new Set()), [h, C] = v(null), [c, F] = v(null), [N, L] = v(null), j = q(async () => {
+function mn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g = 0 }) {
+  const z = { apiBaseUrl: t, env: r, adminKey: i }, [b, x] = v([]), [y, T] = v(null), [d, k] = v(!0), [L, m] = v(null), [I, _] = v(null), [S, W] = v(/* @__PURE__ */ new Set()), [h, C] = v(null), [c, O] = v(null), [F, A] = v(null), N = q(async () => {
     k(!0), m(null);
     try {
       const [u, f] = await Promise.all([
@@ -3874,13 +3874,13 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
     }
   }, [t, r, i]);
   ie(() => {
-    j();
-  }, [j, g]);
-  const G = q(
+    N();
+  }, [N, g]);
+  const U = q(
     async (u, f) => {
       _(u.id), m(null);
       try {
-        await Se.update(z, u.id, f), await j();
+        await Se.update(z, u.id, f), await N();
       } catch (D) {
         m(D instanceof Error ? D.message : "更新に失敗しました");
       } finally {
@@ -3888,18 +3888,18 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, r, i, j]
+    [t, r, i, N]
   ), Z = q(async (u) => {
-    F(null), _(u.id), m(null);
+    O(null), _(u.id), m(null);
     try {
-      await Se.remove(z, u.id), await j();
+      await Se.remove(z, u.id), await N();
     } catch (f) {
       m(f instanceof Error ? f.message : "削除に失敗しました");
     } finally {
       _(null);
     }
-  }, [t, r, i, j]), re = q(async (u) => {
-    L(null), m(null);
+  }, [t, r, i, N]), re = q(async (u) => {
+    A(null), m(null);
     try {
       T(await Se.rotateToken(z, u));
     } catch (f) {
@@ -3911,7 +3911,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
     } catch {
       m("クリップボードにコピーできませんでした");
     }
-  }, []), H = (u) => E((f) => {
+  }, []), H = (u) => W((f) => {
     const D = new Set(f);
     return D.has(u) ? D.delete(u) : D.add(u), D;
   }), w = (u = "default") => ({
@@ -3924,14 +3924,14 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
     color: u === "primary" ? "#FFF" : u === "danger" ? l.error : l.text
   });
   return /* @__PURE__ */ n("div", { style: { flex: 1, overflow: "auto", padding: "20px 24px", background: l.bg, color: l.text }, children: [
-    A && /* @__PURE__ */ e("div", { style: {
+    L && /* @__PURE__ */ e("div", { style: {
       marginBottom: "16px",
       padding: "10px 14px",
       borderRadius: "8px",
       background: l.errorBg,
       color: l.error,
       fontSize: "13px"
-    }, children: A }),
+    }, children: L }),
     /* @__PURE__ */ n("section", { style: {
       marginBottom: "24px",
       padding: "14px 16px",
@@ -3951,7 +3951,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
             colors: l,
             copied: h === "public",
             onCopy: () => ne("public", y.public.pageUrl),
-            onRotate: () => L("public"),
+            onRotate: () => A("public"),
             btn: w
           }
         ),
@@ -3964,12 +3964,12 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
             colors: l,
             copied: h === "internal",
             onCopy: () => ne("internal", y.internal.feedUrl),
-            onRotate: () => L("internal"),
+            onRotate: () => A("internal"),
             btn: w
           }
         )
       ] }) : /* @__PURE__ */ e("p", { style: { margin: 0, fontSize: "12px", color: l.textMuted }, children: "読み込み中…" }),
-      N && /* @__PURE__ */ n("div", { style: {
+      F && /* @__PURE__ */ n("div", { style: {
         marginTop: "12px",
         padding: "10px 12px",
         borderRadius: "8px",
@@ -3979,8 +3979,8 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
       }, children: [
         "URL を再発行すると、これまでに配った URL は開けなくなります。実行しますか？",
         /* @__PURE__ */ n("div", { style: { display: "flex", gap: "8px", marginTop: "8px" }, children: [
-          /* @__PURE__ */ e("button", { type: "button", style: w("danger"), onClick: () => void re(N), children: "再発行する" }),
-          /* @__PURE__ */ e("button", { type: "button", style: w(), onClick: () => L(null), children: "やめる" })
+          /* @__PURE__ */ e("button", { type: "button", style: w("danger"), onClick: () => void re(F), children: "再発行する" }),
+          /* @__PURE__ */ e("button", { type: "button", style: w(), onClick: () => A(null), children: "やめる" })
         ] })
       ] })
     ] }),
@@ -4019,7 +4019,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
                   u.is_public && /* @__PURE__ */ e(Xe, { text: "社外公開", fg: l.warning, bg: l.warningBg })
                 ] }),
                 /* @__PURE__ */ n("p", { style: { margin: "4px 0 0", fontSize: "11px", color: l.textMuted }, children: [
-                  fn(u.released_on),
+                  bn(u.released_on),
                   " ・ 項目 ",
                   u.items.length,
                   " 件 ・ メディア ",
@@ -4034,7 +4034,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
                     type: "button",
                     style: w(u.status === "published" ? "default" : "primary"),
                     disabled: f,
-                    onClick: () => void G(u, { status: u.status === "published" ? "draft" : "published" }),
+                    onClick: () => void U(u, { status: u.status === "published" ? "draft" : "published" }),
                     children: u.status === "published" ? "下書きに戻す" : "公開する"
                   }
                 ),
@@ -4045,12 +4045,12 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
                     style: w(u.is_public ? "default" : "primary"),
                     disabled: f || u.status !== "published",
                     title: u.status !== "published" ? "先に公開してください" : void 0,
-                    onClick: () => void G(u, { is_public: !u.is_public }),
+                    onClick: () => void U(u, { is_public: !u.is_public }),
                     children: u.is_public ? "社外公開をやめる" : "社外公開にする"
                   }
                 ),
                 /* @__PURE__ */ e("button", { type: "button", style: w(), onClick: () => H(u.id), children: D ? "閉じる" : "内容" }),
-                /* @__PURE__ */ e("button", { type: "button", style: w("danger"), disabled: f, onClick: () => F(u), children: /* @__PURE__ */ e(W, { name: "delete", size: 14, color: l.error }) })
+                /* @__PURE__ */ e("button", { type: "button", style: w("danger"), disabled: f, onClick: () => O(u), children: /* @__PURE__ */ e(E, { name: "delete", size: 14, color: l.error }) })
               ] })
             ] }),
             (c == null ? void 0 : c.id) === u.id && /* @__PURE__ */ n("div", { style: {
@@ -4066,7 +4066,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
               "」を削除します。添付された画像・動画も一緒に消えます。",
               /* @__PURE__ */ n("div", { style: { display: "flex", gap: "8px", marginTop: "8px" }, children: [
                 /* @__PURE__ */ e("button", { type: "button", style: w("danger"), onClick: () => void Z(u), children: "削除する" }),
-                /* @__PURE__ */ e("button", { type: "button", style: w(), onClick: () => F(null), children: "やめる" })
+                /* @__PURE__ */ e("button", { type: "button", style: w(), onClick: () => O(null), children: "やめる" })
               ] })
             ] }),
             D && /* @__PURE__ */ n("div", { style: { padding: "12px 16px", borderTop: `1px solid ${l.borderLight}`, background: l.bg }, children: [
@@ -4074,7 +4074,7 @@ function bn({ apiBaseUrl: t, env: r, adminKey: i, colors: l = yt, refreshKey: g 
               u.items.length === 0 ? /* @__PURE__ */ e("p", { style: { margin: 0, fontSize: "12px", color: l.textMuted }, children: "項目がありません" }) : /* @__PURE__ */ e("ol", { style: { margin: 0, paddingLeft: "18px", fontSize: "12px" }, children: u.items.map((B) => /* @__PURE__ */ n("li", { style: { marginBottom: "8px" }, children: [
                 /* @__PURE__ */ n("span", { style: { color: l.textMuted }, children: [
                   "[",
-                  hn[B.category],
+                  fn[B.category],
                   "]"
                 ] }),
                 " ",
@@ -4140,15 +4140,15 @@ function et({
     ] })
   ] });
 }
-const mn = 3e4;
-function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdminKey: l }) {
-  const [g, z] = v(""), [b, x] = v(""), [y, T] = v(""), [d, k] = v(null), [A, m] = v(() => typeof window < "u" ? window.matchMedia("(prefers-color-scheme: dark)").matches : !1), [I, _] = v(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 768px)").matches);
+const yn = 3e4;
+function Nn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdminKey: l }) {
+  const [g, z] = v(""), [b, x] = v(""), [y, T] = v(""), [d, k] = v(null), [L, m] = v(() => typeof window < "u" ? window.matchMedia("(prefers-color-scheme: dark)").matches : !1), [I, _] = v(() => typeof window > "u" ? !1 : window.matchMedia("(max-width: 768px)").matches);
   ie(() => {
     if (typeof window > "u") return;
     const o = window.matchMedia("(max-width: 768px)"), $ = (V) => _(V.matches);
     return o.addEventListener("change", $), () => o.removeEventListener("change", $);
   }, []);
-  const [S, E] = v(!0), [h, C] = v(null), [c, F] = v("notes"), N = !!(i && l), [L, j] = v(null), [G, Z] = v(0), [re, ne] = v(null), [H, w] = v(null), [u, f] = v(""), [D, B] = v(""), [R, M] = v(!1), a = A ? xn : yt;
+  const [S, W] = v(!0), [h, C] = v(null), [c, O] = v("notes"), F = !!(i && l), [A, N] = v(null), [U, Z] = v(0), [re, ne] = v(null), [H, w] = v(null), [u, f] = v(""), [D, B] = v(""), [R, M] = v(!1), a = L ? hn : yt;
   ie(() => {
     t && je(t);
   }, [t]), ie(() => {
@@ -4156,7 +4156,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
     const o = window.matchMedia("(prefers-color-scheme: dark)"), $ = (V) => m(V.matches);
     return o.addEventListener("change", $), () => o.removeEventListener("change", $);
   }, []);
-  const { notes: P, loading: J, error: X, updateStatus: Q, updateSeverity: ee, deleteNote: p, refresh: O } = ct(r);
+  const { notes: P, loading: J, error: X, updateStatus: Q, updateSeverity: ee, deleteNote: p, refresh: j } = ct(r);
   ie(() => {
     !J && h === "refresh" && C(null);
   }, [J, h]), ie(() => {
@@ -4174,17 +4174,17 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
   }, [P]), ie(() => {
     if (!S) return;
     const o = setInterval(() => {
-      O();
-    }, mn);
+      j();
+    }, yn);
     return () => clearInterval(o);
-  }, [S, O]);
+  }, [S, j]);
   const te = q((o) => {
     const V = `${t || Ue()}/export/${o}?env=${r}`;
     window.open(V, "_blank");
   }, [t, r]), de = q((o) => {
-    j(o), z("open"), F("notes");
+    N(o), z("open"), O("notes");
   }, []), xe = ve(() => P.filter((o) => {
-    if (g && o.status !== g || b && (o.source || "manual") !== b || L != null && !(o.test_case_ids ?? (o.test_case_id ? [o.test_case_id] : [])).includes(L))
+    if (g && o.status !== g || b && (o.source || "manual") !== b || A != null && !(o.test_case_ids ?? (o.test_case_id ? [o.test_case_id] : [])).includes(A))
       return !1;
     if (y) {
       const $ = y.match(/^#([1-9]\d*)$/);
@@ -4196,7 +4196,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
       }
     }
     return !0;
-  }), [P, g, b, L, y]), Ce = q((o, $) => {
+  }), [P, g, b, A, y]), Ce = q((o, $) => {
     $ === "fixed" || $ === "resolved" || $ === "rejected" || $ === "closed" ? (w({ id: o, status: $ }), f("")) : (async () => {
       C(`status-${o}`);
       try {
@@ -4283,7 +4283,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
 `).filter(($) => $.trim());
     }
   };
-  return /* @__PURE__ */ n("div", { style: yn(a), children: [
+  return /* @__PURE__ */ n("div", { style: vn(a), children: [
     /* @__PURE__ */ e(
       "link",
       {
@@ -4292,7 +4292,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
       }
     ),
     /* @__PURE__ */ n("header", { style: {
-      ...vn(a),
+      ...wn(a),
       padding: I ? "12px 16px" : "16px 24px",
       flexWrap: "wrap",
       gap: "8px"
@@ -4308,7 +4308,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             alignItems: "center",
             justifyContent: "center",
             color: "#FFF"
-          }, children: /* @__PURE__ */ e(W, { name: "bug_report", size: 24, color: "#FFF" }) }),
+          }, children: /* @__PURE__ */ e(E, { name: "bug_report", size: 24, color: "#FFF" }) }),
           /* @__PURE__ */ n("div", { children: [
             /* @__PURE__ */ e("h1", { style: {
               fontSize: "18px",
@@ -4360,7 +4360,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             {
               type: "checkbox",
               checked: S,
-              onChange: (o) => E(o.target.checked),
+              onChange: (o) => W(o.target.checked),
               style: { display: "none" }
             }
           )
@@ -4385,7 +4385,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             },
             title: "JSON エクスポート",
             children: [
-              /* @__PURE__ */ e(W, { name: "download", size: 16 }),
+              /* @__PURE__ */ e(E, { name: "download", size: 16 }),
               "JSON"
             ]
           }
@@ -4410,7 +4410,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             },
             title: "SQLite エクスポート",
             children: [
-              /* @__PURE__ */ e(W, { name: "download", size: 16 }),
+              /* @__PURE__ */ e(E, { name: "download", size: 16 }),
               "SQLite"
             ]
           }
@@ -4418,7 +4418,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
         /* @__PURE__ */ e(
           "button",
           {
-            onClick: () => m(!A),
+            onClick: () => m(!L),
             style: {
               width: "40px",
               height: "40px",
@@ -4432,15 +4432,15 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               transition: "transform 0.2s",
               color: a.text
             },
-            title: A ? "ライトモード" : "ダークモード",
-            children: /* @__PURE__ */ e(W, { name: A ? "light_mode" : "dark_mode", size: 20 })
+            title: L ? "ライトモード" : "ダークモード",
+            children: /* @__PURE__ */ e(E, { name: L ? "light_mode" : "dark_mode", size: 20 })
           }
         ),
         /* @__PURE__ */ n(
           "button",
           {
             onClick: () => {
-              C("refresh"), O(), Z((o) => o + 1);
+              C("refresh"), j(), Z((o) => o + 1);
             },
             disabled: h !== null,
             style: {
@@ -4459,7 +4459,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               opacity: h !== null ? 0.6 : 1
             },
             children: [
-              h === "refresh" ? /* @__PURE__ */ e(se, { size: 18, color: "#FFF" }) : /* @__PURE__ */ e(W, { name: "refresh", size: 18, color: "#FFF" }),
+              h === "refresh" ? /* @__PURE__ */ e(se, { size: 18, color: "#FFF" }) : /* @__PURE__ */ e(E, { name: "refresh", size: 18, color: "#FFF" }),
               "更新"
             ]
           }
@@ -4475,13 +4475,13 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
     }, children: [
       { key: "notes", label: "ノート一覧" },
       { key: "test-status", label: "テスト状況" },
-      ...N ? [{ key: "feedback", label: "フィードバック" }] : [],
+      ...F ? [{ key: "feedback", label: "フィードバック" }] : [],
       { key: "release-notes", label: "リリースノート" }
     ].map(({ key: o, label: $ }) => /* @__PURE__ */ e(
       "button",
       {
         onClick: () => {
-          F(o), o === "test-status" && j(null);
+          O(o), o === "test-status" && N(null);
         },
         style: {
           padding: "12px 20px",
@@ -4499,31 +4499,31 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
       o
     )) }),
     c === "test-status" ? /* @__PURE__ */ e(
-      dn,
+      cn,
       {
         env: r,
         colors: a,
-        isDarkMode: A,
+        isDarkMode: L,
         onNavigateToNote: de,
-        refreshKey: G
+        refreshKey: U
       }
-    ) : c === "feedback" && N ? /* @__PURE__ */ e(
-      pn,
+    ) : c === "feedback" && F ? /* @__PURE__ */ e(
+      un,
       {
         apiBaseUrl: i,
         adminKey: l,
         colors: a,
-        isDarkMode: A,
-        refreshKey: G
+        isDarkMode: L,
+        refreshKey: U
       }
     ) : c === "release-notes" ? /* @__PURE__ */ e(
-      bn,
+      mn,
       {
         apiBaseUrl: t ?? Ue(),
         env: r,
         adminKey: l,
         colors: a,
-        refreshKey: G
+        refreshKey: U
       }
     ) : /* @__PURE__ */ n("div", { style: {
       display: "flex",
@@ -4628,10 +4628,10 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               top: "50%",
               transform: "translateY(-50%)",
               color: a.textMuted
-            }, children: /* @__PURE__ */ e(W, { name: "search", size: 18 }) })
+            }, children: /* @__PURE__ */ e(E, { name: "search", size: 18 }) })
           ] })
         ] }),
-        L != null && /* @__PURE__ */ e("div", { style: {
+        A != null && /* @__PURE__ */ e("div", { style: {
           padding: "8px 16px",
           borderBottom: `1px solid ${a.border}`,
           display: "flex",
@@ -4649,11 +4649,11 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
           gap: "6px"
         }, children: [
           "テストケース #",
-          L,
+          A,
           /* @__PURE__ */ e(
             "button",
             {
-              onClick: () => j(null),
+              onClick: () => N(null),
               style: {
                 border: "none",
                 background: "transparent",
@@ -4677,7 +4677,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             textAlign: "center",
             color: a.textMuted
           }, children: [
-            /* @__PURE__ */ e(W, { name: "hourglass_empty", size: 32 }),
+            /* @__PURE__ */ e(E, { name: "hourglass_empty", size: 32 }),
             /* @__PURE__ */ e("div", { style: { marginTop: "8px" }, children: "読み込み中..." })
           ] }),
           X && /* @__PURE__ */ e("div", { style: {
@@ -4693,7 +4693,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
             textAlign: "center",
             color: a.textMuted
           }, children: [
-            /* @__PURE__ */ e(W, { name: "inbox", size: 40 }),
+            /* @__PURE__ */ e(E, { name: "inbox", size: 40 }),
             /* @__PURE__ */ e("div", { style: { marginTop: "12px" }, children: "ノートがありません" })
           ] }),
           xe.map((o) => /* @__PURE__ */ n(
@@ -4726,11 +4726,11 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                     o.id
                   ] }),
                   /* @__PURE__ */ n("span", { style: ot(o.severity, a), children: [
-                    /* @__PURE__ */ e(W, { name: at(o.severity), size: 14 }),
+                    /* @__PURE__ */ e(E, { name: at(o.severity), size: 14 }),
                     /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: o.severity || "none" })
                   ] }),
                   /* @__PURE__ */ n("span", { style: _e(o.status, a), children: [
-                    /* @__PURE__ */ e(W, { name: rt(o.status), size: 14 }),
+                    /* @__PURE__ */ e(E, { name: rt(o.status), size: 14 }),
                     /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: $e(o.status) })
                   ] }),
                   o.source === "test" && /* @__PURE__ */ e("span", { style: {
@@ -4752,7 +4752,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                     alignItems: "center",
                     gap: "3px"
                   }, children: [
-                    /* @__PURE__ */ e(W, { name: "image", size: 12 }),
+                    /* @__PURE__ */ e(E, { name: "image", size: 12 }),
                     o.attachment_count
                   ] })
                 ] }),
@@ -4780,7 +4780,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                     fontFamily: "monospace",
                     fontSize: "11px"
                   }, children: [
-                    /* @__PURE__ */ e(W, { name: "link", size: 12 }),
+                    /* @__PURE__ */ e(E, { name: "link", size: 12 }),
                     o.route || "/"
                   ] }),
                   /* @__PURE__ */ e("span", { style: { margin: "0 2px" }, children: "·" }),
@@ -4798,7 +4798,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                   alignItems: "flex-start",
                   gap: "6px"
                 }, children: [
-                  /* @__PURE__ */ e(W, { name: "chat_bubble_outline", size: 14 }),
+                  /* @__PURE__ */ e(E, { name: "chat_bubble_outline", size: 14 }),
                   /* @__PURE__ */ e("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: o.latest_comment.length > 60 ? o.latest_comment.slice(0, 60) + "..." : o.latest_comment })
                 ] })
               ]
@@ -4816,32 +4816,32 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
           color: a.textMuted
         }, children: [
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "description", size: 16 }),
+            /* @__PURE__ */ e(E, { name: "description", size: 16 }),
             P.length,
             " 件"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "error", size: 16, color: a.error }),
+            /* @__PURE__ */ e(E, { name: "error", size: 16, color: a.error }),
             P.filter((o) => o.status === "open").length,
             " Open"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "build", size: 16, color: a.warning }),
+            /* @__PURE__ */ e(E, { name: "build", size: 16, color: a.warning }),
             P.filter((o) => o.status === "fixed").length,
             " Fixed"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "check_circle", size: 16, color: a.success }),
+            /* @__PURE__ */ e(E, { name: "check_circle", size: 16, color: a.success }),
             P.filter((o) => o.status === "resolved").length,
             " Resolved"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "cancel", size: 16, color: a.textMuted }),
+            /* @__PURE__ */ e(E, { name: "cancel", size: 16, color: a.textMuted }),
             P.filter((o) => o.status === "closed").length,
             " クローズ"
           ] }),
           /* @__PURE__ */ n("span", { style: { display: "flex", alignItems: "center", gap: "4px" }, children: [
-            /* @__PURE__ */ e(W, { name: "undo", size: 16, color: a.error }),
+            /* @__PURE__ */ e(E, { name: "undo", size: 16, color: a.error }),
             P.filter((o) => o.status === "rejected").length,
             " Rejected"
           ] })
@@ -4873,7 +4873,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               cursor: "pointer"
             },
             children: [
-              /* @__PURE__ */ e(W, { name: "arrow_back", size: 16, color: a.textSecondary }),
+              /* @__PURE__ */ e(E, { name: "arrow_back", size: 16, color: a.textSecondary }),
               "一覧へ戻る"
             ]
           }
@@ -4894,11 +4894,11 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               marginBottom: "12px"
             }, children: [
               /* @__PURE__ */ n("span", { style: ot(d.severity, a), children: [
-                /* @__PURE__ */ e(W, { name: at(d.severity), size: 14 }),
+                /* @__PURE__ */ e(E, { name: at(d.severity), size: 14 }),
                 /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: d.severity || "none" })
               ] }),
               /* @__PURE__ */ n("span", { style: _e(d.status, a), children: [
-                /* @__PURE__ */ e(W, { name: rt(d.status), size: 14 }),
+                /* @__PURE__ */ e(E, { name: rt(d.status), size: 14 }),
                 /* @__PURE__ */ e("span", { style: { marginLeft: "4px" }, children: $e(d.status) })
               ] }),
               d.source === "test" && /* @__PURE__ */ e("span", { style: {
@@ -4999,7 +4999,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                   opacity: h !== null ? 0.6 : 1
                 },
                 children: [
-                  h === `delete-${d.id}` ? /* @__PURE__ */ e(se, { size: 16, color: a.error }) : /* @__PURE__ */ e(W, { name: "delete", size: 16 }),
+                  h === `delete-${d.id}` ? /* @__PURE__ */ e(se, { size: 16, color: a.error }) : /* @__PURE__ */ e(E, { name: "delete", size: 16 }),
                   "削除"
                 ]
               }
@@ -5054,7 +5054,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               fontWeight: 600,
               color: a.textSecondary
             }, children: [
-              /* @__PURE__ */ e(W, { name: "science", size: 16, color: a.link }),
+              /* @__PURE__ */ e(E, { name: "science", size: 16, color: a.link }),
               "元のテストケース"
             ] }),
             d.test_cases.map((o, $) => {
@@ -5062,7 +5062,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
               return /* @__PURE__ */ n(
                 "div",
                 {
-                  onClick: () => j(o.id),
+                  onClick: () => N(o.id),
                   title: "クリックでこのテストケースのノートを絞り込み",
                   style: {
                     display: "flex",
@@ -5167,7 +5167,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                   fontSize: "11px",
                   flexShrink: 0
                 },
-                children: /* @__PURE__ */ e(W, { name: "delete", size: 14, color: "#fff" })
+                children: /* @__PURE__ */ e(E, { name: "delete", size: 14, color: "#fff" })
               }
             )
           ] })
@@ -5182,7 +5182,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
         }, children: o }, $)) }) }),
         d.user_log && /* @__PURE__ */ e(ue, { icon: "sticky_note_2", title: "補足メモ", colors: a, children: /* @__PURE__ */ e("pre", { style: {
           padding: "16px",
-          background: A ? "#0D1117" : "#1E293B",
+          background: L ? "#0D1117" : "#1E293B",
           color: "#E2E8F0",
           borderRadius: "12px",
           overflow: "auto",
@@ -5204,10 +5204,10 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
         d.console_log && d.console_log.length > 0 && /* @__PURE__ */ e(ue, { icon: "terminal", title: `コンソールログ (${d.console_log.length}件)`, colors: a, children: /* @__PURE__ */ e("div", { style: {
           borderRadius: "12px",
           overflow: "hidden",
-          background: A ? "#0D1117" : "#1E293B"
+          background: L ? "#0D1117" : "#1E293B"
         }, children: d.console_log.map((o, $) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
-          borderBottom: `1px solid ${A ? "#21262D" : "#2D3748"}`,
+          borderBottom: `1px solid ${L ? "#21262D" : "#2D3748"}`,
           fontSize: "12px",
           fontFamily: '"Fira Code", "SF Mono", Consolas, monospace',
           display: "flex",
@@ -5325,7 +5325,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                   flexShrink: 0
                 },
                 children: [
-                  R ? /* @__PURE__ */ e(se, { size: 14, color: a.textMuted }) : /* @__PURE__ */ e(W, { name: "send", size: 16 }),
+                  R ? /* @__PURE__ */ e(se, { size: 14, color: a.textMuted }) : /* @__PURE__ */ e(E, { name: "send", size: 16 }),
                   "送信"
                 ]
               }
@@ -5335,10 +5335,10 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
         d.network_log && d.network_log.length > 0 && /* @__PURE__ */ e(ue, { icon: "wifi", title: `ネットワークログ (${d.network_log.length}件)`, colors: a, children: /* @__PURE__ */ e("div", { style: {
           borderRadius: "12px",
           overflow: "hidden",
-          background: A ? "#0D1117" : "#1E293B"
+          background: L ? "#0D1117" : "#1E293B"
         }, children: d.network_log.map((o, $) => /* @__PURE__ */ n("div", { style: {
           padding: "8px 16px",
-          borderBottom: `1px solid ${A ? "#21262D" : "#2D3748"}`,
+          borderBottom: `1px solid ${L ? "#21262D" : "#2D3748"}`,
           fontSize: "12px",
           fontFamily: '"Fira Code", "SF Mono", Consolas, monospace',
           display: "flex",
@@ -5376,7 +5376,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
         height: "100%",
         color: a.textMuted
       }, children: [
-        /* @__PURE__ */ e(W, { name: "arrow_back", size: 64 }),
+        /* @__PURE__ */ e(E, { name: "arrow_back", size: 64 }),
         /* @__PURE__ */ e("div", { style: { fontSize: "18px", fontWeight: 500, marginTop: "16px" }, children: "ノートを選択してください" }),
         /* @__PURE__ */ e("div", { style: { fontSize: "14px", marginTop: "8px" }, children: "左のリストからノートを選択すると詳細が表示されます" })
       ] }) })
@@ -5416,7 +5416,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                 alignItems: "center",
                 gap: "8px"
               }, children: [
-                /* @__PURE__ */ e(W, { name: "edit_note", size: 20 }),
+                /* @__PURE__ */ e(E, { name: "edit_note", size: 20 }),
                 "ステータスを「",
                 $e(H.status),
                 "」に変更"
@@ -5489,7 +5489,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                       gap: "6px"
                     },
                     children: [
-                      h ? /* @__PURE__ */ e(se, { size: 14, color: "#FFF" }) : /* @__PURE__ */ e(W, { name: "check", size: 16 }),
+                      h ? /* @__PURE__ */ e(se, { size: 14, color: "#FFF" }) : /* @__PURE__ */ e(E, { name: "check", size: 16 }),
                       "変更"
                     ]
                   }
@@ -5549,7 +5549,7 @@ function Wn({ apiBaseUrl: t, env: r = "dev", feedbackApiBaseUrl: i, feedbackAdmi
                 alignItems: "center",
                 justifyContent: "center"
               },
-              children: /* @__PURE__ */ e(W, { name: "close", size: 24, color: "#fff" })
+              children: /* @__PURE__ */ e(E, { name: "close", size: 24, color: "#fff" })
             }
           )
         ]
@@ -5577,7 +5577,7 @@ function be({ icon: t, label: r, value: i, isLink: l, colors: g }) {
       alignItems: "center",
       gap: "6px"
     }, children: [
-      /* @__PURE__ */ e(W, { name: t, size: 16 }),
+      /* @__PURE__ */ e(E, { name: t, size: 16 }),
       r
     ] }),
     /* @__PURE__ */ e("div", { style: {
@@ -5600,7 +5600,7 @@ function ue({ icon: t, title: r, children: i, colors: l }) {
       alignItems: "center",
       gap: "8px"
     }, children: [
-      /* @__PURE__ */ e(W, { name: t, size: 18 }),
+      /* @__PURE__ */ e(E, { name: t, size: 18 }),
       r
     ] }),
     i
@@ -5700,7 +5700,7 @@ function _e(t, r) {
     alignItems: "center"
   };
 }
-function yn(t) {
+function vn(t) {
   return {
     display: "flex",
     flexDirection: "column",
@@ -5711,7 +5711,7 @@ function yn(t) {
     background: t.bg
   };
 }
-function vn(t) {
+function wn(t) {
   return {
     display: "flex",
     justifyContent: "space-between",
@@ -5721,7 +5721,7 @@ function vn(t) {
     background: t.bg
   };
 }
-function Nn({
+function Mn({
   apiBaseUrl: t,
   env: r = "dev",
   testCases: i,
@@ -5734,32 +5734,32 @@ function Nn({
   initialSize: T,
   logCaptureConfig: d,
   disableLogCapture: k,
-  adminRoutePath: A = "/__admin",
+  adminRoutePath: L = "/__admin",
   triggerOffset: m
 }) {
   const { isDebugMode: I } = $t();
   ie(() => {
     t && je(t);
   }, [t]);
-  const _ = ve(() => k || !t ? null : Nt(
+  const _ = ve(() => k || !t ? null : Mt(
     d ?? { console: !0, network: ["/api/**"] }
-  ), [t, k]), [S, E] = v(() => typeof window > "u" ? !1 : window.location.pathname === A);
+  ), [t, k]), [S, W] = v(() => typeof window > "u" ? !1 : window.location.pathname === L);
   return ie(() => {
     if (typeof window > "u") return;
-    const C = () => E(window.location.pathname === A);
+    const C = () => W(window.location.pathname === L);
     C(), window.addEventListener("popstate", C), window.addEventListener("hashchange", C);
-    const c = window.history.pushState, F = window.history.replaceState;
-    return window.history.pushState = function(...N) {
-      const L = c.apply(this, N);
-      return C(), L;
-    }, window.history.replaceState = function(...N) {
-      const L = F.apply(this, N);
-      return C(), L;
+    const c = window.history.pushState, O = window.history.replaceState;
+    return window.history.pushState = function(...F) {
+      const A = c.apply(this, F);
+      return C(), A;
+    }, window.history.replaceState = function(...F) {
+      const A = O.apply(this, F);
+      return C(), A;
     }, () => {
-      window.removeEventListener("popstate", C), window.removeEventListener("hashchange", C), window.history.pushState = c, window.history.replaceState = F;
+      window.removeEventListener("popstate", C), window.removeEventListener("hashchange", C), window.history.pushState = c, window.history.replaceState = O;
     };
-  }, [A]), !t || !(I || S) ? null : /* @__PURE__ */ e(
-    Yt,
+  }, [L]), !t || !(I || S) ? null : /* @__PURE__ */ e(
+    Kt,
     {
       apiBaseUrl: t,
       env: r,
@@ -5776,7 +5776,7 @@ function Nn({
     }
   );
 }
-const Le = {
+const Ae = {
   fix: { label: "直したこと", fg: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
   improve: { label: "使いやすくしたこと", fg: "#065F46", bg: "#ECFDF5", border: "#A7F3D0" },
   feature: { label: "新しくできること", fg: "#1E40AF", bg: "#EFF6FF", border: "#BFDBFE" }
@@ -5785,10 +5785,10 @@ function lt(t) {
   const r = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
   return r ? `${Number(r[1])}年${Number(r[2])}月${Number(r[3])}日` : t;
 }
-function wn(t) {
+function kn(t) {
   return t.mime_type.startsWith("video/");
 }
-function Mn({
+function Ln({
   feedUrl: t,
   title: r = "更新情報",
   description: i = "アプリの更新内容を新しい順に掲載しています",
@@ -5799,30 +5799,24 @@ function Mn({
   className: x,
   style: y
 }) {
-  const { notes: T, loading: d, error: k, markAllRead: A } = Ct({ feedUrl: t, storageKey: z }), [m, I] = v(() => /* @__PURE__ */ new Set()), [_, S] = v("all"), [E, h] = v(null);
+  const { notes: T, loading: d, error: k, markAllRead: L } = Ct({ feedUrl: t, storageKey: z }), [m, I] = v(() => /* @__PURE__ */ new Set()), [_, S] = v("all"), [W, h] = v(null);
   ie(() => {
-    T.length !== 0 && (I(new Set(T.slice(0, Math.max(0, l)).map((F) => F.id))), A(), b == null || b(T));
+    T.length !== 0 && (I(new Set(T.slice(0, Math.max(0, l)).map((F) => F.id))), L(), b == null || b(T));
   }, [T]);
   const C = q((F) => {
-    I((N) => {
-      const L = new Set(N);
-      return L.has(F) ? L.delete(F) : L.add(F), L;
+    I((A) => {
+      const N = new Set(A);
+      return N.has(F) ? N.delete(F) : N.add(F), N;
     });
-  }, []), c = ve(() => _ === "all" ? T : T.map((F) => ({ ...F, items: F.items.filter((N) => N.category === _) })).filter((F) => F.items.length > 0), [T, _]);
-  return ie(() => {
-    if (!E) return;
-    const F = (N) => {
-      N.key === "Escape" && h(null);
-    };
-    return window.addEventListener("keydown", F), () => window.removeEventListener("keydown", F);
-  }, [E]), /* @__PURE__ */ n("div", { className: x, style: { maxWidth: "820px", margin: "0 auto", fontSize: "14px", color: "#111827", ...y }, children: [
+  }, []), c = ve(() => _ === "all" ? T : T.map((F) => ({ ...F, items: F.items.filter((A) => A.category === _) })).filter((F) => F.items.length > 0), [T, _]), O = q(() => h(null), []);
+  return /* @__PURE__ */ n("div", { className: x, style: { maxWidth: "820px", margin: "0 auto", fontSize: "14px", color: "#111827", ...y }, children: [
     /* @__PURE__ */ n("header", { style: { marginBottom: "20px" }, children: [
       /* @__PURE__ */ e("h1", { style: { margin: 0, fontSize: "20px", fontWeight: 700, color: K.primary }, children: r }),
       i && /* @__PURE__ */ e("p", { style: { margin: "4px 0 0", fontSize: "13px", color: K.gray500 }, children: i })
     ] }),
     g && T.length > 0 && /* @__PURE__ */ n("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }, children: [
       /* @__PURE__ */ e(st, { active: _ === "all", onClick: () => S("all"), children: "すべて" }),
-      De.map((F) => /* @__PURE__ */ e(st, { active: _ === F, onClick: () => S(F), children: Le[F].label }, F))
+      De.map((F) => /* @__PURE__ */ e(st, { active: _ === F, onClick: () => S(F), children: Ae[F].label }, F))
     ] }),
     d && T.length === 0 && /* @__PURE__ */ e("p", { style: { padding: "24px", color: K.gray500, fontSize: "13px" }, children: "読み込み中…" }),
     k && /* @__PURE__ */ e("p", { style: {
@@ -5848,67 +5842,25 @@ function Mn({
           style: { position: "absolute", left: "6px", top: "8px", bottom: "8px", width: "1px", background: "#E5E7EB" }
         }
       ),
-      c.map((F, N) => /* @__PURE__ */ e(
-        kn,
+      c.map((F, A) => /* @__PURE__ */ e(
+        Sn,
         {
           note: F,
-          isLatest: N === 0 && _ === "all",
+          isLatest: A === 0 && _ === "all",
           open: m.has(F.id),
           onToggle: () => C(F.id),
-          onZoom: (L, j) => h({ url: L, caption: j })
+          onZoom: (N, U) => h({ url: N, caption: U })
         },
         F.id
       ))
     ] }),
-    E && /* @__PURE__ */ n(
-      "div",
+    W && /* @__PURE__ */ e(
+      Nt,
       {
-        role: "dialog",
-        "aria-modal": "true",
-        onClick: () => h(null),
-        style: {
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.75)",
-          zIndex: 2147483e3,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "24px"
-        },
-        children: [
-          /* @__PURE__ */ e(
-            "button",
-            {
-              type: "button",
-              "aria-label": "閉じる",
-              onClick: () => h(null),
-              style: {
-                position: "absolute",
-                top: "12px",
-                right: "16px",
-                background: "none",
-                border: "none",
-                color: "#FFF",
-                fontSize: "32px",
-                lineHeight: 1,
-                cursor: "pointer"
-              },
-              children: "×"
-            }
-          ),
-          /* @__PURE__ */ n("figure", { style: { margin: 0, maxWidth: "100%", maxHeight: "100%" }, onClick: (F) => F.stopPropagation(), children: [
-            /* @__PURE__ */ e(
-              "img",
-              {
-                src: E.url,
-                alt: E.caption ?? "",
-                style: { maxWidth: "100%", maxHeight: "80vh", borderRadius: "8px", background: "#FFF", display: "block" }
-              }
-            ),
-            E.caption && /* @__PURE__ */ e("figcaption", { style: { textAlign: "center", color: "rgba(255,255,255,0.8)", fontSize: "12px", marginTop: "8px" }, children: E.caption })
-          ] })
-        ]
+        src: W.url,
+        alt: W.caption ?? "",
+        caption: W.caption,
+        onClose: O
       }
     )
   ] });
@@ -5932,7 +5884,7 @@ function st({ active: t, onClick: r, children: i }) {
     }
   );
 }
-function kn({
+function Sn({
   note: t,
   isLatest: r,
   open: i,
@@ -5966,7 +5918,7 @@ function kn({
         /* @__PURE__ */ e("h2", { style: { margin: 0, fontSize: "16px", fontWeight: 700 }, children: t.title }),
         /* @__PURE__ */ e("p", { style: { margin: "4px 0 0", fontSize: "12px", color: K.gray500 }, children: t.previous ? `前回（${lt(t.previous.released_on)} ${t.previous.version}）からの変更` : "最初のリリースです" }),
         b.length > 0 && /* @__PURE__ */ e("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }, children: b.map(({ c: x, n: y }) => {
-          const T = Le[x];
+          const T = Ae[x];
           return /* @__PURE__ */ n("span", { style: {
             fontSize: "11px",
             padding: "2px 9px",
@@ -6006,7 +5958,7 @@ function kn({
       i && /* @__PURE__ */ e("div", { style: { padding: "4px 16px 16px", background: "#FAFBFC", borderTop: "1px solid #F3F4F6" }, children: De.map((x) => {
         const y = t.items.filter((d) => d.category === x);
         if (y.length === 0) return null;
-        const T = Le[x];
+        const T = Ae[x];
         return /* @__PURE__ */ n("section", { style: { marginTop: "16px" }, children: [
           /* @__PURE__ */ n("h3", { style: { margin: "0 0 8px", fontSize: "12px", fontWeight: 700, color: T.fg }, children: [
             T.label,
@@ -6015,11 +5967,11 @@ function kn({
             "件）"
           ] }),
           /* @__PURE__ */ e("ol", { style: { listStyle: "none", margin: 0, padding: 0 }, children: y.map((d, k) => /* @__PURE__ */ e(
-            Sn,
+            zn,
             {
               item: d,
               index: k + 1,
-              media: t.images.filter((A) => A.item_id === d.id),
+              media: t.images.filter((L) => L.item_id === d.id),
               onZoom: g
             },
             d.id
@@ -6029,7 +5981,7 @@ function kn({
     ] })
   ] });
 }
-function Sn({
+function zn({
   item: t,
   index: r,
   media: i,
@@ -6072,7 +6024,7 @@ function Sn({
   ] });
 }
 function vt({ media: t, onZoom: r }) {
-  return wn(t) ? /* @__PURE__ */ e(
+  return kn(t) ? /* @__PURE__ */ e(
     "video",
     {
       src: `${t.url}#t=0.1`,
@@ -6100,12 +6052,12 @@ function vt({ media: t, onZoom: r }) {
   );
 }
 export {
-  xn as D,
+  hn as D,
   yt as L,
-  Mn as R,
-  Wn as a,
-  Yt as b,
-  Nn as c,
-  bn as d,
-  jt as p
+  Ln as R,
+  Nn as a,
+  Kt as b,
+  Mn as c,
+  mn as d,
+  Ot as p
 };

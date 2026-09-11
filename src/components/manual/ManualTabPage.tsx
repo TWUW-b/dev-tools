@@ -293,6 +293,8 @@ export function ManualTabPage({
   onFeedbackSubmitSuccess,
   onFeedbackSubmitError,
   items,
+  defaultExpandCategories,
+  onAppNavigate,
 }: ManualTabPageProps = {}) {
   const [docPath, setDocPath] = useState<string | null>(null);
   const { content, loading, error } = useManualLoader(docPath);
@@ -603,12 +605,22 @@ export function ManualTabPage({
     };
   }, [content, docPath, loading]);
 
-  // アプリリンククリック（親ウィンドウに通知）
-  const handleAppLinkClick = useCallback((path: string) => {
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({ type: 'manual-app-navigate', path }, window.location.origin);
-    }
-  }, []);
+  // アプリリンククリック。
+  // window.open() でこのページを開いた場合（MainLayout からの「別ページで開く」）は
+  // 従来どおり window.opener への postMessage を優先する。
+  // window.opener が無い場合（/manual-view を直接 URL アクセス・ブックマーク等で開いた場合）は
+  // postMessage が届く先が無く無反応になっていたため、onAppNavigate が指定されていれば
+  // それを呼び出すフォールバックを行う（2026-08-31 修正）。
+  const handleAppLinkClick = useCallback(
+    (path: string) => {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'manual-app-navigate', path }, window.location.origin);
+      } else {
+        onAppNavigate?.(path);
+      }
+    },
+    [onAppNavigate]
+  );
 
   // サイドバー内リンククリック
   const handleSidebarLinkClick = useCallback(
@@ -762,6 +774,7 @@ export function ManualTabPage({
                 onSelectPage={handleTocSelectPage}
                 onSelectHeading={handleTocSelectHeading}
                 activeHeadingId={activeHeadingId}
+                defaultExpandCategories={defaultExpandCategories}
               />
             </div>
           </aside>
@@ -800,6 +813,7 @@ export function ManualTabPage({
                   onSelectPage={handleTocSelectPage}
                   onSelectHeading={handleTocSelectHeading}
                   activeHeadingId={activeHeadingId}
+                  defaultExpandCategories={defaultExpandCategories}
                 />
               </div>
             </div>
