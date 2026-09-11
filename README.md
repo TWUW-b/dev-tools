@@ -10,7 +10,7 @@
 - **デバッグノート**: PiP ウィンドウで不具合・違和感を最小入力で記録
 - **テストフロー**: Domain/Capability/Case 階層のチェックリスト実行
   - 展開中の capability の case ID を record タブ保存時に **自動紐付け**（v1.2.0+）
-- **マニュアル表示**: Markdown ドキュメントの PiP / サイドバー / タブ表示
+- **マニュアル表示**: Markdown ドキュメントの PiP / サイドバー / タブ表示（画像のクリック拡大、アプリのアイコン埋め込みに対応）
 - **環境情報タブ**（v1.2.0+）: プロジェクト・環境別の URL / 認証情報 / 注意点を MD ベースで管理
 - **フィードバック**: ユーザーからのバグ報告・要望・質問を収集
 - コンソール・ネットワークログの自動キャプチャ
@@ -214,6 +214,30 @@ function App() {
   );
 }
 ```
+
+#### マニュアルにアプリのアイコンを出す
+
+Markdown からは React コンポーネントを書けないため、「名前 → ノード」を `icons` に渡し、
+本文には `<app-icon name="...">`（閉じタグ必須）と書きます。アプリ本体のアイコンを
+そのまま渡せるので、SVG をマニュアルにコピーする必要がありません。
+
+```tsx
+import { Building, Users } from 'lucide-react';
+
+<ManualPiP
+  items={manualItems}
+  icons={{ building: <Building size={18} />, users: <Users size={18} /> }}
+  categoryIcons={{ 'はじめに': <Building size={14} /> }}
+  /* ...他の props */
+/>
+```
+
+```markdown
+## <app-icon name="building"></app-icon> 新しい物件情報が入ったとき
+```
+
+目次・サイドバーのページ行には `ManualItem.icon`、カテゴリ見出しには `categoryIcons` を使います。
+詳細は [docs/usage.md](docs/usage.md) を参照してください。
 
 `items` を渡すと「カテゴリ→ページ→見出し」の階層目次が使えるようになる。`ManualPiP` はハンバーガー
 メニューから開くオーバーレイパネル、`ManualTabPage` は画面幅767px以下で自動的に同じハンバーガー
