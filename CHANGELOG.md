@@ -39,7 +39,7 @@
 
 ### Tests
 
-- Unit: 170（MarkdownRenderer のアイコン描画・拡大除外、本文と目次の id 一致の突き合わせを追加）
+- Unit: 170 / API: 135 (+1 skipped) / E2E: 19（MarkdownRenderer のアイコン描画・拡大除外、本文と目次の id 一致の突き合わせを追加）
 
 ## [1.4.12] - 2026-09-11
 
