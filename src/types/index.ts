@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /** 重要度 */
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 
@@ -281,6 +283,11 @@ export interface DebugPanelProps {
   onManualNavigate?: (path: string) => void;
   /** マニュアル内 app: リンク遷移時のハンドラ */
   onManualAppNavigate?: (path: string) => void;
+  /**
+   * マニュアル本文中の `<app-icon name="...">` を解決するアイコン。
+   * ManualPiP / ManualTabPage と同じものを渡せば、どの面でも同じアイコンが出る。
+   */
+  manualIcons?: Record<string, ReactNode>;
   /** 環境情報 MD 文字列（指定時に「環境」タブ表示） */
   environmentsMd?: string;
   /**
@@ -349,6 +356,12 @@ export interface ManualItem {
    * サイドバー側の重複表示だけを抑制したい場合に指定する。
    */
   hideHeadingsOutline?: boolean;
+  /**
+   * 目次・サイドバーでタイトルの左に出すアイコン。
+   * アプリ本体が使っているアイコン（lucide 等の React コンポーネント）をそのまま渡せる。
+   * 例: `icon: <Building size={16} />`
+   */
+  icon?: ReactNode;
 }
 
 /** PiP状態 */
@@ -450,6 +463,16 @@ export interface ManualTabPageProps {
    * app: リンクが無反応だった不具合の修正）。
    */
   onAppNavigate?: (path: string) => void;
+  /**
+   * 本文中で使えるアイコン。Markdown の `<app-icon name="building"></app-icon>` を
+   * 同名のノードに置き換える（`MarkdownRenderer.icons` にそのまま渡す）。
+   */
+  icons?: Record<string, ReactNode>;
+  /**
+   * 目次のカテゴリ見出しに出すアイコン（カテゴリ名 → ノード）。
+   * ページ単位のアイコンは `ManualItem.icon` で指定する。
+   */
+  categoryIcons?: Record<string, ReactNode>;
 }
 
 /** マニュアルローダー戻り値 */
@@ -500,6 +523,17 @@ export interface MarkdownRendererProps {
    * 既定は false（クリックで拡大できる）。
    */
   disableImageZoom?: boolean;
+  /**
+   * 本文中で使えるアイコン。Markdown に `<app-icon name="building"></app-icon>` と
+   * 書くと、ここで渡した同名のノードに置き換わる。
+   *
+   * アプリ本体のアイコン（lucide 等の React コンポーネント）をそのまま渡せるので、
+   * SVG をマニュアルへコピーして二重管理する必要がない。
+   * 未登録の name や未指定時は何も描画しない。
+   *
+   * 例: `icons={{ building: <Building size={18} />, users: <Users size={18} /> }}`
+   */
+  icons?: Record<string, ReactNode>;
 }
 
 /** ManualPiP プロパティ */
@@ -540,6 +574,16 @@ export interface ManualPiPProps {
    * 無効化したい場合は false を指定する。
    */
   copyHostStyles?: boolean;
+  /**
+   * 本文中で使えるアイコン。Markdown の `<app-icon name="building"></app-icon>` を
+   * 同名のノードに置き換える（`MarkdownRenderer.icons` にそのまま渡す）。
+   */
+  icons?: Record<string, ReactNode>;
+  /**
+   * 目次のカテゴリ見出しに出すアイコン（カテゴリ名 → ノード）。
+   * ページ単位のアイコンは `ManualItem.icon` で指定する。
+   */
+  categoryIcons?: Record<string, ReactNode>;
 
   // --- フィードバック ---
   /** フィードバックAPIのベースURL */
@@ -578,6 +622,11 @@ export interface ManualSidebarProps {
   onPiP?: (path: string) => void;
   /** 新しいタブで開くハンドラ（オプション） */
   onNewTab?: (path: string) => void;
+  /**
+   * カテゴリ見出しの左に出すアイコン（カテゴリ名 → ノード）。
+   * ページ単位のアイコンは `ManualItem.icon` で指定する。
+   */
+  categoryIcons?: Record<string, ReactNode>;
 }
 
 /** ManualTableOfContents プロパティ */
@@ -598,6 +647,11 @@ export interface ManualTableOfContentsProps {
    * - 'all': 全カテゴリを初期状態から開く
    */
   defaultExpandCategories?: 'active' | 'all';
+  /**
+   * カテゴリ見出しの左に出すアイコン（カテゴリ名 → ノード）。
+   * ページ単位のアイコンは `ManualItem.icon` で指定する。
+   */
+  categoryIcons?: Record<string, ReactNode>;
   /** 追加のクラス名 */
   className?: string;
 }

@@ -114,6 +114,7 @@ import { DevTools } from '@twuw-b/dev-tools';
 | `testCases` | `ParsedTestCase[]` | | テストケース配列。指定時に **test タブ有効化 + 実行中ケース自動紐付け** が動作 |
 | `environmentsMd` | `string` | | 環境情報 MD 文字列。指定時に **環境タブ** が追加 |
 | `manualItems` | `ManualItem[]` | | マニュアル項目。指定時にマニュアルタブ有効化 |
+| `manualIcons` | `Record<string, ReactNode>` | | マニュアル本文の `<app-icon name="...">` を解決するアイコン |
 | `manualDefaultPath` | `string` | | マニュアルのデフォルトパス |
 | `onManualNavigate` | `(path: string) => void` | | マニュアル内リンク遷移ハンドラ |
 | `onManualAppNavigate` | `(path: string) => void` | | `app:` リンク遷移ハンドラ |
@@ -458,6 +459,8 @@ function App() {
 | `feedbackMinHeight` | `number` | | フィードバック領域の最小高さ（デフォルト: 150px） |
 | `feedbackMaxHeight` | `number` | | フィードバック領域の最大高さ（デフォルト: 400px） |
 | `items` | `ManualItem[]` | | マニュアル項目リスト。**指定時のみ**ヘッダーにハンバーガーメニューが表示され、トグルで階層目次パネル（`ManualTableOfContents`）を開閉できる。未指定時は既存の見た目・挙動を一切変えない |
+| `icons` | `Record<string, ReactNode>` | | 本文の `<app-icon name="...">` を解決するアイコン（`MarkdownRenderer.icons` に渡る） |
+| `categoryIcons` | `Record<string, ReactNode>` | | 目次のカテゴリ見出しに出すアイコン（カテゴリ名 → ノード） |
 
 #### 階層目次パネル（items）
 
@@ -538,6 +541,7 @@ const items: ManualItem[] = [
 | `className` | `string` | | 追加の CSS クラス名 |
 | `onPiP` | `(path: string) => void` | | PiP で開くハンドラ |
 | `onNewTab` | `(path: string) => void` | | 新しいタブで開くハンドラ |
+| `categoryIcons` | `Record<string, ReactNode>` | | カテゴリ見出しに出すアイコン（カテゴリ名 → ノード） |
 
 ### ManualTableOfContents
 
@@ -571,6 +575,7 @@ const items: ManualItem[] = [
 | `activePath` | `string \| null` | | 現在表示中のページパス（指定時、そのページを含むカテゴリを初期状態で開く） |
 | `onSelectPage` | `(path: string) => void` | ✓ | ページ選択ハンドラ（ページタイトルクリック時） |
 | `onSelectHeading` | `(path: string, headingId: string) => void` | ✓ | 見出し選択ハンドラ（見出しクリック時） |
+| `categoryIcons` | `Record<string, ReactNode>` | | カテゴリ見出しに出すアイコン（カテゴリ名 → ノード） |
 | `className` | `string` | | 追加の CSS クラス名 |
 
 ### ManualTabPage
@@ -618,6 +623,8 @@ function ManualViewPage() {
 | `onFeedbackSubmitError` | `(error: Error) => void` | | 送信エラーコールバック |
 | `defaultDocPath` | `string` | | URL に `?path=` がない場合のデフォルトドキュメント |
 | `items` | `ManualItem[]` | | マニュアル項目リスト。**指定時のみ**メインペイン左側に常時表示の階層目次サイドバー（`ManualTableOfContents`、固定幅 260px）が表示される。既存の右サイドバー（`sidebarPath`/`feedbackApiBaseUrl`）とは独立して共存する。未指定時は既存の見た目・挙動を一切変えない |
+| `icons` | `Record<string, ReactNode>` | | 本文の `<app-icon name="...">` を解決するアイコン（`MarkdownRenderer.icons` に渡る） |
+| `categoryIcons` | `Record<string, ReactNode>` | | 目次のカテゴリ見出しに出すアイコン（カテゴリ名 → ノード） |
 
 #### 階層目次サイドバー（items）
 
@@ -693,6 +700,44 @@ import { MarkdownRenderer } from '@twuw-b/dev-tools/manual';
 DOM 構造は従来のまま（`<img>` をラッパー要素で包まない）です。ホスト側の
 `.manual-shot img { width: 100% }` のような CSS や、画像に重ねた注記の位置指定を壊さないためです。
 
+#### アプリのアイコンをマニュアルに出す
+
+マニュアルは Markdown なので React コンポーネントを直接は書けません。`icons` に「名前 → ノード」を
+渡しておくと、本文に `<app-icon name="...">` と書いた箇所がそのノードに置き換わります。
+アプリ本体が使っているアイコン（lucide 等）をそのまま渡せるので、SVG をマニュアルへコピーして
+二重管理する必要がありません。
+
+```tsx
+import { Building, Users } from 'lucide-react';
+
+<MarkdownRenderer
+  content={content}
+  icons={{
+    building: <Building size={18} />,
+    users: <Users size={18} />,
+  }}
+/>
+```
+
+```markdown
+## <app-icon name="building"></app-icon> 新しい物件情報が入ったとき
+
+<app-icon name="users"></app-icon> 顧客管理から登録します。
+```
+
+- **閉じタグは必須**。`<app-icon … />` は HTML のパース規則上「開始タグ」として扱われ、
+  以降の行がアイコンの子要素になってしまいます
+- 既定では装飾扱い（`aria-hidden`）です。アイコン単体で意味を持たせる場合は
+  `<app-icon name="building" label="物件"></app-icon>` のように `label` を付けると
+  `role="img"` + `aria-label` で読み上げ対象になります
+- 未登録の `name` や `icons` 未指定時は何も描画しません
+- ラッパーには `manual-icon` クラスが付きます（位置調整の CSS フックとして使えます）
+- 見出しの中に置いても、目次からその見出しへのジャンプは維持されます
+
+アイコンを画像で置く場合（`<img src="…" width="18" height="18">`）は、クリック拡大の対象から
+自動的に外れます（最大辺 48px 以下）。サイズを指定しない画像を除外したいときは `data-no-zoom`
+を付けてください。
+
 #### Props
 
 | Prop | 型 | 必須 | 説明 |
@@ -702,6 +747,7 @@ DOM 構造は従来のまま（`<img>` をラッパー要素で包まない）�
 | `onLinkClick` | `(path: string) => void` | | `.md` リンククリック時のハンドラ |
 | `onAppLinkClick` | `(path: string) => void` | | `app:/` リンククリック時のハンドラ |
 | `disableImageZoom` | `boolean` | | 画像のクリック拡大を無効にする（既定 `false`） |
+| `icons` | `Record<string, ReactNode>` | | 本文の `<app-icon name="...">` を解決するアイコン |
 
 ### ImageLightbox
 
@@ -1443,6 +1489,10 @@ interface ManualItem {
   path: string;
   category?: string;
   order?: number;
+  /** 目次サイドバーの見出しトグルを出さない */
+  hideHeadingsOutline?: boolean;
+  /** 目次・サイドバーでタイトルの左に出すアイコン（アプリ本体の React コンポーネントを渡せる） */
+  icon?: ReactNode;
 }
 
 // ダウンロード用

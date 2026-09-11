@@ -46,6 +46,7 @@ export function DebugPanel({
   testCases,
   logCapture,
   manualItems,
+  manualIcons,
   manualDefaultPath,
   onManualNavigate,
   onManualAppNavigate,
@@ -504,6 +505,7 @@ export function DebugPanel({
         {activeTab === 'manual' && hasManualTab && (
           <ManualTabContent
             items={manualItems!}
+            icons={manualIcons}
             defaultPath={manualDefaultPath}
             onNavigate={onManualNavigate}
             onAppNavigate={onManualAppNavigate}

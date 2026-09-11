@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useManualLoader } from '../../hooks/useManualLoader';
 import { MarkdownRenderer } from '../manual/MarkdownRenderer';
 import type { ManualItem } from '../../types';
+import type { ReactNode } from 'react';
 
 interface ManualTabContentProps {
   items: ManualItem[];
   defaultPath?: string;
   onNavigate?: (path: string) => void;
   onAppNavigate?: (path: string) => void;
+  /** 本文中の `<app-icon name="...">` を解決するアイコン */
+  icons?: Record<string, ReactNode>;
 }
 
 export function ManualTabContent({
@@ -15,6 +18,7 @@ export function ManualTabContent({
   defaultPath,
   onNavigate,
   onAppNavigate,
+  icons,
 }: ManualTabContentProps) {
   const [selectedPath, setSelectedPath] = useState<string>(defaultPath || items[0]?.path || '');
   const { content, loading, error } = useManualLoader(selectedPath);
@@ -34,6 +38,11 @@ export function ManualTabContent({
             onClick={() => handleSelect(item.path)}
             title={item.title}
           >
+            {item.icon && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }} aria-hidden="true">
+                {item.icon}
+              </span>
+            )}
             {item.title}
           </button>
         ))}
@@ -49,6 +58,7 @@ export function ManualTabContent({
               onNavigate?.(path);
             }}
             onAppLinkClick={onAppNavigate}
+            icons={icons}
           />
         )}
       </div>

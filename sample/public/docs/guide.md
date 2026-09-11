@@ -5,7 +5,7 @@
 マニュアル画像アップロードAPI(RFC 002)で実際にアップロードした画像です。API(localhost:8081)と
 sample app(localhost:3000)はオリジンが異なるため、Markdown内では絶対URLで参照する必要があります。
 
-## デバッグモードの起動
+## <app-icon name="book"></app-icon> デバッグモードの起動
 
 デバッグモードを有効にする方法は3つあります:
 
@@ -13,7 +13,10 @@ sample app(localhost:3000)はオリジンが異なるため、Markdown内では�
 2. `z` キーを素早く3回押す
 3. URL に `#debug` を付ける
 
-## デバッグパネル
+## <app-icon name="bug"></app-icon> デバッグパネル
+
+アプリ本体で使っているアイコン（<app-icon name="bug"></app-icon> バグ報告 / <app-icon name="code"></app-icon> API）を
+本文中にそのまま置けます。
 
 デバッグモードが有効な場合、画面右下にバグアイコンが表示されます。
 

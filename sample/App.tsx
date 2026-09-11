@@ -72,11 +72,58 @@ domain: sample
 `);
 
 // マニュアル項目
+/**
+ * アプリ本体が使っているアイコン（lucide 等の React コンポーネント）を、
+ * マニュアルにもそのまま出せることを示すデモ。
+ * ここでは依存を増やさないよう lucide と同じ体裁の SVG を手書きしている。
+ */
+function BookIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </svg>
+  );
+}
+
+function BugIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="8" height="14" x="8" y="6" rx="4" />
+      <path d="m19 7-3 2M5 7l3 2M19 19l-3-2M5 19l3-2M20 13h-4M4 13h4" />
+    </svg>
+  );
+}
+
+function CodeIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
 const manualItems: ManualItem[] = [
-  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: 'はじめに', order: 1 },
-  { id: 'faq', title: 'FAQ', path: '/docs/faq.md', category: 'はじめに', order: 2 },
-  { id: 'api', title: 'API リファレンス', path: '/docs/api.md', category: 'リファレンス', order: 3 },
+  { id: 'guide', title: '使い方ガイド', path: '/docs/guide.md', category: 'はじめに', order: 1, icon: <BookIcon /> },
+  { id: 'faq', title: 'FAQ', path: '/docs/faq.md', category: 'はじめに', order: 2, icon: <BugIcon /> },
+  { id: 'api', title: 'API リファレンス', path: '/docs/api.md', category: 'リファレンス', order: 3, icon: <CodeIcon /> },
 ];
+
+/** 目次のカテゴリ見出しに出すアイコン（カテゴリ名 → ノード） */
+const manualCategoryIcons = {
+  'はじめに': <BookIcon size={14} />,
+  'リファレンス': <CodeIcon size={14} />,
+};
+
+/** 本文中で `<app-icon name="...">` として使えるアイコン */
+const manualIcons = {
+  book: <BookIcon size={18} />,
+  bug: <BugIcon size={18} />,
+  code: <CodeIcon size={18} />,
+};
 
 const FEEDBACK_API = 'http://localhost:8081';
 const FEEDBACK_ADMIN_KEY = 'dev-admin-key-change-in-production';
@@ -149,6 +196,8 @@ export function App() {
       {view === 'manual-tab' && (
         <ManualTabPage
           items={manualItems}
+          icons={manualIcons}
+          categoryIcons={manualCategoryIcons}
           sidebarPath="/docs/index.md"
           defaultDocPath="/docs/guide.md"
           onSidebarNavigate={(path) => console.log('Navigate:', path)}
@@ -165,6 +214,8 @@ export function App() {
       {/* PiP（全ビュー共通） */}
       <ManualPiP
         items={manualItems}
+        icons={manualIcons}
+        categoryIcons={manualCategoryIcons}
         isOpen={pip.isOpen}
         docPath={pip.currentPath}
         onClose={pip.closePiP}
@@ -184,6 +235,7 @@ export function App() {
           testCases={sampleTestCases}
           logCapture={logCapture}
           manualItems={manualItems}
+          manualIcons={manualIcons}
           onManualNavigate={(path) => pip.openPiP(path)}
           onManualAppNavigate={(path) => alert(`app: リンク → ${path}`)}
         />
@@ -250,6 +302,7 @@ function ManualSidebarView({ pip }: { pip: ReturnType<typeof useManualPiP> }) {
       <div style={{ width: '280px', borderRight: '1px solid #e5e7eb', overflow: 'auto', background: '#fff' }}>
         <ManualSidebar
           items={manualItems}
+          categoryIcons={manualCategoryIcons}
           onSelect={setActivePath}
           activePath={activePath}
           onPiP={(path) => pip.openPiP(path)}
@@ -263,6 +316,7 @@ function ManualSidebarView({ pip }: { pip: ReturnType<typeof useManualPiP> }) {
           <MarkdownRenderer
             content={content}
             className="manual-markdown"
+            icons={manualIcons}
             onLinkClick={setActivePath}
             onAppLinkClick={(path) => alert(`app: リンク → ${path}`)}
           />

@@ -13,6 +13,7 @@ export function ManualSidebar({
   className = '',
   onPiP,
   onNewTab,
+  categoryIcons,
 }: ManualSidebarProps) {
   // Material Symbols フォントを読み込む（自動読み込みが無効化されていない場合）
   useEffect(() => {
@@ -65,6 +66,9 @@ export function ManualSidebar({
         <div key={category} style={{ marginTop: '16px' }}>
           <div
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               fontSize: '12px',
               fontWeight: 'bold',
               color: '#666',
@@ -72,6 +76,12 @@ export function ManualSidebar({
               padding: '8px 12px',
             }}
           >
+            {/* カテゴリのアイコン（アプリ本体と同じものをホストから渡す。文字の繰り返しなので装飾扱い） */}
+            {categoryIcons?.[category] && (
+              <span style={{ display: 'inline-flex', alignItems: 'center' }} aria-hidden="true">
+                {categoryIcons[category]}
+              </span>
+            )}
             {category}
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -109,7 +119,10 @@ function SidebarItem({ item, isActive, onSelect, onPiP, onNewTab }: SidebarItemP
       width: '100%',
     } as React.CSSProperties,
     itemButton: {
-      display: 'block',
+      // アイコンがある時だけ flex にする（テキストのみの既存表示は block のまま変えない）
+      display: item.icon ? 'flex' : 'block',
+      alignItems: 'center',
+      gap: '8px',
       flex: 1,
       padding: '8px 12px',
       border: 'none',
@@ -164,6 +177,12 @@ function SidebarItem({ item, isActive, onSelect, onPiP, onNewTab }: SidebarItemP
           onClick={() => onSelect(item.path)}
           style={styles.itemButton}
         >
+          {/* ページのアイコン（ManualItem.icon）。タイトルが読み上げられるので装飾扱い */}
+          {item.icon && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', flex: 'none' }} aria-hidden="true">
+              {item.icon}
+            </span>
+          )}
           {item.title}
         </button>
         <div style={styles.actionButtons}>

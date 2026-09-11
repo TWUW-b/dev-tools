@@ -176,7 +176,38 @@ const BASE_MARKDOWN_CSS = `
 :where(.manual-markdown img[data-zoomable]) {
   cursor: zoom-in;
 }
+
+/*
+ * <app-icon name="..."> の描画枠。
+ * 行の中で文字と並べたときにベースラインが揃うよう、inline-flex + 微調整のみを当てる。
+ * 大きさ・色はホストが渡すノード側（lucide の size/className 等）に任せる。
+ */
+:where(.manual-markdown .manual-icon) {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -0.15em;
+}
 `;
+
+/**
+ * 「アイコンとして置かれた画像」とみなす最大辺（px）。
+ * これ以下のサイズを明示している画像はクリック拡大の対象から外す
+ * （18px のアイコンが全画面ライトボックスで開くのを防ぐ）。
+ */
+const ICON_IMAGE_MAX_SIZE = 48;
+
+/** width/height 属性から、アイコンとして扱うべき小さい画像かどうかを判定する */
+function isIconSizedImage(props: Record<string, unknown>): boolean {
+  const toPx = (v: unknown): number | null => {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && /^\d+(\.\d+)?(px)?$/.test(v.trim())) return parseFloat(v);
+    return null;
+  };
+  const w = toPx(props.width);
+  const h = toPx(props.height);
+  if (w === null && h === null) return false;
+  return (w ?? 0) <= ICON_IMAGE_MAX_SIZE && (h ?? 0) <= ICON_IMAGE_MAX_SIZE;
+}
 
 /**
  * Markdown → HTML 変換・表示コンポーネント
@@ -190,6 +221,7 @@ export function MarkdownRenderer({
   onLinkClick,
   onAppLinkClick,
   disableImageZoom = false,
+  icons,
 }: MarkdownRendererProps) {
   const [zoomedImage, setZoomedImage] = useState<
     { src: string; alt: string; caption: string | null; overlaySource: HTMLElement | null } | null
@@ -203,7 +235,8 @@ export function MarkdownRenderer({
    * アンマウント→再マウントされる。そうなると拡大表示を開閉するたびに、開いていた
    * <details> が閉じる・フォーカスが失われる、といった副作用が出る。
    */
-  const components: Components = useMemo(() => ({
+  const components: Components = useMemo(() => {
+    const map: Components = {
     a: ({ href, children, ...props }) => {
       // app:リンクの場合はonAppLinkClickで処理（メイン画面遷移）
       // NOTE: <a>タグではなく<span>を使用してブラウザのデフォルト動作を回避
@@ -276,7 +309,14 @@ export function MarkdownRenderer({
     img: ({ node, src, alt, title, ...props }) => {
       void node; // react-markdown が渡す hast ノード。DOM 要素には渡さない
       const url = typeof src === 'string' ? src : '';
-      if (!url || disableImageZoom) {
+      /*
+       * アイコンとして置かれた画像は拡大しない。
+       * 18px のアイコンをライトボックスで全画面表示しても意味がないため、
+       * サイズを明示している小さい画像と、明示的に外した画像を対象から除く。
+       */
+      const rest = props as Record<string, unknown>;
+      const noZoom = disableImageZoom || rest['data-no-zoom'] !== undefined || isIconSizedImage(rest);
+      if (!url || noZoom) {
         return <img {...props} src={url || undefined} alt={alt ?? ''} title={title} />;
       }
       /*
@@ -329,7 +369,34 @@ export function MarkdownRenderer({
         />
       );
     },
-  }), [onLinkClick, onAppLinkClick, disableImageZoom]);
+    };
+
+    /*
+     * `<app-icon name="building"></app-icon>` をホストから渡されたノードに差し替える。
+     * react-markdown の components はタグ名で引くので、独自要素もここに登録すれば
+     * rehype-raw が作った hast 要素をそのまま受け取れる（Components 型は
+     * HTML 標準要素しか持たないため、組み立ててから cast している）。
+     *
+     * NOTE: MD には必ず閉じタグ付きで書くこと。`<app-icon … />` は HTML の
+     * パース規則上「開始タグ」になり、以降の行がアイコンの子要素になってしまう。
+     */
+    // Components 型は HTML 標準要素しか持たないので、独自タグを足すときだけ型を広げる
+    const withCustomTags = map as Components & Record<string, unknown>;
+    withCustomTags['app-icon'] = ({ name, label, className }: { name?: string; label?: string; className?: string }) => {
+      const node = typeof name === 'string' ? icons?.[name] : undefined;
+      if (node === undefined || node === null) return null;
+      const cls = className ? `manual-icon ${className}` : 'manual-icon';
+      // 文章に添えるアイコンは装飾なので既定では読み上げから外す。
+      // 単独で意味を持たせたい場合だけ label を指定してもらう。
+      return label ? (
+        <span className={cls} role="img" aria-label={label}>{node}</span>
+      ) : (
+        <span className={cls} aria-hidden="true">{node}</span>
+      );
+    };
+
+    return withCustomTags;
+  }, [onLinkClick, onAppLinkClick, disableImageZoom, icons]);
 
   return (
     <div className={`manual-markdown ${className}`}>

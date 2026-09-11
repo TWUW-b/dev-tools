@@ -60,6 +60,7 @@ export function ManualTableOfContents({
   onSelectHeading,
   activeHeadingId = null,
   defaultExpandCategories = 'active',
+  categoryIcons,
   className = '',
 }: ManualTableOfContentsProps) {
   const { groups, uncategorized } = useMemo(() => groupByCategory(items), [items]);
@@ -152,11 +153,19 @@ export function ManualTableOfContents({
             aria-controls={item.hideHeadingsOutline ? undefined : headingsListId}
             style={{
               ...styles.pageButton,
+              // アイコンがある時だけ flex にする（テキストのみの既存表示は変えない）
+              ...(item.icon ? { display: 'flex', alignItems: 'center', gap: '8px' } : null),
               background: isActive ? '#e3f2fd' : 'transparent',
               color: isActive ? COLORS.primary : COLORS.gray700,
               borderLeft: isActive ? `3px solid ${COLORS.primary}` : '3px solid transparent',
             }}
           >
+            {/* ページのアイコン（ManualItem.icon）。直後にタイトルが読まれるので装飾扱い */}
+            {item.icon && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', flex: 'none' }} aria-hidden="true">
+                {item.icon}
+              </span>
+            )}
             {item.title}
           </button>
           {/* hideHeadingsOutline: 本文の h2/h3 とサイドバーの実カテゴリ一覧が同じ文言になる
@@ -248,6 +257,12 @@ export function ManualTableOfContents({
               aria-controls={categoryListId}
             >
               <span style={styles.categoryChevron} aria-hidden="true">{isOpen ? 'expand_more' : 'chevron_right'}</span>
+              {/* カテゴリのアイコン（アプリ本体と同じものをホストから渡す） */}
+              {categoryIcons?.[group.category] && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', flex: 'none' }} aria-hidden="true">
+                  {categoryIcons[group.category]}
+                </span>
+              )}
               <span>{group.category}</span>
             </button>
             {isOpen && (

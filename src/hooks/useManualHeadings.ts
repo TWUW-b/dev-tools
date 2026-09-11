@@ -22,6 +22,10 @@ export interface UseManualHeadingsReturn {
  * できるだけ近づけ、id 生成結果を一致させるための前処理。
  * - リンクは表示テキストのみを残す（実際のレンダリングでは <a> の子テキストノードが残るため）
  * - 画像は alt 属性が実際には子テキストノードにならないため、丸ごと除去する
+ *
+ * NOTE: ここでは trim しない。除去した跡に残る空白は、レンダリング後のテキストにも
+ * そのまま残る（例: `## ![icon](x.png) 手順` のレンダリング結果は " 手順"）ため、
+ * 落とすと id が rehype-slug 側とズレる。表示用のテキストだけを後段で trim する。
  */
 function stripInlineMarkdown(text: string): string {
   return text
@@ -31,8 +35,24 @@ function stripInlineMarkdown(text: string): string {
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/_([^_]+)_/g, '$1')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .trim();
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+}
+
+/**
+ * 見出しに直接書かれた生 HTML タグを除去する。
+ *
+ * マニュアル本文の見出しにアイコンを入れる書き方（`### <app-icon name="building"></app-icon>
+ * 新しい物件情報が入ったとき` や lucide の SVG をそのまま貼る形）に対応するためのもの。
+ * rehype-raw が処理するこれらの要素はテキストを持たないので、rehype-slug が見る
+ * plain text からは消える。ここで同じように落とさないと、
+ * 本文側 `-新しい物件情報が入ったとき` に対して目次側が
+ * `svg-xmlnshttpwwww3org2000svg-width18-...` のような別 id になり、
+ * 目次から見出しへジャンプできなくなる（かつ目次に HTML ソースがそのまま並ぶ）。
+ *
+ * NOTE: ここでも trim しない（理由は stripInlineMarkdown と同じ）。
+ */
+function stripHtmlTags(text: string): string {
+  return text.replace(/<[^>]+>/g, '');
 }
 
 /**
@@ -87,16 +107,21 @@ function extractHeadings(markdown: string): ManualHeading[] {
       const htmlMatch = /^\s{0,3}<h([23])(?:\s[^>]*)?>([\s\S]*?)<\/h\1>\s*$/i.exec(line);
       if (htmlMatch) {
         level = Number(htmlMatch[1]) as 2 | 3;
-        rawText = htmlMatch[2].replace(/<[^>]+>/g, '').trim();
+        // 内側のタグ除去と trim は共通処理（stripHtmlTags）に任せる。
+        // ここで trim すると、レンダリング後に残る前後の空白まで落として id がズレる。
+        rawText = htmlMatch[2];
       }
     }
 
     if (level === null) continue;
 
-    const text = stripInlineMarkdown(rawText);
+    // id は「レンダリング後の plain text」から作る（＝ trim しない）。
+    // 表示用テキストだけを trim する（目次に前後の空白は要らない）。
+    const slugSource = stripHtmlTags(stripInlineMarkdown(rawText));
+    const text = slugSource.trim();
     if (!text) continue;
 
-    const id = slugger.slug(text);
+    const id = slugger.slug(slugSource);
     headings.push({ id, text, level });
   }
 

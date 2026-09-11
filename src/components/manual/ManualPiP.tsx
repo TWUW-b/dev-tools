@@ -61,6 +61,8 @@ export function ManualPiP({
   initialSize = { width: 420, height: 550 },
   showDownloadButton = false,
   copyHostStyles = true,
+  icons,
+  categoryIcons,
   items,
   feedbackApiBaseUrl,
   feedbackUserType,
@@ -646,6 +648,7 @@ export function ManualPiP({
                   onSelectPage={handleTocSelectPage}
                   onSelectHeading={handleTocSelectHeading}
                   activeHeadingId={activeHeadingId}
+                  categoryIcons={categoryIcons}
                 />
               </div>
             </div>
@@ -676,6 +679,7 @@ export function ManualPiP({
               content={content}
               onLinkClick={handleLinkClick}
               onAppLinkClick={onAppNavigate}
+              icons={icons}
             />
           )}
 
