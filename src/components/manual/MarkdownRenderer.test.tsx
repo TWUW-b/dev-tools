@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { useManualHeadings } from '../../hooks/useManualHeadings';
+import { renderHook, act } from '@testing-library/react';
 
 /**
  * app リンク (アプリ画面遷移) の解決テスト。
@@ -214,5 +216,117 @@ describe('MarkdownRenderer 画像の拡大表示', () => {
 
     fireEvent.click(img);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 本文中のアイコン表示（v1.5.0）。
+ *
+ * アプリ本体が使っているアイコン（lucide 等の React コンポーネント）を、
+ * SVG をマニュアルへコピーせずにそのまま出せるようにするための仕組み。
+ */
+describe('MarkdownRenderer 本文中のアイコン', () => {
+  const icons = {
+    building: <span data-testid="icon-building">🏢</span>,
+    users: <span data-testid="icon-users">👥</span>,
+  };
+
+  it('<app-icon> が渡したノードに置き換わる', () => {
+    render(
+      <MarkdownRenderer
+        content={'<app-icon name="building"></app-icon> 新しい物件情報が入ったとき'}
+        icons={icons}
+      />
+    );
+
+    expect(screen.getByTestId('icon-building')).toBeInTheDocument();
+    expect(screen.queryByTestId('icon-users')).not.toBeInTheDocument();
+  });
+
+  it('見出しの中でも置き換わる', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'## <app-icon name="building"></app-icon> 物件'} icons={icons} />
+    );
+
+    const h2 = container.querySelector('h2');
+    expect(h2).not.toBeNull();
+    expect(h2?.querySelector('[data-testid="icon-building"]')).not.toBeNull();
+  });
+
+  it('未登録の name / icons 未指定では何も描画しない', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'<app-icon name="unknown"></app-icon>テキスト'} icons={icons} />
+    );
+
+    expect(container.querySelector('.manual-icon')).toBeNull();
+    expect(container.textContent).toContain('テキスト');
+  });
+
+  it('既定では装飾扱い（aria-hidden）、label 指定時は読み上げ対象になる', () => {
+    const { container, rerender } = render(
+      <MarkdownRenderer content={'<app-icon name="building"></app-icon>'} icons={icons} />
+    );
+    expect(container.querySelector('.manual-icon')).toHaveAttribute('aria-hidden', 'true');
+
+    rerender(
+      <MarkdownRenderer content={'<app-icon name="building" label="物件"></app-icon>'} icons={icons} />
+    );
+    expect(screen.getByRole('img', { name: '物件' })).toBeInTheDocument();
+  });
+
+  it('アイコンサイズの画像は拡大表示の対象にしない', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'<img src="/icons/building.svg" alt="物件" width="18" height="18">'} />
+    );
+
+    const img = container.querySelector('img');
+    expect(img).not.toHaveAttribute('data-zoomable');
+    fireEvent.click(img!);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('data-no-zoom を付けた画像は拡大表示の対象にしない', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'<img src="/img/a.png" alt="図" data-no-zoom>'} />
+    );
+
+    expect(container.querySelector('img')).not.toHaveAttribute('data-zoomable');
+  });
+
+  it('サイズ指定が大きい画像は従来どおり拡大できる', () => {
+    const { container } = render(
+      <MarkdownRenderer content={'<img src="/img/a.png" alt="図" width="640" height="400">'} />
+    );
+
+    expect(container.querySelector('img')).toHaveAttribute('data-zoomable', 'true');
+  });
+});
+
+/**
+ * 本文側（rehype-slug）と目次側（useManualHeadings）の id が一致することを、
+ * 実際に両方を動かして突き合わせる。アイコンを見出しに入れても目次から
+ * ジャンプできることの最終的な保証。
+ */
+describe('見出し id の本文・目次間の一致', () => {
+  const cases = [
+    '## 手順',
+    '## <app-icon name="building"></app-icon> 新しい物件情報が入ったとき',
+    '## ![](/icons/building.svg) 物件',
+    '## **太字** の見出し',
+    '## [リンク](other.md) つき見出し',
+  ];
+
+  it.each(cases)('%s', async (markdown) => {
+    const { container } = render(<MarkdownRenderer content={markdown} />);
+    const renderedId = container.querySelector('h2')?.id;
+
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(markdown) });
+    const { result } = renderHook(() => useManualHeadings());
+    await act(async () => {
+      await result.current.loadHeadings('/docs/parity.md');
+    });
+    const tocId = result.current.getHeadings('/docs/parity.md')?.[0]?.id;
+
+    expect(tocId).toBe(renderedId);
   });
 });

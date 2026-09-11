@@ -295,6 +295,8 @@ export function ManualTabPage({
   items,
   defaultExpandCategories,
   onAppNavigate,
+  icons,
+  categoryIcons,
 }: ManualTabPageProps = {}) {
   const [docPath, setDocPath] = useState<string | null>(null);
   const { content, loading, error } = useManualLoader(docPath);
@@ -775,6 +777,7 @@ export function ManualTabPage({
                 onSelectHeading={handleTocSelectHeading}
                 activeHeadingId={activeHeadingId}
                 defaultExpandCategories={defaultExpandCategories}
+                categoryIcons={categoryIcons}
               />
             </div>
           </aside>
@@ -814,6 +817,7 @@ export function ManualTabPage({
                   onSelectHeading={handleTocSelectHeading}
                   activeHeadingId={activeHeadingId}
                   defaultExpandCategories={defaultExpandCategories}
+                  categoryIcons={categoryIcons}
                 />
               </div>
             </div>
@@ -848,6 +852,7 @@ export function ManualTabPage({
             {content && (
               <MarkdownRenderer
                 content={content}
+                icons={icons}
                 onLinkClick={handleLinkClick}
                 onAppLinkClick={handleAppLinkClick}
               />
@@ -932,6 +937,7 @@ export function ManualTabPage({
                     {sidebarContent && (
                       <MarkdownRenderer
                         content={sidebarContent}
+                        icons={icons}
                         onLinkClick={handleSidebarLinkClick}
                         onAppLinkClick={handleSidebarAppLinkClick}
                       />

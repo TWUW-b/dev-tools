@@ -226,4 +226,50 @@ describe('useManualHeadings', () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  /**
+   * 見出しにアイコン（生 HTML）を入れたときの id 一致（v1.5.0）。
+   *
+   * 回帰の経緯: 目次側は Markdown ソースから slug を作るため、見出しに
+   * `<app-icon>` や lucide の SVG を直接書くと、本文側（rehype-slug は
+   * レンダリング後のテキストから作る）と id が食い違い、目次から本文へ
+   * ジャンプできなくなっていた。目次の表示も HTML ソースがそのまま並んでいた。
+   */
+  it('見出し内の生 HTML を除き、レンダリング結果と同じ id を作る', async () => {
+    const markdown = [
+      '# タイトル',
+      '',
+      '## <app-icon name="building"></app-icon> 新しい物件情報が入ったとき',
+      '',
+      '### <svg xmlns="http://www.w3.org/2000/svg" width="18"><rect x="1" /></svg> 手順',
+    ].join('\n');
+
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(markdown) });
+
+    const { result } = renderHook(() => useManualHeadings());
+    await act(async () => {
+      await result.current.loadHeadings('/docs/icons.md');
+    });
+
+    const headings = result.current.getHeadings('/docs/icons.md');
+    // 表示テキストにはタグが残らない
+    expect(headings?.map((h) => h.text)).toEqual(['新しい物件情報が入ったとき', '手順']);
+    // id は rehype-slug と同じ「タグ除去後のテキスト（trim しない）」から作る。
+    // タグの直後の空白がそのまま残るため先頭がハイフンになる。
+    expect(headings?.map((h) => h.id)).toEqual(['-新しい物件情報が入ったとき', '-手順']);
+  });
+
+  it('画像だけの見出しでも本文側と同じ id になる', async () => {
+    const markdown = ['## ![](/icons/building.svg) 物件'].join('\n');
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(markdown) });
+
+    const { result } = renderHook(() => useManualHeadings());
+    await act(async () => {
+      await result.current.loadHeadings('/docs/img.md');
+    });
+
+    expect(result.current.getHeadings('/docs/img.md')).toEqual([
+      { id: '-物件', text: '物件', level: 2 },
+    ]);
+  });
 });
