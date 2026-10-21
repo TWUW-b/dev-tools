@@ -25,7 +25,9 @@ return [
     // API キー（Phase1 では未使用）
     'api_key' => null,
 
-    // Feedback 管理者APIキー（必須。bin2hex(random_bytes(32)) で生成）
+    // Feedback 管理者APIキー（bin2hex(random_bytes(32)) で生成）。
+    // ⚠️ dev / test 環境専用。本番では空文字にし、firebase_project_id による Firebase ログインだけで認証する。
+    //    この鍵 1 本で notes / feedback / release-notes / test-cases / export がすべて開くため。
     'feedback_admin_key' => 'CHANGE_ME_BEFORE_DEPLOY',
 
     // リリースノートのメディア保存先（任意）。既定は api/data/release-notes。

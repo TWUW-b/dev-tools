@@ -83,6 +83,11 @@ return [
 
 **注意**: `$storagePath` はプロジェクトの Docker 構成に合わせて調整する。
 
+> ⚠️ **管理キー（`X-Admin-Key` / `feedback_admin_key` / `DEBUG_ADMIN_KEY` / `VITE_DEBUG_ADMIN_KEY`）は dev / test 環境専用です。本番では設定しないでください。**
+> この鍵 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）がすべて開きます。
+> また `VITE_` の値はフロントのバンドルに平文で載ります。本番では `firebase_project_id` を設定し、
+> 管理者の Firebase ログイン（`Authorization: Bearer`）だけで認証してください。
+
 ## Step 3: PHP ルーティングバイパス
 
 バックエンドの `public/index.php` の**先頭** (フレームワーク bootstrap の前) に追加:
@@ -245,7 +250,9 @@ setDebugAdminKey(feedbackAdminKey);
 - `DebugAdmin` の `feedbackAdminKey` prop は **feedback** 用の鍵送出にのみ使われます。
   notes には別途この `setDebugAdminKey()` が必要です（同じ鍵で構いません）。
 - 鍵を渡す先はブラウザに露出するため、`/__debug` は Basic 認証やネットワーク制限と
-  併用し、鍵は本番用と分けてください。
+  併用してください。
+- **この鍵は dev / test 環境専用です。本番では `setDebugAdminKey()` を呼ばず、鍵も設定しないでください**
+  （本番は Firebase ログインで認証する。Step 2 の注意を参照）。
 
 ### 環境情報タブ（任意）
 
@@ -698,8 +705,10 @@ AI が下書き → 人が確認 → 投入）。設定の F 群に次を入れ�
 |------|-----|
 | `releaseNoteUrl` | `https://<host>/api/__debug/release-notes` |
 | `releaseNoteAuth` | `admin-key` |
-| `releaseNoteToken` | `env:VITE_DEBUG_ADMIN_KEY` と同じ鍵 |
+| `releaseNoteToken` | `env:VITE_DEBUG_ADMIN_KEY` と同じ鍵（**dev / test 環境のみ**） |
 | `releaseNotePageUrl` | 管理タブに出ている「社外公開」の URL |
+
+> 管理キーは dev / test 環境専用のため、本番には管理キーでは投入できません。本番は管理者の Firebase ログインで投入してください。
 
 API を直接叩く場合は `POST /release-notes` → `POST /:id/items` → `POST /:id/images` の順。
 メディアの説明は `POST /:id/images` の `kind` / `caption` / `alt` / `description` で付け、後から

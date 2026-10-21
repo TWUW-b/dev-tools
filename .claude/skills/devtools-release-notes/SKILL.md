@@ -19,6 +19,7 @@ description: |
   リリースノート API が使える（メディアの `kind` / `description` は v1.6.0 から）。
 - 管理 API の鍵（X-Admin-Key）がある。値はメッセージやファイルに書かず、環境変数
   `DEVTOOLS_ADMIN_KEY` で渡す。
+  **管理キーは dev / test 環境専用**。本番には設定しないため、本番へは管理者の Firebase ログインで投入する。
 - 撮影に chrome-devtools-mcp、動画の圧縮に ffmpeg を使う。
 
 スクリプトはこのスキルの `scripts/` にある（以下 `$S`）。npm で入れた場合は

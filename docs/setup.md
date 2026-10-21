@@ -263,6 +263,11 @@ return [
 > **違い**: Debug Notes は `db` が環境別の連想配列、Feedback は単一パスの文字列。
 > Feedback API の `admin_key` は管理画面（`X-Admin-Key` ヘッダー）で使用される。
 
+> ⚠️ **管理キー（`X-Admin-Key` / `feedback_admin_key` / `DEBUG_ADMIN_KEY` / `VITE_DEBUG_ADMIN_KEY`）は dev / test 環境専用です。本番では設定しないでください。**
+> この鍵 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）がすべて開きます。
+> また `VITE_` の値はフロントのバンドルに平文で載ります。本番では `firebase_project_id` を設定し、
+> 管理者の Firebase ログイン（`Authorization: Bearer`）だけで認証してください。
+
 ### 2.3 データディレクトリの作成
 
 ```bash
