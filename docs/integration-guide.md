@@ -635,6 +635,27 @@ const { unreadCount } = useReleaseNotes({ feedUrl });
 未読の判定は「最後に見た号より新しい号」で、`localStorage` に持つ。
 `<ReleaseNotes />` を表示した時点で既読になる。
 
+#### 自作の画面で出す場合（見本: `sample/CustomReleaseNotes.tsx`）
+
+`<ReleaseNotes />` を使わず、アプリのデザインシステムで更新情報ページを作るときは、
+`sample/CustomReleaseNotes.tsx` を下敷きにする（依存なし・インライン style。データは同じ `ReleaseNote[]`）。
+サンプルアプリ（`npm run sample`）の「Release Notes」→「自作の画面の見本」で動く形を見られる。
+Tailwind 版の実例は toho_matching の `frontend/src/pages/release-notes/ReleaseNotesPage.tsx`。
+
+見た目の決まり（利用者が迷わないため。toho_matching で UI/UX レビューを通した形）:
+
+1. 号は開閉できるカード。見出しは「日付 · 号 / タイトル / 開閉の矢印」だけにし、補足文を常に出さない
+2. 号の中は「要約 → 変更点 N 件 → この号の画像・動画」。件数を先に出す
+3. 変更点は 1 件 = 番号付きの 1 枚のカード。カードの間に切れ目を作る
+4. 変更前（`kind: before`）の画像は「これまで」、変更後（`after`）は「これから」の欄の中に置く。欄が役割を言うので札は出さない
+5. 使い方・全体像（`howto` / `overview`）は、何の画像かを画像の上に、見どころ（`description`）を下に書く
+6. 号全体の画像（`item_id` が null）は変更点と同じカードにしない（番号の無い 3 件目に見える）。区切り線と見出しで分ける
+7. 元の報告（`sources`）はカードの下端に区切って置き、開ける人（管理者）にだけ出す。別タブで開く
+8. 青はリンクだけに使い、押せない札は灰色にする
+
+アプリ独自の API（ログイン中の利用者に返す一覧など）から読む場合も、`ReleaseNote[]` の形で返せばこの見本がそのまま使える。
+その API が社外公開と同じ絞り込みの号を返すときは、`sources` を含めるかどうかを API 側で決める（社外向けには出さない）。
+
 ### 3. PHP のアップロード上限を上げる（動画を載せる場合）
 
 動作の変化は動画でしか示せないため、既定の上限は 50MB にしてある。
