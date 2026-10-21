@@ -53,12 +53,15 @@ async function createNote(body: Record<string, unknown>): Promise<number> {
 async function uploadMedia(
   noteId: number,
   file: { data: Buffer; name: string; type: string },
-  extra?: { itemId?: number; caption?: string },
+  extra?: { itemId?: number; caption?: string; kind?: string; alt?: string; description?: string },
 ) {
   const form = new FormData();
   form.append("file", new Blob([file.data], { type: file.type }), file.name);
   if (extra?.itemId !== undefined) form.append("item_id", String(extra.itemId));
   if (extra?.caption) form.append("caption", extra.caption);
+  if (extra?.kind) form.append("kind", extra.kind);
+  if (extra?.alt) form.append("alt", extra.alt);
+  if (extra?.description) form.append("description", extra.description);
   return fetch(url(`/release-notes/${noteId}/images`), {
     method: "POST",
     body: form,
@@ -411,6 +414,249 @@ describe("メディア", () => {
     // 号ごと削除すると、残りのメディアも辿れなくなる（実体も片付けられる）
     expect((await admin(`/release-notes/${noteId}`, { method: "DELETE" })).status).toBe(200);
     expect((await anon(`${BASE_URL}${two.url}`)).status).toBe(404);
+  });
+});
+
+// ─── メディアの説明（RFC 003） ───
+
+describe("メディアの説明", () => {
+  test("kind / alt / description を付けて添付でき、一覧に返る", async () => {
+    const noteId = await createNote({ version: "第950号", title: "説明つき", released_on: "2026-06-01" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, { method: "POST", json: { headline: "保存できるようにしました" } })).json()).data;
+
+    const res = await uploadMedia(noteId, { data: PNG_1X1, name: "02-after.png", type: "image/png" }, {
+      itemId: item.id,
+      kind: "after",
+      caption: "変更後: 保存ボタンが押せます",
+      alt: "保存ボタンが青く表示された編集画面",
+      description: "右下の保存ボタンが有効になっている",
+    });
+    expect(res.status).toBe(201);
+    const media = (await res.json()).data;
+    expect(media.kind).toBe("after");
+    expect(media.alt).toBe("保存ボタンが青く表示された編集画面");
+    expect(media.description).toBe("右下の保存ボタンが有効になっている");
+
+    const list = await (await admin("/release-notes")).json();
+    const listed = list.data.find((n: { id: number }) => n.id === noteId).images[0];
+    expect(listed).toMatchObject({ item_id: item.id, kind: "after", caption: "変更後: 保存ボタンが押せます" });
+  });
+
+  test("説明を付けない従来の添付は kind 等が null になる", async () => {
+    const noteId = await createNote({ version: "第951号", title: "従来", released_on: "2026-06-02" });
+    createdNotes.push(noteId);
+    const media = (await (await uploadMedia(noteId, { data: PNG_1X1, name: "a.png", type: "image/png" })).json()).data;
+    expect(media.kind).toBeNull();
+    expect(media.alt).toBeNull();
+    expect(media.description).toBeNull();
+  });
+
+  test("不明な kind は拒否する", async () => {
+    const noteId = await createNote({ version: "第952号", title: "kind検証", released_on: "2026-06-03" });
+    createdNotes.push(noteId);
+    const res = await uploadMedia(noteId, { data: PNG_1X1, name: "a.png", type: "image/png" }, { kind: "side" });
+    expect(res.status).toBe(400);
+  });
+
+  test("PATCH で説明・紐付け先・並びを直せる。URL は変わらない", async () => {
+    const noteId = await createNote({ version: "第953号", title: "PATCH検証", released_on: "2026-06-04" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, { method: "POST", json: { headline: "項目" } })).json()).data;
+    const media = (await (await uploadMedia(noteId, { data: PNG_1X1, name: "a.png", type: "image/png" })).json()).data;
+
+    const res = await admin(`/release-notes/${noteId}/images/${media.id}`, {
+      method: "PATCH",
+      json: { item_id: item.id, kind: "before", caption: "変更前", description: "保存ボタンが灰色", sort_order: 5 },
+    });
+    expect(res.status).toBe(200);
+    const updated = (await res.json()).data;
+    expect(updated).toMatchObject({ item_id: item.id, kind: "before", caption: "変更前", description: "保存ボタンが灰色", sort_order: 5 });
+    expect(updated.url).toBe(media.url);
+
+    // 空文字と null は「説明なし」に戻す
+    const cleared = (await (await admin(`/release-notes/${noteId}/images/${media.id}`, {
+      method: "PATCH",
+      json: { kind: null, description: "", item_id: null },
+    })).json()).data;
+    expect(cleared).toMatchObject({ kind: null, description: null, item_id: null, caption: "変更前" });
+  });
+
+  test("PATCH は他の号の項目・不明な kind・空の更新を拒否し、他の号のメディアは 404", async () => {
+    const a = await createNote({ version: "第954号", title: "A", released_on: "2026-06-05" });
+    const b = await createNote({ version: "第955号", title: "B", released_on: "2026-06-06" });
+    createdNotes.push(a, b);
+    const itemOfB = (await (await admin(`/release-notes/${b}/items`, { method: "POST", json: { headline: "Bの項目" } })).json()).data;
+    const media = (await (await uploadMedia(a, { data: PNG_1X1, name: "a.png", type: "image/png" })).json()).data;
+
+    const patch = (noteId: number, json: unknown) =>
+      admin(`/release-notes/${noteId}/images/${media.id}`, { method: "PATCH", json });
+
+    expect((await patch(a, { item_id: itemOfB.id })).status).toBe(400);
+    expect((await patch(a, { kind: "side" })).status).toBe(400);
+    expect((await patch(a, {})).status).toBe(400);
+    expect((await patch(b, { caption: "x" })).status).toBe(404);
+  });
+
+  test("PATCH は管理者のみ", async () => {
+    const res = await anon("/release-notes/1/images/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caption: "x" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  test("公開ページに役割の札・説明が出て、変更前と変更後は横並びになる", async () => {
+    const noteId = await createNote({
+      version: "第956号", title: "公開ページ検証", released_on: "2026-06-07", status: "published", is_public: true,
+    });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, { method: "POST", json: { headline: "見やすくしました", category: "improve" } })).json()).data;
+    await uploadMedia(noteId, { data: PNG_1X1, name: "01-before.png", type: "image/png" }, { itemId: item.id, kind: "before", caption: "変更前の一覧" });
+    await uploadMedia(noteId, { data: PNG_1X1, name: "01-after.png", type: "image/png" }, {
+      itemId: item.id, kind: "after", caption: "変更後の一覧", description: "<b>件数</b>が見出しの横に出る", alt: "件数つきの一覧",
+    });
+
+    const tokens = (await (await admin("/release-notes/tokens")).json()).data;
+    const html = await (await anon(`${BASE_URL}${tokens.public.pageUrl}`)).text();
+    expect(html).toContain('class="media pair"');
+    expect(html).toContain(">変更前<");
+    expect(html).toContain(">変更後<");
+    expect(html).toContain('alt="件数つきの一覧"');
+    // 説明もエスケープされる
+    expect(html).toContain("&lt;b&gt;件数&lt;/b&gt;が見出しの横に出る");
+  });
+});
+
+// ─── 元の報告（feedback / note）との紐付け（R-010） ───
+
+describe("元の報告との紐付け", () => {
+  const cleanup: Array<() => Promise<unknown>> = [];
+  afterAll(async () => {
+    for (const fn of cleanup) await fn();
+  });
+
+  async function createFeedback(message: string): Promise<number> {
+    const res = await admin("/feedbacks", { method: "POST", json: { kind: "bug", message } });
+    expect(res.status).toBe(201);
+    const id = (await res.json()).data.id as number;
+    cleanup.push(() => admin(`/feedbacks/${id}`, { method: "DELETE" }));
+    return id;
+  }
+
+  async function createDebugNote(title: string): Promise<number> {
+    const res = await admin("/notes", {
+      method: "POST",
+      json: { title, content: `${title} の詳細`, route: "/rn", screenName: "RN" },
+    });
+    expect(res.status).toBe(201);
+    const id = (await res.json()).note.id as number;
+    cleanup.push(() => admin(`/notes/${id}`, { method: "DELETE" }));
+    return id;
+  }
+
+  test("sources を付けて項目を作ると、元の報告のタイトルが入り、feedback_id も埋まる", async () => {
+    const fb = await createFeedback("保存ボタンが押せない\n担当者を変えると灰色のまま");
+    const dn = await createDebugNote("一覧の件数が出ない");
+    const noteId = await createNote({ version: "第960号", title: "紐付け", released_on: "2026-07-01" });
+    createdNotes.push(noteId);
+
+    const res = await admin(`/release-notes/${noteId}/items`, {
+      method: "POST",
+      json: {
+        headline: "保存できるようにしました",
+        sources: [{ type: "feedback", id: fb }, { type: "note", id: dn, title: "件数の表示" }, { type: "feedback", id: fb }],
+      },
+    });
+    expect(res.status).toBe(201);
+    const item = (await res.json()).data;
+    expect(item.feedback_id).toBe(fb);
+    // 重複は 1 つにまとめ、タイトルは feedback の本文 1 行目 / 指定があればそれ
+    expect(item.sources.map((s: { type: string; id: number; title: string }) => [s.type, s.id, s.title])).toEqual([
+      ["feedback", fb, "保存ボタンが押せない"],
+      ["note", dn, "件数の表示"],
+    ]);
+    for (const src of item.sources) {
+      if (src.url !== null) expect(src.url).toContain(String(src.id));
+    }
+  });
+
+  test("存在しない報告・不正な種類は 400", async () => {
+    const noteId = await createNote({ version: "第961号", title: "紐付け拒否", released_on: "2026-07-02" });
+    createdNotes.push(noteId);
+    const post = (sources: unknown) =>
+      admin(`/release-notes/${noteId}/items`, { method: "POST", json: { headline: "x", sources } });
+
+    expect((await post([{ type: "feedback", id: 99999999 }])).status).toBe(400);
+    expect((await post([{ type: "ticket", id: 1 }])).status).toBe(400);
+    expect((await post([{ type: "note", id: "abc" }])).status).toBe(400);
+    expect((await post({ type: "note", id: 1 })).status).toBe(400);
+  });
+
+  test("PATCH で sources を置き換え・全部外せる", async () => {
+    const a = await createFeedback("A の報告");
+    const b = await createFeedback("B の報告");
+    const noteId = await createNote({ version: "第962号", title: "置き換え", released_on: "2026-07-03" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", sources: [{ type: "feedback", id: a }] },
+    })).json()).data;
+
+    const replaced = (await (await admin(`/release-notes/${noteId}/items/${item.id}`, {
+      method: "PATCH", json: { sources: [{ type: "feedback", id: b }] },
+    })).json()).data;
+    expect(replaced.sources.map((s: { id: number }) => s.id)).toEqual([b]);
+
+    const cleared = await admin(`/release-notes/${noteId}/items/${item.id}`, { method: "PATCH", json: { sources: [] } });
+    expect(cleared.status).toBe(200);
+    expect((await cleared.json()).data.sources).toEqual([]);
+  });
+
+  test("従来の feedback_id だけの投入も紐付けとして表示される", async () => {
+    const fb = await createFeedback("従来の投入");
+    const noteId = await createNote({ version: "第963号", title: "従来", released_on: "2026-07-04" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", feedback_id: fb },
+    })).json()).data;
+    expect(item.sources).toMatchObject([{ type: "feedback", id: fb, title: "従来の投入" }]);
+  });
+
+  test("社内向けには出て、社外向け（public）のフィードとページには出ない", async () => {
+    const fb = await createFeedback("社外に出してはいけない原文");
+    const noteId = await createNote({
+      version: "第964号", title: "可視性", released_on: "2026-07-05", status: "published", is_public: true,
+    });
+    createdNotes.push(noteId);
+    await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "直しました", sources: [{ type: "feedback", id: fb }] },
+    });
+
+    const tokens = (await (await admin("/release-notes/tokens")).json()).data;
+    const itemsOf = async (feedUrl: string) =>
+      (await (await anon(`${BASE_URL}${feedUrl}`)).json()).data.find((n: { id: number }) => n.id === noteId).items;
+
+    expect((await itemsOf(tokens.internal.feedUrl))[0].sources).toHaveLength(1);
+    expect((await itemsOf(tokens.public.feedUrl))[0].sources).toEqual([]);
+
+    const internalHtml = await (await anon(`${BASE_URL}${tokens.internal.pageUrl}`)).text();
+    const publicHtml = await (await anon(`${BASE_URL}${tokens.public.pageUrl}`)).text();
+    expect(internalHtml).toContain(`フィードバック #${fb}`);
+    expect(internalHtml).toContain("社外に出してはいけない原文");
+    expect(publicHtml).not.toContain("社外に出してはいけない原文");
+  });
+
+  test("項目を消すと紐付けも消える", async () => {
+    const fb = await createFeedback("削除検証");
+    const noteId = await createNote({ version: "第965号", title: "削除", released_on: "2026-07-06" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", sources: [{ type: "feedback", id: fb }] },
+    })).json()).data;
+    expect((await admin(`/release-notes/${noteId}/items/${item.id}`, { method: "DELETE" })).status).toBe(200);
+    const list = await (await admin("/release-notes")).json();
+    expect(list.data.find((n: { id: number }) => n.id === noteId).items).toEqual([]);
   });
 });
 

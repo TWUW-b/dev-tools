@@ -111,6 +111,8 @@ $releaseNotesController = new ReleaseNotesController(
     (int) ($config['release_notes_max_upload'] ?? 52428800)
 );
 $releaseNotesController->setUrlContext($basePath, $env);
+// 各変更の元になった報告（feedback / note）をアプリ内で開く URL のひな形（R-010）。
+$releaseNotesController->setSourceUrlTemplates((array) ($config['release_notes_source_urls'] ?? []));
 
 // マニュアル画像（RFC 002 / ADR-002）。ManualItem は DB に実体を持たないため、
 // manual_item_id は自由入力の文字列（正規表現で検証したものだけをディレクトリ名に使う）。
@@ -618,6 +620,21 @@ try {
     if ($method === 'POST' && preg_match('#^/release-notes/(\d+)/images/?$#', $relativePath, $matches)) {
         $result = $releaseNotesController->uploadImage((int) $matches[1]);
         http_response_code($result['success'] ? 201 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
+    // PATCH /release-notes/{id}/images/{imageId}（kind / caption / alt / description / item_id / sort_order）
+    if ($method === 'PATCH' && preg_match('#^/release-notes/(\d+)/images/(\d+)/?$#', $relativePath, $matches)) {
+        $rawInput = file_get_contents('php://input');
+        if (strlen($rawInput) > 1048576) {
+            http_response_code(413);
+            echo json_encode(['success' => false, 'error' => 'Request body too large']);
+            exit;
+        }
+        $input = json_decode($rawInput, true) ?? [];
+        $result = $releaseNotesController->updateImage((int) $matches[1], (int) $matches[2], $input);
+        http_response_code($result['success'] ? 200 : ($result['error'] === 'Not found' ? 404 : 400));
         echo json_encode($result);
         exit;
     }

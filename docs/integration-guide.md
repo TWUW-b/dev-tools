@@ -655,7 +655,22 @@ php_value post_max_size 64M
 
 ### 4. 文面を投入する
 
-投入は feedback-fix のリリースノート画面から行う（マージ済み・本番反映済みのカードから
+**同梱スキル `devtools-release-notes` を使う（v1.6.0+・推奨）。** 原稿を
+`docs/release-notes/<YYYY-MM-DD>-<名前>/`（`release.json` と `media/`）としてアプリのリポジトリに置き、
+検査 → 下見 → 下書きで投入 → ユーザー確認 → 公開、の順で進める。手順は
+`.claude/skills/devtools-release-notes/SKILL.md`。スキルを使うには、このフォルダをアプリの
+`.claude/skills/` にコピーする（`node_modules/@twuw-b/dev-tools/.claude/skills/devtools-release-notes`）。
+
+原稿の画像・動画には必ず役割（`kind`: 変更前 / 変更後 / 使い方 / 全体像）・`caption`（何が写っているか）・
+`description`（どこを見ればよいか）を付ける。検査スクリプトが、説明の無いメディアや項目に紐付かない
+メディアを止める。`.gitignore` には次を足す:
+
+```
+docs/release-notes/**/preview.html
+docs/release-notes/**/pushed.*.json
+```
+
+feedback-fix から投入する場合は、feedback-fix のリリースノート画面から行う（マージ済み・本番反映済みのカードから
 AI が下書き → 人が確認 → 投入）。設定の F 群に次を入れる。
 
 | 設定 | 値 |
@@ -666,9 +681,38 @@ AI が下書き → 人が確認 → 投入）。設定の F 群に次を入れ�
 | `releaseNotePageUrl` | 管理タブに出ている「社外公開」の URL |
 
 API を直接叩く場合は `POST /release-notes` → `POST /:id/items` → `POST /:id/images` の順。
-詳細は `api/openapi.yaml` の ReleaseNotes セクションを参照。
+メディアの説明は `POST /:id/images` の `kind` / `caption` / `alt` / `description` で付け、後から
+`PATCH /:id/images/:imageId` で直せる（v1.6.0+）。詳細は `api/openapi.yaml` の ReleaseNotes セクションを参照。
 
-### 5. 必ずブラウザで確認する
+### 5. 元の報告へのリンク（任意・v1.6.0+）
+
+各変更に紐付けた feedback / note を、社内向けの表示からアプリ内で開けるようにする。
+`config.php` に開く先の URL を書く（`{id}` が報告の ID に置き換わる）。公開ページ（internal）は
+API のオリジンで開くので、アプリのオリジンを含む絶対 URL で書く。
+
+```php
+'release_notes_source_urls' => [
+    'feedback' => 'https://app.example.com/__admin?feedback={id}',
+    'note' => 'https://app.example.com/__admin?note={id}',
+],
+```
+
+`DebugAdmin`（`/__admin`）は `?note=` と `?feedback=`、`FeedbackAdmin` は `?feedback=` で該当項目を開く。
+社外公開（public トークン）のページとフィードには、報告の ID もタイトルも出ない。
+
+### 6. API をフォークしている場合（v1.6.0 への更新）
+
+`ReleaseNotesController.php` を手で改変して取り込んでいるアプリは、次をマージする。
+
+- `Database.php` の v15（`release_note_images` に `kind` / `alt` / `description` 列を追加）と
+  v16（`release_note_item_sources` テーブル。既存の `feedback_id` を移す）
+- `ReleaseNotesController.php` の `MEDIA_KINDS`、`uploadImage` の新しい項目、`updateImage`、`formatImage`、
+  `SOURCE_TYPES` と sources まわり（`resolveSources` / `replaceSources` / `sourcesByItem` / `formatSource`、
+  `addItem` / `updateItem` / `deleteItem` の変更、`collect` で public には出さない処理）、
+  公開ページの描画（`renderFigure` / `renderSources` / カバーの説明）
+- `index.php` の `PATCH /release-notes/{id}/images/{imageId}` と `setSourceUrlTemplates`
+
+### 7. 必ずブラウザで確認する
 
 **API が 200 を返すことと、画面に出ることは別**。特に添付は curl では気づけない。
 公開 URL を開いて、画像が表示され、動画が再生でき、シークできるところまで見る。

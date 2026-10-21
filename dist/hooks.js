@@ -1,4 +1,4 @@
-import { u as s, a as u, b as o } from "./chunks/useReleaseNotes-D1ZTqeG2.js";
+import { u as s, a as u, b as o } from "./chunks/useReleaseNotes-DvdEGOj5.js";
 import { s as b, u as l } from "./chunks/useManualPiP-CjK-TJ87.js";
 import { u as n, a as t, b as M, c as m, d as c, e as i } from "./chunks/useFeedbackAdminMode-DpbrwKWq.js";
 export {

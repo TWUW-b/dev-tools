@@ -35,6 +35,18 @@ class ReleaseNotesController
 
     private const CATEGORIES = ['fix', 'improve', 'feature'];
 
+    /**
+     * メディアの役割（RFC 003）。caption だけでは「変更前か変更後か」が読み手に伝わらないため持つ。
+     *   before … 変更前 / after … 変更後 / howto … 使い方 / overview … 全体像
+     */
+    private const MEDIA_KINDS = ['before', 'after', 'howto', 'overview'];
+
+    /** 項目の元になった報告の種類（R-010）。feedback = 利用者の報告、note = デバッグノート */
+    private const SOURCE_TYPES = ['feedback', 'note'];
+
+    /** 1 項目に紐付けられる報告の数の上限 */
+    private const MAX_SOURCES_PER_ITEM = 20;
+
     /** 1号あたりのメディア数上限。 */
     private const MAX_MEDIA_PER_NOTE = 30;
 
@@ -78,6 +90,15 @@ class ReleaseNotesController
     /** env=test 等を引き継ぐためのクエリ（例: '?env=test'。dev なら空文字）。 */
     private string $urlQuery = '';
 
+    /**
+     * 報告をアプリ内で開く URL のひな形（例: ['feedback' => 'https://app.example.com/feedbacks?feedback={id}']）。
+     * dev-tools はホストアプリの画面構成を知らないので、config.php の release_notes_source_urls で受け取る。
+     */
+    private array $sourceUrlTemplates = [];
+
+    /** 公開ページの描画中のスコープ。社外向けには報告の ID・タイトルを出さない。 */
+    private string $renderScope = self::SCOPE_PUBLIC;
+
     public function __construct(Database $db, string $mediaDir, int $maxUploadSize = 52428800)
     {
         $this->db = $db;
@@ -93,6 +114,19 @@ class ReleaseNotesController
      * URL の組み立て情報を注入する。
      * 統合先ごとにベースパスが違う（/__debug/api など）ため、ルーター側で算出したものを渡す。
      */
+    /**
+     * 報告をアプリ内で開く URL のひな形を設定する。{id} が報告の ID に置き換わる。
+     */
+    public function setSourceUrlTemplates(array $templates): void
+    {
+        $this->sourceUrlTemplates = [];
+        foreach (self::SOURCE_TYPES as $type) {
+            if (isset($templates[$type]) && is_string($templates[$type]) && $templates[$type] !== '') {
+                $this->sourceUrlTemplates[$type] = $templates[$type];
+            }
+        }
+    }
+
     public function setUrlContext(string $apiBasePath, string $env): void
     {
         $base = rtrim($apiBasePath, '/');
@@ -237,6 +271,11 @@ class ReleaseNotesController
             "SELECT * FROM release_note_images WHERE release_note_id IN ($ph) ORDER BY sort_order, id",
             $ids
         );
+        // 社外向けには報告の ID・タイトルを出さない（内部の管理番号と、利用者の書いた原文のため）。
+        $sourcesByItem = $scope === self::SCOPE_PUBLIC ? [] : $this->sourcesByItem(array_map(
+            static fn($i) => (int) $i['id'],
+            $items
+        ));
 
         // 「前回（○月○日 第N号）からの変更」を画面が出せるように、参照先の最小情報を添える。
         // 参照先が絞り込みで落ちている場合もあるため、元の全件から引く。
@@ -270,7 +309,7 @@ class ReleaseNotesController
                 'created_at' => Database::toJstIso($n['created_at']),
                 'updated_at' => Database::toJstIso($n['updated_at']),
                 'items' => array_values(array_map(
-                    fn($i) => $this->formatItem($i),
+                    fn($i) => $this->formatItem($i, $sourcesByItem[(int) $i['id']] ?? []),
                     array_filter($items, static fn($i) => (int) $i['release_note_id'] === $id)
                 )),
                 'images' => array_values(array_map(
@@ -282,7 +321,7 @@ class ReleaseNotesController
         return $out;
     }
 
-    private function formatItem(array $i): array
+    private function formatItem(array $i, array $sources = []): array
     {
         return [
             'id' => (int) $i['id'],
@@ -294,7 +333,114 @@ class ReleaseNotesController
             'before_text' => $i['before_text'],
             'after_text' => $i['after_text'],
             'feedback_id' => $i['feedback_id'] === null ? null : (int) $i['feedback_id'],
+            'sources' => array_map(fn($s) => $this->formatSource($s), $sources),
         ];
+    }
+
+    private function formatSource(array $s): array
+    {
+        $type = (string) $s['source_type'];
+        $id = (int) $s['source_id'];
+        $tpl = $this->sourceUrlTemplates[$type] ?? null;
+        return [
+            'type' => $type,
+            'id' => $id,
+            'title' => $s['title'],
+            'url' => $tpl === null ? null : str_replace('{id}', (string) $id, $tpl),
+        ];
+    }
+
+    /**
+     * 項目 id ごとの報告一覧。
+     * @param int[] $itemIds
+     * @return array<int, array<int, array>>
+     */
+    private function sourcesByItem(array $itemIds): array
+    {
+        if (!$itemIds) {
+            return [];
+        }
+        $ph = implode(',', array_fill(0, count($itemIds), '?'));
+        $rows = $this->db->query(
+            "SELECT * FROM release_note_item_sources WHERE item_id IN ($ph) ORDER BY sort_order, id",
+            $itemIds
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[(int) $r['item_id']][] = $r;
+        }
+        return $out;
+    }
+
+    /**
+     * 入力の sources を検証して、保存する行に整える。
+     * タイトルを省いたら元の報告から引く（feedback は本文の 1 行目、note はタイトル）。
+     * 存在しない報告は紐付けない（誤った ID のまま告知すると、リンク先が別の報告になる）。
+     *
+     * @return array{0: ?array, 1: ?string} [行の配列, エラー]
+     */
+    private function resolveSources(mixed $input): array
+    {
+        if (!is_array($input) || !array_is_list($input)) {
+            return [null, 'sources は配列で指定してください'];
+        }
+        if (count($input) > self::MAX_SOURCES_PER_ITEM) {
+            return [null, 'sources は ' . self::MAX_SOURCES_PER_ITEM . ' 件までです'];
+        }
+        $rows = [];
+        $seen = [];
+        foreach ($input as $n => $src) {
+            $type = is_array($src) ? ($src['type'] ?? null) : null;
+            $id = is_array($src) ? ($src['id'] ?? null) : null;
+            if (!in_array($type, self::SOURCE_TYPES, true)) {
+                return [null, 'sources[' . $n . '].type は feedback か note です'];
+            }
+            if (!is_int($id) && !(is_string($id) && preg_match('/^\d+$/', $id) === 1)) {
+                return [null, 'sources[' . $n . '].id は整数で指定してください'];
+            }
+            $id = (int) $id;
+            if (isset($seen[$type . ':' . $id])) {
+                continue;
+            }
+            $seen[$type . ':' . $id] = true;
+
+            $original = $type === 'feedback'
+                ? $this->db->fetchOne('SELECT message AS t FROM feedbacks WHERE id = ?', [$id])
+                : $this->db->fetchOne('SELECT title AS t FROM notes WHERE id = ? AND deleted_at IS NULL', [$id]);
+            if ($original === null) {
+                $label = $type === 'feedback' ? 'フィードバック' : 'ノート';
+                return [null, "{$label} #{$id} が見つかりません"];
+            }
+            $title = $this->nullableText($src['title'] ?? null) ?? $this->firstLine((string) $original['t']);
+            $rows[] = ['source_type' => $type, 'source_id' => $id, 'title' => $title];
+        }
+        return [$rows, null];
+    }
+
+    private function firstLine(string $text): ?string
+    {
+        $line = trim(strtok($text, "\r\n") ?: '');
+        if ($line === '') {
+            return null;
+        }
+        return mb_strlen($line) > 80 ? mb_substr($line, 0, 80) . '…' : $line;
+    }
+
+    private function replaceSources(int $itemId, array $rows): void
+    {
+        $this->db->execute('DELETE FROM release_note_item_sources WHERE item_id = ?', [$itemId]);
+        foreach ($rows as $order => $r) {
+            $this->db->execute(
+                'INSERT INTO release_note_item_sources (item_id, source_type, source_id, title, sort_order) VALUES (?, ?, ?, ?, ?)',
+                [$itemId, $r['source_type'], $r['source_id'], $r['title'], $order]
+            );
+        }
+    }
+
+    private function itemWithSources(int $itemId): array
+    {
+        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$itemId]);
+        return $this->formatItem($row ?? [], $this->sourcesByItem([$itemId])[$itemId] ?? []);
     }
 
     /**
@@ -311,6 +457,9 @@ class ReleaseNotesController
             'mime_type' => $im['mime_type'],
             'size' => (int) $im['size'],
             'caption' => $im['caption'],
+            'kind' => $im['kind'] ?? null,
+            'alt' => $im['alt'] ?? null,
+            'description' => $im['description'] ?? null,
             'sort_order' => (int) $im['sort_order'],
             'url' => $this->mediaUrlBase . $im['token'] . $this->urlQuery,
         ];
@@ -490,6 +639,28 @@ class ReleaseNotesController
         }
         $category = in_array($input['category'] ?? '', self::CATEGORIES, true) ? $input['category'] : 'fix';
 
+        $feedbackId = isset($input['feedback_id']) && is_numeric($input['feedback_id']) ? (int) $input['feedback_id'] : null;
+        $sources = null;
+        if (array_key_exists('sources', $input)) {
+            [$sources, $err] = $this->resolveSources($input['sources']);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
+            }
+            // 投入側(feedback-fix)は feedback_id で告知済みを突き合わせるので、指定が無ければ埋めておく。
+            if ($feedbackId === null) {
+                foreach ($sources as $r) {
+                    if ($r['source_type'] === 'feedback') {
+                        $feedbackId = $r['source_id'];
+                        break;
+                    }
+                }
+            }
+        } elseif ($feedbackId !== null) {
+            // 従来の feedback_id だけの投入も、報告の紐付けとして表示できるようにする。
+            // 元の報告が無い（別環境の ID など）ときは表示用の紐付けだけ省く。
+            [$sources] = $this->resolveSources([['type' => 'feedback', 'id' => $feedbackId]]);
+        }
+
         $order = $input['sort_order'] ?? null;
         if (!is_int($order)) {
             $row = $this->db->fetchOne(
@@ -511,12 +682,15 @@ class ReleaseNotesController
                 $this->nullableText($input['where_text'] ?? null),
                 $this->nullableText($input['before_text'] ?? null),
                 $this->nullableText($input['after_text'] ?? null),
-                isset($input['feedback_id']) && is_numeric($input['feedback_id']) ? (int) $input['feedback_id'] : null,
+                $feedbackId,
             ]
         );
 
-        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$this->db->lastInsertId()]);
-        return ['success' => true, 'data' => $this->formatItem($row ?? [])];
+        $itemId = (int) $this->db->lastInsertId();
+        if ($sources) {
+            $this->replaceSources($itemId, $sources);
+        }
+        return ['success' => true, 'data' => $this->itemWithSources($itemId)];
     }
 
     public function updateItem(int $noteId, int $itemId, array $input): array
@@ -550,15 +724,27 @@ class ReleaseNotesController
                 $binds[] = $input[$key] === null ? null : (int) $input[$key];
             }
         }
-        if (!$fields) {
+        // sources を送ったときは丸ごと置き換える（[] で全部外す）。
+        $sources = null;
+        if (array_key_exists('sources', $input)) {
+            [$sources, $err] = $this->resolveSources($input['sources']);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
+            }
+        }
+        if (!$fields && $sources === null) {
             return ['success' => false, 'error' => '更新する項目がありません'];
         }
 
-        $binds[] = $itemId;
-        $this->db->execute('UPDATE release_note_items SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+        if ($fields) {
+            $binds[] = $itemId;
+            $this->db->execute('UPDATE release_note_items SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+        }
+        if ($sources !== null) {
+            $this->replaceSources($itemId, $sources);
+        }
 
-        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$itemId]);
-        return ['success' => true, 'data' => $this->formatItem($row ?? [])];
+        return ['success' => true, 'data' => $this->itemWithSources($itemId)];
     }
 
     /**
@@ -579,6 +765,7 @@ class ReleaseNotesController
         $this->db->beginTransaction();
         try {
             $this->db->execute('DELETE FROM release_note_images WHERE item_id = ?', [$itemId]);
+            $this->db->execute('DELETE FROM release_note_item_sources WHERE item_id = ?', [$itemId]);
             $this->db->execute('DELETE FROM release_note_items WHERE id = ?', [$itemId]);
             $this->db->commit();
         } catch (\Exception $e) {
@@ -661,6 +848,11 @@ class ReleaseNotesController
             }
         }
 
+        $kind = $this->nullableText($_POST['kind'] ?? null);
+        if ($kind !== null && !in_array($kind, self::MEDIA_KINDS, true)) {
+            return ['success' => false, 'error' => 'kind は before / after / howto / overview のいずれかです'];
+        }
+
         $dir = $this->noteDir($noteId);
         if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
             return ['success' => false, 'error' => 'Failed to create storage directory'];
@@ -678,8 +870,9 @@ class ReleaseNotesController
 
         $this->db->execute(
             'INSERT INTO release_note_images
-                (release_note_id, item_id, token, stored_name, original_name, mime_type, size, caption, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (release_note_id, item_id, token, stored_name, original_name, mime_type, size, caption, sort_order,
+                 kind, alt, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $noteId,
                 $itemId,
@@ -690,10 +883,75 @@ class ReleaseNotesController
                 (int) $file['size'],
                 isset($_POST['caption']) && is_string($_POST['caption']) && $_POST['caption'] !== '' ? $_POST['caption'] : null,
                 ((int) ($order['m'] ?? -1)) + 1,
+                $kind,
+                $this->nullableText($_POST['alt'] ?? null),
+                $this->nullableText($_POST['description'] ?? null),
             ]
         );
 
         $row = $this->db->fetchOne('SELECT * FROM release_note_images WHERE id = ?', [$this->db->lastInsertId()]);
+        return ['success' => true, 'data' => $this->formatImage($row ?? [])];
+    }
+
+    /**
+     * メディアの説明・紐付け先・並びを後から直す（RFC 003）。
+     * これが無いと、説明を 1 文直すだけでも削除して上げ直すしかなく、トークン（URL）も変わる。
+     */
+    public function updateImage(int $noteId, int $imageId, array $input): array
+    {
+        $cur = $this->db->fetchOne(
+            'SELECT id FROM release_note_images WHERE id = ? AND release_note_id = ?',
+            [$imageId, $noteId]
+        );
+        if ($cur === null) {
+            return ['success' => false, 'error' => 'Not found'];
+        }
+
+        $fields = [];
+        $binds = [];
+        foreach (['caption', 'alt', 'description'] as $key) {
+            if (array_key_exists($key, $input)) {
+                $fields[] = "$key = ?";
+                $binds[] = $this->nullableText($input[$key]);
+            }
+        }
+        if (array_key_exists('kind', $input)) {
+            $kind = $this->nullableText($input['kind']);
+            if ($kind !== null && !in_array($kind, self::MEDIA_KINDS, true)) {
+                return ['success' => false, 'error' => 'kind は before / after / howto / overview のいずれかです'];
+            }
+            $fields[] = 'kind = ?';
+            $binds[] = $kind;
+        }
+        if (array_key_exists('item_id', $input)) {
+            $itemId = $input['item_id'] === null ? null : (int) $input['item_id'];
+            if ($itemId !== null) {
+                $owns = $this->db->fetchOne(
+                    'SELECT id FROM release_note_items WHERE id = ? AND release_note_id = ?',
+                    [$itemId, $noteId]
+                );
+                if ($owns === null) {
+                    return ['success' => false, 'error' => 'item_id がこのリリースの項目ではありません'];
+                }
+            }
+            $fields[] = 'item_id = ?';
+            $binds[] = $itemId;
+        }
+        if (array_key_exists('sort_order', $input)) {
+            if (!is_int($input['sort_order'])) {
+                return ['success' => false, 'error' => 'sort_order は整数で指定してください'];
+            }
+            $fields[] = 'sort_order = ?';
+            $binds[] = $input['sort_order'];
+        }
+        if (!$fields) {
+            return ['success' => false, 'error' => '更新する項目がありません'];
+        }
+
+        $binds[] = $imageId;
+        $this->db->execute('UPDATE release_note_images SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+
+        $row = $this->db->fetchOne('SELECT * FROM release_note_images WHERE id = ?', [$imageId]);
         return ['success' => true, 'data' => $this->formatImage($row ?? [])];
     }
 
@@ -953,6 +1211,7 @@ class ReleaseNotesController
         // 公開 URL でも検索エンジンには載せない（クライアントに配る前提の限定公開）。
         header('X-Robots-Tag: noindex, nofollow');
         header('Cache-Control: private, no-store');
+        $this->renderScope = $scope;
         echo $this->renderPage($this->collect($scope), $scope);
     }
 
@@ -1072,7 +1331,7 @@ HTML;
         $summaryBlock = '';
         if ($n['summary'] !== null && $n['summary'] !== '' || $cover !== null) {
             $summaryBlock = '<div class="summary-row">'
-                . ($cover !== null ? '<div class="cover">' . $this->renderMedia($cover) . '</div>' : '')
+                . ($cover !== null ? '<div class="cover media">' . $this->renderFigure($cover) . '</div>' : '')
                 . (($n['summary'] ?? '') !== '' ? '<p class="summary">' . nl2br($e($n['summary'])) . '</p>' : '')
                 . '</div>';
         }
@@ -1109,11 +1368,12 @@ HTML;
         if ($media) {
             $figs = [];
             foreach ($media as $m) {
-                $figs[] = '<figure>' . $this->renderMedia($m)
-                    . (($m['caption'] ?? null) !== null ? '<figcaption>' . $e($m['caption']) . '</figcaption>' : '')
-                    . '</figure>';
+                $figs[] = $this->renderFigure($m);
             }
-            $mediaHtml = '<div class="media">' . implode('', $figs) . '</div>';
+            // 変更前と変更後がそろっているときは横に並べて見比べられるようにする（狭い画面では縦）。
+            $kinds = array_column($media, 'kind');
+            $pair = in_array('before', $kinds, true) && in_array('after', $kinds, true);
+            $mediaHtml = '<div class="media' . ($pair ? ' pair' : '') . '">' . implode('', $figs) . '</div>';
         }
 
         // 「これまで → これから」の対で読ませる。片方だけだと何が変わったのか伝わらない。
@@ -1130,8 +1390,61 @@ HTML;
         return '<li class="item"><span class="num">' . $index . '.</span><div class="item-body">'
             . '<p class="headline">' . $e($item['headline']) . '</p>'
             . (($item['where_text'] ?? null) !== null ? '<p class="where">場所: ' . $e($item['where_text']) . '</p>' : '')
+            . $this->renderSources($item['sources'] ?? [])
             . $ba . $mediaHtml
             . '</div></li>';
+    }
+
+    /**
+     * 「対応: フィードバック #24 〜」の行。社内向け（internal）のページだけに出す。
+     */
+    private function renderSources(array $sources): string
+    {
+        if ($this->renderScope === self::SCOPE_PUBLIC || !$sources) {
+            return '';
+        }
+        $e = static fn(?string $s): string => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        $parts = [];
+        foreach ($sources as $s) {
+            $label = ($s['type'] === 'feedback' ? 'フィードバック' : 'ノート') . ' #' . (int) $s['id'];
+            $ref = $s['url'] !== null && preg_match('#^(https?://|/)#', (string) $s['url']) === 1
+                ? '<a href="' . $e($s['url']) . '" target="_blank" rel="noopener">' . $e($label) . '</a>'
+                : $e($label);
+            $parts[] = '<li>' . $ref . (($s['title'] ?? null) !== null ? ' <span class="src-title">' . $e($s['title']) . '</span>' : '') . '</li>';
+        }
+        return '<div class="sources"><span class="src-label">対応</span><ul>' . implode('', $parts) . '</ul></div>';
+    }
+
+    /**
+     * メディア 1 つ分。役割の札（変更前／変更後…）→ 本体 → caption → description の順に出す。
+     * caption は「何が写っているか」の 1 文、description は「どこを見ればよいか」。
+     */
+    private function renderFigure(array $m): string
+    {
+        $e = static fn(?string $s): string => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        $kind = $m['kind'] ?? null;
+        $label = $kind !== null ? $this->mediaKindLabel($kind) : '';
+        return '<figure' . ($kind !== null ? ' class="k-' . $e($kind) . '"' : '') . '>'
+            . ($label !== '' ? '<span class="kind kind-' . $e($kind) . '">' . $e($label) . '</span>' : '')
+            . $this->renderMedia($m)
+            . ((($m['caption'] ?? null) !== null || ($m['description'] ?? null) !== null)
+                ? '<figcaption>'
+                    . (($m['caption'] ?? null) !== null ? '<span class="cap">' . $e($m['caption']) . '</span>' : '')
+                    . (($m['description'] ?? null) !== null ? '<span class="desc">' . nl2br($e($m['description'])) . '</span>' : '')
+                    . '</figcaption>'
+                : '')
+            . '</figure>';
+    }
+
+    private function mediaKindLabel(string $kind): string
+    {
+        return match ($kind) {
+            'before' => '変更前',
+            'after' => '変更後',
+            'howto' => '使い方',
+            'overview' => '全体像',
+            default => '',
+        };
     }
 
     /**
@@ -1140,10 +1453,12 @@ HTML;
     private function renderMedia(array $m): string
     {
         $url = htmlspecialchars((string) $m['url'], ENT_QUOTES, 'UTF-8');
-        $alt = htmlspecialchars((string) ($m['caption'] ?? ''), ENT_QUOTES, 'UTF-8');
+        // alt が無ければ従来どおり caption を代替テキストに使う。
+        $alt = htmlspecialchars((string) ($m['alt'] ?? $m['caption'] ?? ''), ENT_QUOTES, 'UTF-8');
 
         if (str_starts_with((string) $m['mime_type'], 'video/')) {
-            return '<video src="' . $url . '#t=0.1" controls playsinline preload="metadata"></video>';
+            return '<video src="' . $url . '#t=0.1" controls playsinline preload="metadata"'
+                . ($alt !== '' ? ' aria-label="' . $alt . '"' : '') . '></video>';
         }
         return '<img src="' . $url . '" alt="' . $alt . '" loading="lazy" data-zoom="' . $url . '">';
     }
@@ -1250,7 +1565,23 @@ details[open] summary::before{content:"▾ "}
 .media img,.media video{width:100%;border-radius:6px;border:1px solid #E5E7EB;
   background:#000;display:block}
 .media img{background:#F9FAFB;cursor:zoom-in}
-.media figcaption{margin-top:4px;font-size:11px;color:#9CA3AF}
+.sources{display:flex;gap:6px;margin:4px 0 0;font-size:12px;color:#6B7280}
+.src-label{flex-shrink:0;color:#9CA3AF}
+.sources ul{list-style:none;margin:0;padding:0}
+.sources a{color:#043E80}
+.src-title{color:#4B5563}
+.cover.media{margin-top:0}
+.cover figure{max-width:100%}
+.media.pair figure{max-width:calc(50% - 6px)}
+@media (max-width:560px){.media.pair figure{max-width:100%}}
+.kind{display:inline-block;margin-bottom:4px;padding:1px 8px;border-radius:999px;font-size:11px;
+  background:#F3F4F6;color:#4B5563}
+.kind-before{background:#F3F4F6;color:#4B5563}
+.kind-after{background:#ECFDF5;color:#065F46}
+.kind-howto{background:#EFF6FF;color:#1E40AF}
+.media figcaption{margin-top:4px;font-size:12px;color:#4B5563}
+.media figcaption .cap{display:block}
+.media figcaption .desc{display:block;margin-top:2px;font-size:11px;color:#6B7280}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;
   display:flex;align-items:center;justify-content:center;padding:24px}
 .lightbox[hidden]{display:none}

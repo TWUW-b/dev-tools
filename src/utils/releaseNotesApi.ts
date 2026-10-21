@@ -15,6 +15,8 @@ import type {
   ReleaseNoteItem,
   ReleaseNoteItemInput,
   ReleaseNoteMedia,
+  ReleaseNoteMediaInput,
+  ReleaseNoteMediaKind,
   ReleaseNoteTokens,
   Environment,
 } from '../types';
@@ -194,12 +196,21 @@ export const releaseNotesApi = {
     config: ReleaseNotesApiConfig,
     noteId: number,
     file: File,
-    options?: { itemId?: number; caption?: string },
+    options?: {
+      itemId?: number;
+      caption?: string;
+      kind?: ReleaseNoteMediaKind;
+      alt?: string;
+      description?: string;
+    },
   ): Promise<ReleaseNoteMedia> {
     const form = new FormData();
     form.append('file', file);
     if (options?.itemId !== undefined) form.append('item_id', String(options.itemId));
     if (options?.caption) form.append('caption', options.caption);
+    if (options?.kind) form.append('kind', options.kind);
+    if (options?.alt) form.append('alt', options.alt);
+    if (options?.description) form.append('description', options.description);
 
     const res = await dbgFetch(`${base(config)}/release-notes/${noteId}/images${query(config)}`, {
       method: 'POST',
@@ -207,6 +218,22 @@ export const releaseNotesApi = {
       body: form,
     });
     const media = await parse<ReleaseNoteMedia>(res, 'メディアの添付に失敗しました');
+    return { ...media, url: absolutize(media.url, base(config)) };
+  },
+
+  /** メディアの説明・役割・紐付け先・並びを直す（ファイルと URL はそのまま） */
+  async updateMedia(
+    config: ReleaseNotesApiConfig,
+    noteId: number,
+    mediaId: number,
+    input: ReleaseNoteMediaInput,
+  ): Promise<ReleaseNoteMedia> {
+    const res = await dbgFetch(`${base(config)}/release-notes/${noteId}/images/${mediaId}${query(config)}`, {
+      method: 'PATCH',
+      headers: adminHeaders(config, true),
+      body: JSON.stringify(input),
+    });
+    const media = await parse<ReleaseNoteMedia>(res, 'メディアの更新に失敗しました');
     return { ...media, url: absolutize(media.url, base(config)) };
   },
 

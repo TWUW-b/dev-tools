@@ -23,6 +23,8 @@ interface FeedbackTabProps {
     colors: Colors;
     isDarkMode: boolean;
     refreshKey: number;
+    /** 最初に詳細を開くフィードバック（?feedback= から開いたとき） */
+    initialSelectedId?: number;
 }
-export declare function FeedbackTab({ apiBaseUrl, adminKey, colors, isDarkMode, refreshKey }: FeedbackTabProps): import("react/jsx-runtime").JSX.Element;
+export declare function FeedbackTab({ apiBaseUrl, adminKey, colors, isDarkMode, refreshKey, initialSelectedId }: FeedbackTabProps): import("react/jsx-runtime").JSX.Element;
 export {};

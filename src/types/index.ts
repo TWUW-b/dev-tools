@@ -750,6 +750,29 @@ export type ReleaseCategory = 'fix' | 'improve' | 'feature';
 /** 号の公開状態。社外公開の可否は is_public で別に持つ */
 export type ReleaseNoteStatus = 'draft' | 'published';
 
+/** 変更の元になった報告の種類。feedback = 利用者の報告、note = デバッグノート */
+export type ReleaseNoteSourceType = 'feedback' | 'note';
+
+/**
+ * 変更の元になった報告（R-010）。社外公開のフィードには含まれない（空配列になる）。
+ */
+export interface ReleaseNoteSource {
+  type: ReleaseNoteSourceType;
+  /** 元の feedback / note の ID */
+  id: number;
+  /** 登録時点のタイトル（feedback は本文の 1 行目、note はタイトル） */
+  title: string | null;
+  /** アプリ内で開く URL。API の config（release_notes_source_urls）が無ければ null */
+  url: string | null;
+}
+
+/** 報告の紐付けに渡す値。title を省くと元の報告から引かれる */
+export interface ReleaseNoteSourceInput {
+  type: ReleaseNoteSourceType;
+  id: number;
+  title?: string;
+}
+
 /** 1つの変更点。必ず「これまで(before) → これから(after)」の対で読ませる */
 export interface ReleaseNoteItem {
   id: number;
@@ -764,7 +787,15 @@ export interface ReleaseNoteItem {
   after_text: string | null;
   /** 元になったフィードバック ID。投入側が二重掲載を検出する正本 */
   feedback_id: number | null;
+  /** 元になった報告（v1.6.0+）。社外公開のフィードでは空 */
+  sources?: ReleaseNoteSource[];
 }
+
+/**
+ * メディアの役割（RFC 003）。caption だけだと変更前か変更後かが読み手に伝わらないため持つ。
+ * before … 変更前 / after … 変更後 / howto … 使い方 / overview … 全体像
+ */
+export type ReleaseNoteMediaKind = 'before' | 'after' | 'howto' | 'overview';
 
 /** 添付メディア。動作の変化は動画、見た目の変化は静止画で示す */
 export interface ReleaseNoteMedia {
@@ -775,7 +806,14 @@ export interface ReleaseNoteMedia {
   original_name: string;
   mime_type: string;
   size: number;
+  /** 何が写っているかを 1 文で（例「変更後: 担当者が正しく表示されます」） */
   caption: string | null;
+  /** 役割。v1.6.0 より前のデータは null */
+  kind?: ReleaseNoteMediaKind | null;
+  /** 代替テキスト。null なら caption を使う */
+  alt?: string | null;
+  /** 見どころ。動画なら「0:04 で保存を押すと…」のように、どこを見ればよいかを書く */
+  description?: string | null;
   sort_order: number;
   /** 配信 URL。トークンを含むため認証なしで参照できる（<img>/<video> 用） */
   url: string;
@@ -824,6 +862,18 @@ export interface ReleaseNoteItemInput {
   after_text?: string | null;
   feedback_id?: number | null;
   sort_order?: number;
+  /** 元になった報告。更新では丸ごと置き換わる（[] で全部外す） */
+  sources?: ReleaseNoteSourceInput[];
+}
+
+/** メディアの添付・更新に渡す値 */
+export interface ReleaseNoteMediaInput {
+  item_id?: number | null;
+  kind?: ReleaseNoteMediaKind | null;
+  caption?: string | null;
+  alt?: string | null;
+  description?: string | null;
+  sort_order?: number;
 }
 
 /** 公開トークン1本ぶんの情報 */
@@ -861,6 +911,15 @@ export interface ReleaseNotesProps {
   storageKey?: string;
   /** 読み込み完了時（未読件数の反映などに使う） */
   onLoaded?: (notes: ReleaseNote[]) => void;
+  /**
+   * 元の報告（feedback / note）を開く URL を決める。省略時は API が返す source.url を使う。
+   * null を返すとリンクにせず ID とタイトルだけを出す。
+   */
+  sourceHref?: (source: ReleaseNoteSource) => string | null | undefined;
+  /**
+   * 元の報告のリンクを押したとき。渡すとブラウザの遷移を止めて呼ぶ（SPA のルーターで遷移したい場合）。
+   */
+  onSourceClick?: (source: ReleaseNoteSource, href: string) => void;
   className?: string;
   style?: React.CSSProperties;
 }
