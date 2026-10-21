@@ -635,10 +635,10 @@ const { unreadCount } = useReleaseNotes({ feedUrl });
 未読の判定は「最後に見た号より新しい号」で、`localStorage` に持つ。
 `<ReleaseNotes />` を表示した時点で既読になる。
 
-#### 自作の画面で出す場合（見本: `sample/CustomReleaseNotes.tsx`）
+#### 自作の画面で出す場合（見本: `sample/CustomReleaseNotes.tsx`。パッケージにも同梱）
 
 `<ReleaseNotes />` を使わず、アプリのデザインシステムで更新情報ページを作るときは、
-`sample/CustomReleaseNotes.tsx` を下敷きにする（依存なし・インライン style。データは同じ `ReleaseNote[]`）。
+`sample/CustomReleaseNotes.tsx` を写して下敷きにする（`node_modules/@twuw-b/dev-tools/sample/CustomReleaseNotes.tsx`。依存は React と本パッケージだけ・インライン style。データは同じ `ReleaseNote[]`）。
 サンプルアプリ（`npm run sample`）の「Release Notes」→「自作の画面の見本」で動く形を見られる。
 Tailwind 版の実例は toho_matching の `frontend/src/pages/release-notes/ReleaseNotesPage.tsx`。
 

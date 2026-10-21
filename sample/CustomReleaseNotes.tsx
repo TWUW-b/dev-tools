@@ -16,8 +16,8 @@
  * 8. 青はリンクだけ。押せない札は灰色にする
  */
 import { useEffect, useState, type CSSProperties } from 'react';
-import { fetchReleaseNotesFeed } from '@/index';
-import type { ReleaseNote, ReleaseNoteItem, ReleaseNoteMedia, ReleaseNoteSource } from '@/types';
+import { fetchReleaseNotesFeed } from '@twuw-b/dev-tools';
+import type { ReleaseNote, ReleaseNoteItem, ReleaseNoteMedia, ReleaseNoteSource } from '@twuw-b/dev-tools';
 
 const C = {
   border: '#e5e7eb',

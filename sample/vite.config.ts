@@ -7,6 +7,8 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
+      // sample/CustomReleaseNotes.tsx はアプリにそのまま写せるよう、パッケージ名で import している
+      '@twuw-b/dev-tools': resolve(__dirname, '../src/index.ts'),
       '@': resolve(__dirname, '../src'),
     },
   },
