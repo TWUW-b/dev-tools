@@ -26,3 +26,4 @@
 |---|---|---|---|
 | [001](./001-environment-switching.md) | 環境切替機能（dev/test/staging/prod） | **Proposed** | 未定 |
 | [002](./002-manual-media-upload-api.md) | マニュアル画像アップロードAPI | **Implemented** | v1.4.0 |
+| [003](./003-release-notes-media-authoring.md) | リリースノートの画像・動画の説明と作成フロー | **Accepted** | v1.6.0 |

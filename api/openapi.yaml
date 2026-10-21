@@ -1256,6 +1256,9 @@ paths:
                 file: { type: string, format: binary }
                 item_id: { type: integer }
                 caption: { type: string }
+                kind: { $ref: '#/components/schemas/ReleaseNoteMediaKind' }
+                alt: { type: string }
+                description: { type: string }
       responses:
         '201':
           description: 作成
@@ -1272,6 +1275,56 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /release-notes/{id}/images/{imageId}:
+    patch:
+      tags: [ReleaseNotes]
+      summary: メディアの説明・役割・紐付け先・並びを更新（管理）
+      description: |
+        ファイルと配信 URL はそのまま。送ったキーだけを更新する。
+        `kind` / `caption` / `alt` / `description` / `item_id` は null か空文字で「なし」に戻せる。
+        `item_id` は同じ号の項目だけ指定できる。（v1.6.0+ / RFC 003）
+      security:
+        - AdminKey: []
+        - FirebaseBearer: []
+      parameters:
+        - $ref: '#/components/parameters/env'
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: imageId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_id: { type: integer, nullable: true }
+                kind:
+                  type: string
+                  enum: [before, after, howto, overview]
+                  nullable: true
+                caption: { type: string, nullable: true }
+                alt: { type: string, nullable: true }
+                description: { type: string, nullable: true }
+                sort_order: { type: integer }
+      responses:
+        '200':
+          description: 更新後のメディア
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ReleaseNoteMedia' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
     delete:
       tags: [ReleaseNotes]
       summary: メディアを削除（管理・実体も消える）
@@ -2159,12 +2212,33 @@ components:
         original_name: { type: string }
         mime_type: { type: string, example: video/mp4 }
         size: { type: integer }
-        caption: { type: string, nullable: true }
+        caption:
+          type: string
+          nullable: true
+          description: "何が写っているかの 1 文（例「修正後: 担当者が正しく表示されます」）"
+        kind:
+          type: string
+          enum: [before, after, howto, overview]
+          nullable: true
+          description: v1.6.0 より前のデータは null
+        alt:
+          type: string
+          nullable: true
+          description: 代替テキスト。null なら表示側は caption を使う
+        description:
+          type: string
+          nullable: true
+          description: 見どころ。動画なら「0:04 で保存を押すと…」のように、どこを見ればよいか
         sort_order: { type: integer }
         url:
           type: string
           description: 認証不要で参照できる配信 URL（<img> / <video> にそのまま入れる）
           example: /__debug/api/release-notes/media/9f2c…
+
+    ReleaseNoteMediaKind:
+      type: string
+      enum: [before, after, howto, overview]
+      description: メディアの役割。before 変更前 / after 変更後 / howto 使い方 / overview 全体像（v1.6.0+）
 
     ManualMedia:
       type: object

@@ -127,6 +127,8 @@ export type {
   ReleaseNoteMedia,
   ReleaseNoteInput,
   ReleaseNoteItemInput,
+  ReleaseNoteMediaInput,
+  ReleaseNoteMediaKind,
   ReleaseNoteTokenInfo,
   ReleaseNoteTokens,
   ReleaseNotesProps,

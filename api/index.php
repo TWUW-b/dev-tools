@@ -622,6 +622,21 @@ try {
         exit;
     }
 
+    // PATCH /release-notes/{id}/images/{imageId}（kind / caption / alt / description / item_id / sort_order）
+    if ($method === 'PATCH' && preg_match('#^/release-notes/(\d+)/images/(\d+)/?$#', $relativePath, $matches)) {
+        $rawInput = file_get_contents('php://input');
+        if (strlen($rawInput) > 1048576) {
+            http_response_code(413);
+            echo json_encode(['success' => false, 'error' => 'Request body too large']);
+            exit;
+        }
+        $input = json_decode($rawInput, true) ?? [];
+        $result = $releaseNotesController->updateImage((int) $matches[1], (int) $matches[2], $input);
+        http_response_code($result['success'] ? 200 : ($result['error'] === 'Not found' ? 404 : 400));
+        echo json_encode($result);
+        exit;
+    }
+
     // DELETE /release-notes/{id}/images/{imageId}
     if ($method === 'DELETE' && preg_match('#^/release-notes/(\d+)/images/(\d+)/?$#', $relativePath, $matches)) {
         $result = $releaseNotesController->deleteImage((int) $matches[1], (int) $matches[2]);

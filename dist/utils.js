@@ -1,7 +1,7 @@
 import { c as u, f as d, k as b, h, g as k, p as g, s as F, b as x, u as A } from "./chunks/feedbackApi-BAwJP8AU.js";
 import { c as W, m as C } from "./chunks/feedbackLogCapture-DUBfVREg.js";
 import { c as B } from "./chunks/logCapture-Bkuy8MSd.js";
-import { f as N, r as S } from "./chunks/releaseNotesApi-BahuRlM7.js";
+import { f as N, r as S } from "./chunks/releaseNotesApi-XrwLFfcW.js";
 function f(c) {
   const n = c.split(`
 `), i = [];

@@ -16,7 +16,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useReleaseNotes } from '../hooks/useReleaseNotes';
 import { ImageLightbox } from './ImageLightbox';
 import { MANUAL_COLORS } from '../styles/colors';
-import type { ReleaseCategory, ReleaseNote, ReleaseNoteItem, ReleaseNoteMedia, ReleaseNotesProps } from '../types';
+import type {
+  ReleaseCategory,
+  ReleaseNote,
+  ReleaseNoteItem,
+  ReleaseNoteMedia,
+  ReleaseNoteMediaKind,
+  ReleaseNotesProps,
+} from '../types';
 
 const CATEGORY_META: Record<ReleaseCategory, { label: string; fg: string; bg: string; border: string }> = {
   fix: { label: '直したこと', fg: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
@@ -24,6 +31,14 @@ const CATEGORY_META: Record<ReleaseCategory, { label: string; fg: string; bg: st
   feature: { label: '新しくできること', fg: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
 };
 const CATEGORY_ORDER: ReleaseCategory[] = ['fix', 'improve', 'feature'];
+
+/** メディアの役割の札（公開ページ側と同じ文言・色） */
+const MEDIA_KIND_META: Record<ReleaseNoteMediaKind, { label: string; fg: string; bg: string }> = {
+  before: { label: '変更前', fg: '#4B5563', bg: '#F3F4F6' },
+  after: { label: '変更後', fg: '#065F46', bg: '#ECFDF5' },
+  howto: { label: '使い方', fg: '#1E40AF', bg: '#EFF6FF' },
+  overview: { label: '全体像', fg: '#4B5563', bg: '#F3F4F6' },
+};
 
 function formatDate(ymd: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
@@ -342,20 +357,67 @@ function ItemRow({
           </div>
         )}
 
-        {media.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
-            {media.map((m) => (
-              <figure key={m.id} style={{ margin: 0, width: '100%', maxWidth: '420px' }}>
-                <Media media={m} onZoom={onZoom} />
-                {m.caption && (
-                  <figcaption style={{ marginTop: '4px', fontSize: '11px', color: '#9CA3AF' }}>{m.caption}</figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        )}
+        {media.length > 0 && <MediaList media={media} onZoom={onZoom} />}
       </div>
     </li>
+  );
+}
+
+/**
+ * 項目に付くメディアの並び。
+ * 変更前と変更後がそろっているときは横に並べて見比べられるようにする（狭い幅では折り返して縦）。
+ */
+function MediaList({
+  media,
+  onZoom,
+}: {
+  media: ReleaseNoteMedia[];
+  onZoom: (url: string, caption: string | null) => void;
+}) {
+  const pair = media.some((m) => m.kind === 'before') && media.some((m) => m.kind === 'after');
+  return (
+    <div data-testid="release-note-media" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
+      {media.map((m) => {
+        const kind = m.kind ? MEDIA_KIND_META[m.kind] : undefined;
+        return (
+          <figure
+            key={m.id}
+            data-kind={m.kind ?? undefined}
+            style={{
+              margin: 0,
+              width: '100%',
+              // 横に 2 つ入る幅なら半分ずつ、入らなければ折り返して全幅になる
+              maxWidth: pair ? '100%' : '420px',
+              flex: pair ? '1 1 220px' : undefined,
+            }}
+          >
+            {kind && (
+              <span style={{
+                display: 'inline-block', marginBottom: '4px', padding: '1px 8px', borderRadius: '999px',
+                fontSize: '11px', background: kind.bg, color: kind.fg,
+              }}>
+                {kind.label}
+              </span>
+            )}
+            <Media media={m} onZoom={onZoom} />
+            {(m.caption || m.description) && (
+              <figcaption style={{ marginTop: '4px' }}>
+                {m.caption && (
+                  <span style={{ display: 'block', fontSize: '12px', color: MANUAL_COLORS.gray700 }}>{m.caption}</span>
+                )}
+                {m.description && (
+                  <span style={{
+                    display: 'block', marginTop: '2px', fontSize: '11px', color: MANUAL_COLORS.gray500, whiteSpace: 'pre-wrap',
+                  }}>
+                    {m.description}
+                  </span>
+                )}
+              </figcaption>
+            )}
+          </figure>
+        );
+      })}
+    </div>
   );
 }
 
@@ -373,6 +435,7 @@ function Media({ media, onZoom }: { media: ReleaseNoteMedia; onZoom: (url: strin
         controls
         playsInline
         preload="metadata"
+        aria-label={media.alt ?? media.caption ?? undefined}
         style={{ width: '100%', borderRadius: '6px', border: '1px solid #E5E7EB', background: '#000', display: 'block' }}
       />
     );
@@ -381,11 +444,12 @@ function Media({ media, onZoom }: { media: ReleaseNoteMedia; onZoom: (url: strin
     <button
       type="button"
       onClick={() => onZoom(media.url, media.caption)}
+      aria-label={media.alt ?? media.caption ?? '画像を拡大'}
       style={{ display: 'block', width: '100%', padding: 0, border: 'none', background: 'none', cursor: 'zoom-in' }}
     >
       <img
         src={media.url}
-        alt={media.caption ?? ''}
+        alt={media.alt ?? media.caption ?? ''}
         loading="lazy"
         style={{ width: '100%', borderRadius: '6px', border: '1px solid #E5E7EB', background: '#F9FAFB', display: 'block' }}
       />

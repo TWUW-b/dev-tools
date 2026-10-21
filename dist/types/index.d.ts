@@ -698,6 +698,11 @@ export interface ReleaseNoteItem {
     /** 元になったフィードバック ID。投入側が二重掲載を検出する正本 */
     feedback_id: number | null;
 }
+/**
+ * メディアの役割（RFC 003）。caption だけだと変更前か変更後かが読み手に伝わらないため持つ。
+ * before … 変更前 / after … 変更後 / howto … 使い方 / overview … 全体像
+ */
+export type ReleaseNoteMediaKind = 'before' | 'after' | 'howto' | 'overview';
 /** 添付メディア。動作の変化は動画、見た目の変化は静止画で示す */
 export interface ReleaseNoteMedia {
     id: number;
@@ -707,7 +712,14 @@ export interface ReleaseNoteMedia {
     original_name: string;
     mime_type: string;
     size: number;
+    /** 何が写っているかを 1 文で（例「変更後: 担当者が正しく表示されます」） */
     caption: string | null;
+    /** 役割。v1.6.0 より前のデータは null */
+    kind?: ReleaseNoteMediaKind | null;
+    /** 代替テキスト。null なら caption を使う */
+    alt?: string | null;
+    /** 見どころ。動画なら「0:04 で保存を押すと…」のように、どこを見ればよいかを書く */
+    description?: string | null;
     sort_order: number;
     /** 配信 URL。トークンを含むため認証なしで参照できる（<img>/<video> 用） */
     url: string;
@@ -756,6 +768,15 @@ export interface ReleaseNoteItemInput {
     before_text?: string | null;
     after_text?: string | null;
     feedback_id?: number | null;
+    sort_order?: number;
+}
+/** メディアの添付・更新に渡す値 */
+export interface ReleaseNoteMediaInput {
+    item_id?: number | null;
+    kind?: ReleaseNoteMediaKind | null;
+    caption?: string | null;
+    alt?: string | null;
+    description?: string | null;
     sort_order?: number;
 }
 /** 公開トークン1本ぶんの情報 */

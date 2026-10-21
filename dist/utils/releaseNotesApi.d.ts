@@ -1,4 +1,4 @@
-import type { ReleaseNote, ReleaseNoteInput, ReleaseNoteItem, ReleaseNoteItemInput, ReleaseNoteMedia, ReleaseNoteTokens, Environment } from '../types';
+import type { ReleaseNote, ReleaseNoteInput, ReleaseNoteItem, ReleaseNoteItemInput, ReleaseNoteMedia, ReleaseNoteMediaInput, ReleaseNoteMediaKind, ReleaseNoteTokens, Environment } from '../types';
 /** 管理系の呼び出しに共通で要る接続情報 */
 export interface ReleaseNotesApiConfig {
     /** デバッグ API のベース URL（例: /api/__debug） */
@@ -41,7 +41,12 @@ export declare const releaseNotesApi: {
     uploadMedia(config: ReleaseNotesApiConfig, noteId: number, file: File, options?: {
         itemId?: number;
         caption?: string;
+        kind?: ReleaseNoteMediaKind;
+        alt?: string;
+        description?: string;
     }): Promise<ReleaseNoteMedia>;
+    /** メディアの説明・役割・紐付け先・並びを直す（ファイルと URL はそのまま） */
+    updateMedia(config: ReleaseNotesApiConfig, noteId: number, mediaId: number, input: ReleaseNoteMediaInput): Promise<ReleaseNoteMedia>;
     deleteMedia(config: ReleaseNotesApiConfig, noteId: number, mediaId: number): Promise<void>;
     /** 公開 URL と 2 本のトークンを取得する（未生成なら生成される） */
     tokens(config: ReleaseNotesApiConfig, signal?: AbortSignal): Promise<ReleaseNoteTokens>;

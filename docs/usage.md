@@ -874,6 +874,19 @@ import { ReleaseNotes } from '@twuw-b/dev-tools';
 動画は `#t=0.1` 付きで読み込むため、再生前でも冒頭フレームが表示される
 （付けないと真っ黒な箱になる）。静止画はクリックで拡大表示。
 
+メディアは項目の下に、役割の札 → 本体 → `caption` → `description` の順で出る（v1.6.0+）。
+
+| `kind` | 札 | 使いどころ |
+|---|---|---|
+| `before` | 変更前 | 使いやすくした点の比較 |
+| `after` | 変更後 | 直した結果・比較の後側 |
+| `howto` | 使い方 | 新しくできることの操作動画 |
+| `overview` | 全体像 | 号の代表画像 |
+
+同じ項目に `before` と `after` がそろうと横に並ぶ（狭い幅では縦）。代替テキストは `alt`、
+無ければ `caption` を使う。`kind` の無い従来のデータは札を出さず、従来どおり表示する。
+メディアの説明は `releaseNotesApi.updateMedia()`（`PATCH /release-notes/{id}/images/{imageId}`）で後から直せる。
+
 スタイルはすべてインラインで、ホストの CSS に依存しない。
 
 #### 可視性

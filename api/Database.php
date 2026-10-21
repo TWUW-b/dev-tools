@@ -523,6 +523,30 @@ class Database
             }
             $version = '14';
         }
+
+        // v15: リリースノートのメディアに説明を持たせる（RFC 003 / R-010）。
+        // caption 1 つだけだと「変更前か変更後か」「動画のどこを見ればよいか」が書けず、
+        // 取り込み先で説明の無い画像が並ぶだけになった。既存行は全列 NULL のまま従来表示になる。
+        //   kind        … before / after / howto / overview（NULL は区別なし）
+        //   alt         … 代替テキスト（NULL なら caption を使う）
+        //   description … 見どころ（「0:04 で保存を押すと…」）
+        if ((int)$version < 15) {
+            $this->pdo->beginTransaction();
+            try {
+                $cols = array_column($this->pdo->query('PRAGMA table_info(release_note_images)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+                foreach (['kind', 'alt', 'description'] as $col) {
+                    if (!in_array($col, $cols, true)) {
+                        $this->pdo->exec("ALTER TABLE release_note_images ADD COLUMN {$col} TEXT");
+                    }
+                }
+                $this->pdo->exec("UPDATE meta SET value = '15' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '15';
+        }
     }
 
     /**

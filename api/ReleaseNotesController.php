@@ -35,6 +35,12 @@ class ReleaseNotesController
 
     private const CATEGORIES = ['fix', 'improve', 'feature'];
 
+    /**
+     * メディアの役割（RFC 003）。caption だけでは「変更前か変更後か」が読み手に伝わらないため持つ。
+     *   before … 変更前 / after … 変更後 / howto … 使い方 / overview … 全体像
+     */
+    private const MEDIA_KINDS = ['before', 'after', 'howto', 'overview'];
+
     /** 1号あたりのメディア数上限。 */
     private const MAX_MEDIA_PER_NOTE = 30;
 
@@ -311,6 +317,9 @@ class ReleaseNotesController
             'mime_type' => $im['mime_type'],
             'size' => (int) $im['size'],
             'caption' => $im['caption'],
+            'kind' => $im['kind'] ?? null,
+            'alt' => $im['alt'] ?? null,
+            'description' => $im['description'] ?? null,
             'sort_order' => (int) $im['sort_order'],
             'url' => $this->mediaUrlBase . $im['token'] . $this->urlQuery,
         ];
@@ -661,6 +670,11 @@ class ReleaseNotesController
             }
         }
 
+        $kind = $this->nullableText($_POST['kind'] ?? null);
+        if ($kind !== null && !in_array($kind, self::MEDIA_KINDS, true)) {
+            return ['success' => false, 'error' => 'kind は before / after / howto / overview のいずれかです'];
+        }
+
         $dir = $this->noteDir($noteId);
         if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
             return ['success' => false, 'error' => 'Failed to create storage directory'];
@@ -678,8 +692,9 @@ class ReleaseNotesController
 
         $this->db->execute(
             'INSERT INTO release_note_images
-                (release_note_id, item_id, token, stored_name, original_name, mime_type, size, caption, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (release_note_id, item_id, token, stored_name, original_name, mime_type, size, caption, sort_order,
+                 kind, alt, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $noteId,
                 $itemId,
@@ -690,10 +705,75 @@ class ReleaseNotesController
                 (int) $file['size'],
                 isset($_POST['caption']) && is_string($_POST['caption']) && $_POST['caption'] !== '' ? $_POST['caption'] : null,
                 ((int) ($order['m'] ?? -1)) + 1,
+                $kind,
+                $this->nullableText($_POST['alt'] ?? null),
+                $this->nullableText($_POST['description'] ?? null),
             ]
         );
 
         $row = $this->db->fetchOne('SELECT * FROM release_note_images WHERE id = ?', [$this->db->lastInsertId()]);
+        return ['success' => true, 'data' => $this->formatImage($row ?? [])];
+    }
+
+    /**
+     * メディアの説明・紐付け先・並びを後から直す（RFC 003）。
+     * これが無いと、説明を 1 文直すだけでも削除して上げ直すしかなく、トークン（URL）も変わる。
+     */
+    public function updateImage(int $noteId, int $imageId, array $input): array
+    {
+        $cur = $this->db->fetchOne(
+            'SELECT id FROM release_note_images WHERE id = ? AND release_note_id = ?',
+            [$imageId, $noteId]
+        );
+        if ($cur === null) {
+            return ['success' => false, 'error' => 'Not found'];
+        }
+
+        $fields = [];
+        $binds = [];
+        foreach (['caption', 'alt', 'description'] as $key) {
+            if (array_key_exists($key, $input)) {
+                $fields[] = "$key = ?";
+                $binds[] = $this->nullableText($input[$key]);
+            }
+        }
+        if (array_key_exists('kind', $input)) {
+            $kind = $this->nullableText($input['kind']);
+            if ($kind !== null && !in_array($kind, self::MEDIA_KINDS, true)) {
+                return ['success' => false, 'error' => 'kind は before / after / howto / overview のいずれかです'];
+            }
+            $fields[] = 'kind = ?';
+            $binds[] = $kind;
+        }
+        if (array_key_exists('item_id', $input)) {
+            $itemId = $input['item_id'] === null ? null : (int) $input['item_id'];
+            if ($itemId !== null) {
+                $owns = $this->db->fetchOne(
+                    'SELECT id FROM release_note_items WHERE id = ? AND release_note_id = ?',
+                    [$itemId, $noteId]
+                );
+                if ($owns === null) {
+                    return ['success' => false, 'error' => 'item_id がこのリリースの項目ではありません'];
+                }
+            }
+            $fields[] = 'item_id = ?';
+            $binds[] = $itemId;
+        }
+        if (array_key_exists('sort_order', $input)) {
+            if (!is_int($input['sort_order'])) {
+                return ['success' => false, 'error' => 'sort_order は整数で指定してください'];
+            }
+            $fields[] = 'sort_order = ?';
+            $binds[] = $input['sort_order'];
+        }
+        if (!$fields) {
+            return ['success' => false, 'error' => '更新する項目がありません'];
+        }
+
+        $binds[] = $imageId;
+        $this->db->execute('UPDATE release_note_images SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+
+        $row = $this->db->fetchOne('SELECT * FROM release_note_images WHERE id = ?', [$imageId]);
         return ['success' => true, 'data' => $this->formatImage($row ?? [])];
     }
 
@@ -1109,11 +1189,12 @@ HTML;
         if ($media) {
             $figs = [];
             foreach ($media as $m) {
-                $figs[] = '<figure>' . $this->renderMedia($m)
-                    . (($m['caption'] ?? null) !== null ? '<figcaption>' . $e($m['caption']) . '</figcaption>' : '')
-                    . '</figure>';
+                $figs[] = $this->renderFigure($m);
             }
-            $mediaHtml = '<div class="media">' . implode('', $figs) . '</div>';
+            // 変更前と変更後がそろっているときは横に並べて見比べられるようにする（狭い画面では縦）。
+            $kinds = array_column($media, 'kind');
+            $pair = in_array('before', $kinds, true) && in_array('after', $kinds, true);
+            $mediaHtml = '<div class="media' . ($pair ? ' pair' : '') . '">' . implode('', $figs) . '</div>';
         }
 
         // 「これまで → これから」の対で読ませる。片方だけだと何が変わったのか伝わらない。
@@ -1135,15 +1216,49 @@ HTML;
     }
 
     /**
+     * メディア 1 つ分。役割の札（変更前／変更後…）→ 本体 → caption → description の順に出す。
+     * caption は「何が写っているか」の 1 文、description は「どこを見ればよいか」。
+     */
+    private function renderFigure(array $m): string
+    {
+        $e = static fn(?string $s): string => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        $kind = $m['kind'] ?? null;
+        $label = $kind !== null ? $this->mediaKindLabel($kind) : '';
+        return '<figure' . ($kind !== null ? ' class="k-' . $e($kind) . '"' : '') . '>'
+            . ($label !== '' ? '<span class="kind kind-' . $e($kind) . '">' . $e($label) . '</span>' : '')
+            . $this->renderMedia($m)
+            . ((($m['caption'] ?? null) !== null || ($m['description'] ?? null) !== null)
+                ? '<figcaption>'
+                    . (($m['caption'] ?? null) !== null ? '<span class="cap">' . $e($m['caption']) . '</span>' : '')
+                    . (($m['description'] ?? null) !== null ? '<span class="desc">' . nl2br($e($m['description'])) . '</span>' : '')
+                    . '</figcaption>'
+                : '')
+            . '</figure>';
+    }
+
+    private function mediaKindLabel(string $kind): string
+    {
+        return match ($kind) {
+            'before' => '変更前',
+            'after' => '変更後',
+            'howto' => '使い方',
+            'overview' => '全体像',
+            default => '',
+        };
+    }
+
+    /**
      * 動画には #t=0.1 を付ける。付けないと再生前が真っ黒な箱に見えて、何の動画か分からない。
      */
     private function renderMedia(array $m): string
     {
         $url = htmlspecialchars((string) $m['url'], ENT_QUOTES, 'UTF-8');
-        $alt = htmlspecialchars((string) ($m['caption'] ?? ''), ENT_QUOTES, 'UTF-8');
+        // alt が無ければ従来どおり caption を代替テキストに使う。
+        $alt = htmlspecialchars((string) ($m['alt'] ?? $m['caption'] ?? ''), ENT_QUOTES, 'UTF-8');
 
         if (str_starts_with((string) $m['mime_type'], 'video/')) {
-            return '<video src="' . $url . '#t=0.1" controls playsinline preload="metadata"></video>';
+            return '<video src="' . $url . '#t=0.1" controls playsinline preload="metadata"'
+                . ($alt !== '' ? ' aria-label="' . $alt . '"' : '') . '></video>';
         }
         return '<img src="' . $url . '" alt="' . $alt . '" loading="lazy" data-zoom="' . $url . '">';
     }
@@ -1250,7 +1365,16 @@ details[open] summary::before{content:"▾ "}
 .media img,.media video{width:100%;border-radius:6px;border:1px solid #E5E7EB;
   background:#000;display:block}
 .media img{background:#F9FAFB;cursor:zoom-in}
-.media figcaption{margin-top:4px;font-size:11px;color:#9CA3AF}
+.media.pair figure{max-width:calc(50% - 6px)}
+@media (max-width:560px){.media.pair figure{max-width:100%}}
+.kind{display:inline-block;margin-bottom:4px;padding:1px 8px;border-radius:999px;font-size:11px;
+  background:#F3F4F6;color:#4B5563}
+.kind-before{background:#F3F4F6;color:#4B5563}
+.kind-after{background:#ECFDF5;color:#065F46}
+.kind-howto{background:#EFF6FF;color:#1E40AF}
+.media figcaption{margin-top:4px;font-size:12px;color:#4B5563}
+.media figcaption .cap{display:block}
+.media figcaption .desc{display:block;margin-top:2px;font-size:11px;color:#6B7280}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;
   display:flex;align-items:center;justify-content:center;padding:24px}
 .lightbox[hidden]{display:none}
