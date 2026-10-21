@@ -26,6 +26,7 @@ import {
   loadMaterialSymbols,
 } from '@/index';
 import type { ParsedTestCase, ManualItem } from '@/types';
+import { CustomReleaseNotes } from './CustomReleaseNotes';
 
 // --- 初期化（モジュールレベルで1回） ---
 
@@ -338,6 +339,9 @@ function ReleaseNotesView() {
   const [error, setError] = useState<string | null>(null);
   const [scope, setScope] = useState<'internal' | 'public'>('internal');
   const [tokens, setTokens] = useState<{ internal: string; public: string } | null>(null);
+  // 部品（<ReleaseNotes />）か、自作の画面の見本（sample/CustomReleaseNotes.tsx）か
+  const [render, setRender] = useState<'component' | 'custom'>('component');
+  const [asAdmin, setAsAdmin] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -391,10 +395,33 @@ function ReleaseNotesView() {
             </a>
           )}
         </p>
+        <p style={{ ...styles.text, margin: '8px 0 0' }}>
+          表示:{' '}
+          {(['component', 'custom'] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRender(r)}
+              style={{
+                ...styles.navBtn,
+                marginRight: '6px',
+                background: render === r ? '#1E40AF' : '#fff',
+                color: render === r ? '#fff' : '#374151',
+              }}
+            >
+              {r === 'component' ? '部品（ReleaseNotes）' : '自作の画面の見本'}
+            </button>
+          ))}
+          {render === 'custom' && (
+            <label style={{ marginLeft: '12px' }}>
+              <input type="checkbox" checked={asAdmin} onChange={(e) => setAsAdmin(e.target.checked)} /> 管理者として見る（対応した報告を出す）
+            </label>
+          )}
+        </p>
         {error && <p style={{ color: '#dc2626', fontSize: '13px', marginBottom: 0 }}>{error}</p>}
       </div>
 
-      {feedUrl && <ReleaseNotes key={feedUrl} feedUrl={feedUrl} />}
+      {feedUrl && render === 'component' && <ReleaseNotes key={feedUrl} feedUrl={feedUrl} />}
+      {feedUrl && render === 'custom' && <CustomReleaseNotes key={feedUrl} feedUrl={feedUrl} showSources={asAdmin} />}
     </main>
   );
 }
