@@ -31,6 +31,8 @@ interface FeedbackTabProps {
   colors: Colors;
   isDarkMode: boolean;
   refreshKey: number;
+  /** 最初に詳細を開くフィードバック（?feedback= から開いたとき） */
+  initialSelectedId?: number;
 }
 
 const KIND_LABELS: Record<FeedbackKind, { label: string; icon: string }> = {
@@ -105,7 +107,7 @@ function getStatusBadgeStyle(status: FeedbackStatus, colors: Colors): React.CSSP
   };
 }
 
-export function FeedbackTab({ apiBaseUrl, adminKey, colors, isDarkMode, refreshKey }: FeedbackTabProps) {
+export function FeedbackTab({ apiBaseUrl, adminKey, colors, isDarkMode, refreshKey, initialSelectedId }: FeedbackTabProps) {
   const {
     feedbacks, total, page, limit, loading, error, filters, customTags,
     setFilters, setPage, updateStatus, remove, refresh,
@@ -147,6 +149,14 @@ export function FeedbackTab({ apiBaseUrl, adminKey, colors, isDarkMode, refreshK
       setDetailLoading(false);
     }
   }, [selectedId, apiBaseUrl, adminKey]);
+
+  // ?feedback= から開いたときは、そのフィードバックの詳細を最初に 1 度だけ開く
+  const initialOpenedRef = useRef(false);
+  useEffect(() => {
+    if (initialSelectedId === undefined || initialOpenedRef.current) return;
+    initialOpenedRef.current = true;
+    void handleSelect(initialSelectedId);
+  }, [initialSelectedId, handleSelect]);
 
   const handleStatusChange = useCallback(async (id: number, status: FeedbackStatus) => {
     const ok = await updateStatus(id, status);

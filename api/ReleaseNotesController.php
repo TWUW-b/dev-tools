@@ -41,6 +41,12 @@ class ReleaseNotesController
      */
     private const MEDIA_KINDS = ['before', 'after', 'howto', 'overview'];
 
+    /** 項目の元になった報告の種類（R-010）。feedback = 利用者の報告、note = デバッグノート */
+    private const SOURCE_TYPES = ['feedback', 'note'];
+
+    /** 1 項目に紐付けられる報告の数の上限 */
+    private const MAX_SOURCES_PER_ITEM = 20;
+
     /** 1号あたりのメディア数上限。 */
     private const MAX_MEDIA_PER_NOTE = 30;
 
@@ -84,6 +90,15 @@ class ReleaseNotesController
     /** env=test 等を引き継ぐためのクエリ（例: '?env=test'。dev なら空文字）。 */
     private string $urlQuery = '';
 
+    /**
+     * 報告をアプリ内で開く URL のひな形（例: ['feedback' => 'https://app.example.com/feedbacks?feedback={id}']）。
+     * dev-tools はホストアプリの画面構成を知らないので、config.php の release_notes_source_urls で受け取る。
+     */
+    private array $sourceUrlTemplates = [];
+
+    /** 公開ページの描画中のスコープ。社外向けには報告の ID・タイトルを出さない。 */
+    private string $renderScope = self::SCOPE_PUBLIC;
+
     public function __construct(Database $db, string $mediaDir, int $maxUploadSize = 52428800)
     {
         $this->db = $db;
@@ -99,6 +114,19 @@ class ReleaseNotesController
      * URL の組み立て情報を注入する。
      * 統合先ごとにベースパスが違う（/__debug/api など）ため、ルーター側で算出したものを渡す。
      */
+    /**
+     * 報告をアプリ内で開く URL のひな形を設定する。{id} が報告の ID に置き換わる。
+     */
+    public function setSourceUrlTemplates(array $templates): void
+    {
+        $this->sourceUrlTemplates = [];
+        foreach (self::SOURCE_TYPES as $type) {
+            if (isset($templates[$type]) && is_string($templates[$type]) && $templates[$type] !== '') {
+                $this->sourceUrlTemplates[$type] = $templates[$type];
+            }
+        }
+    }
+
     public function setUrlContext(string $apiBasePath, string $env): void
     {
         $base = rtrim($apiBasePath, '/');
@@ -243,6 +271,11 @@ class ReleaseNotesController
             "SELECT * FROM release_note_images WHERE release_note_id IN ($ph) ORDER BY sort_order, id",
             $ids
         );
+        // 社外向けには報告の ID・タイトルを出さない（内部の管理番号と、利用者の書いた原文のため）。
+        $sourcesByItem = $scope === self::SCOPE_PUBLIC ? [] : $this->sourcesByItem(array_map(
+            static fn($i) => (int) $i['id'],
+            $items
+        ));
 
         // 「前回（○月○日 第N号）からの変更」を画面が出せるように、参照先の最小情報を添える。
         // 参照先が絞り込みで落ちている場合もあるため、元の全件から引く。
@@ -276,7 +309,7 @@ class ReleaseNotesController
                 'created_at' => Database::toJstIso($n['created_at']),
                 'updated_at' => Database::toJstIso($n['updated_at']),
                 'items' => array_values(array_map(
-                    fn($i) => $this->formatItem($i),
+                    fn($i) => $this->formatItem($i, $sourcesByItem[(int) $i['id']] ?? []),
                     array_filter($items, static fn($i) => (int) $i['release_note_id'] === $id)
                 )),
                 'images' => array_values(array_map(
@@ -288,7 +321,7 @@ class ReleaseNotesController
         return $out;
     }
 
-    private function formatItem(array $i): array
+    private function formatItem(array $i, array $sources = []): array
     {
         return [
             'id' => (int) $i['id'],
@@ -300,7 +333,114 @@ class ReleaseNotesController
             'before_text' => $i['before_text'],
             'after_text' => $i['after_text'],
             'feedback_id' => $i['feedback_id'] === null ? null : (int) $i['feedback_id'],
+            'sources' => array_map(fn($s) => $this->formatSource($s), $sources),
         ];
+    }
+
+    private function formatSource(array $s): array
+    {
+        $type = (string) $s['source_type'];
+        $id = (int) $s['source_id'];
+        $tpl = $this->sourceUrlTemplates[$type] ?? null;
+        return [
+            'type' => $type,
+            'id' => $id,
+            'title' => $s['title'],
+            'url' => $tpl === null ? null : str_replace('{id}', (string) $id, $tpl),
+        ];
+    }
+
+    /**
+     * 項目 id ごとの報告一覧。
+     * @param int[] $itemIds
+     * @return array<int, array<int, array>>
+     */
+    private function sourcesByItem(array $itemIds): array
+    {
+        if (!$itemIds) {
+            return [];
+        }
+        $ph = implode(',', array_fill(0, count($itemIds), '?'));
+        $rows = $this->db->query(
+            "SELECT * FROM release_note_item_sources WHERE item_id IN ($ph) ORDER BY sort_order, id",
+            $itemIds
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[(int) $r['item_id']][] = $r;
+        }
+        return $out;
+    }
+
+    /**
+     * 入力の sources を検証して、保存する行に整える。
+     * タイトルを省いたら元の報告から引く（feedback は本文の 1 行目、note はタイトル）。
+     * 存在しない報告は紐付けない（誤った ID のまま告知すると、リンク先が別の報告になる）。
+     *
+     * @return array{0: ?array, 1: ?string} [行の配列, エラー]
+     */
+    private function resolveSources(mixed $input): array
+    {
+        if (!is_array($input) || !array_is_list($input)) {
+            return [null, 'sources は配列で指定してください'];
+        }
+        if (count($input) > self::MAX_SOURCES_PER_ITEM) {
+            return [null, 'sources は ' . self::MAX_SOURCES_PER_ITEM . ' 件までです'];
+        }
+        $rows = [];
+        $seen = [];
+        foreach ($input as $n => $src) {
+            $type = is_array($src) ? ($src['type'] ?? null) : null;
+            $id = is_array($src) ? ($src['id'] ?? null) : null;
+            if (!in_array($type, self::SOURCE_TYPES, true)) {
+                return [null, 'sources[' . $n . '].type は feedback か note です'];
+            }
+            if (!is_int($id) && !(is_string($id) && preg_match('/^\d+$/', $id) === 1)) {
+                return [null, 'sources[' . $n . '].id は整数で指定してください'];
+            }
+            $id = (int) $id;
+            if (isset($seen[$type . ':' . $id])) {
+                continue;
+            }
+            $seen[$type . ':' . $id] = true;
+
+            $original = $type === 'feedback'
+                ? $this->db->fetchOne('SELECT message AS t FROM feedbacks WHERE id = ?', [$id])
+                : $this->db->fetchOne('SELECT title AS t FROM notes WHERE id = ? AND deleted_at IS NULL', [$id]);
+            if ($original === null) {
+                $label = $type === 'feedback' ? 'フィードバック' : 'ノート';
+                return [null, "{$label} #{$id} が見つかりません"];
+            }
+            $title = $this->nullableText($src['title'] ?? null) ?? $this->firstLine((string) $original['t']);
+            $rows[] = ['source_type' => $type, 'source_id' => $id, 'title' => $title];
+        }
+        return [$rows, null];
+    }
+
+    private function firstLine(string $text): ?string
+    {
+        $line = trim(strtok($text, "\r\n") ?: '');
+        if ($line === '') {
+            return null;
+        }
+        return mb_strlen($line) > 80 ? mb_substr($line, 0, 80) . '…' : $line;
+    }
+
+    private function replaceSources(int $itemId, array $rows): void
+    {
+        $this->db->execute('DELETE FROM release_note_item_sources WHERE item_id = ?', [$itemId]);
+        foreach ($rows as $order => $r) {
+            $this->db->execute(
+                'INSERT INTO release_note_item_sources (item_id, source_type, source_id, title, sort_order) VALUES (?, ?, ?, ?, ?)',
+                [$itemId, $r['source_type'], $r['source_id'], $r['title'], $order]
+            );
+        }
+    }
+
+    private function itemWithSources(int $itemId): array
+    {
+        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$itemId]);
+        return $this->formatItem($row ?? [], $this->sourcesByItem([$itemId])[$itemId] ?? []);
     }
 
     /**
@@ -499,6 +639,28 @@ class ReleaseNotesController
         }
         $category = in_array($input['category'] ?? '', self::CATEGORIES, true) ? $input['category'] : 'fix';
 
+        $feedbackId = isset($input['feedback_id']) && is_numeric($input['feedback_id']) ? (int) $input['feedback_id'] : null;
+        $sources = null;
+        if (array_key_exists('sources', $input)) {
+            [$sources, $err] = $this->resolveSources($input['sources']);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
+            }
+            // 投入側(feedback-fix)は feedback_id で告知済みを突き合わせるので、指定が無ければ埋めておく。
+            if ($feedbackId === null) {
+                foreach ($sources as $r) {
+                    if ($r['source_type'] === 'feedback') {
+                        $feedbackId = $r['source_id'];
+                        break;
+                    }
+                }
+            }
+        } elseif ($feedbackId !== null) {
+            // 従来の feedback_id だけの投入も、報告の紐付けとして表示できるようにする。
+            // 元の報告が無い（別環境の ID など）ときは表示用の紐付けだけ省く。
+            [$sources] = $this->resolveSources([['type' => 'feedback', 'id' => $feedbackId]]);
+        }
+
         $order = $input['sort_order'] ?? null;
         if (!is_int($order)) {
             $row = $this->db->fetchOne(
@@ -520,12 +682,15 @@ class ReleaseNotesController
                 $this->nullableText($input['where_text'] ?? null),
                 $this->nullableText($input['before_text'] ?? null),
                 $this->nullableText($input['after_text'] ?? null),
-                isset($input['feedback_id']) && is_numeric($input['feedback_id']) ? (int) $input['feedback_id'] : null,
+                $feedbackId,
             ]
         );
 
-        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$this->db->lastInsertId()]);
-        return ['success' => true, 'data' => $this->formatItem($row ?? [])];
+        $itemId = (int) $this->db->lastInsertId();
+        if ($sources) {
+            $this->replaceSources($itemId, $sources);
+        }
+        return ['success' => true, 'data' => $this->itemWithSources($itemId)];
     }
 
     public function updateItem(int $noteId, int $itemId, array $input): array
@@ -559,15 +724,27 @@ class ReleaseNotesController
                 $binds[] = $input[$key] === null ? null : (int) $input[$key];
             }
         }
-        if (!$fields) {
+        // sources を送ったときは丸ごと置き換える（[] で全部外す）。
+        $sources = null;
+        if (array_key_exists('sources', $input)) {
+            [$sources, $err] = $this->resolveSources($input['sources']);
+            if ($err !== null) {
+                return ['success' => false, 'error' => $err];
+            }
+        }
+        if (!$fields && $sources === null) {
             return ['success' => false, 'error' => '更新する項目がありません'];
         }
 
-        $binds[] = $itemId;
-        $this->db->execute('UPDATE release_note_items SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+        if ($fields) {
+            $binds[] = $itemId;
+            $this->db->execute('UPDATE release_note_items SET ' . implode(', ', $fields) . ' WHERE id = ?', $binds);
+        }
+        if ($sources !== null) {
+            $this->replaceSources($itemId, $sources);
+        }
 
-        $row = $this->db->fetchOne('SELECT * FROM release_note_items WHERE id = ?', [$itemId]);
-        return ['success' => true, 'data' => $this->formatItem($row ?? [])];
+        return ['success' => true, 'data' => $this->itemWithSources($itemId)];
     }
 
     /**
@@ -588,6 +765,7 @@ class ReleaseNotesController
         $this->db->beginTransaction();
         try {
             $this->db->execute('DELETE FROM release_note_images WHERE item_id = ?', [$itemId]);
+            $this->db->execute('DELETE FROM release_note_item_sources WHERE item_id = ?', [$itemId]);
             $this->db->execute('DELETE FROM release_note_items WHERE id = ?', [$itemId]);
             $this->db->commit();
         } catch (\Exception $e) {
@@ -1033,6 +1211,7 @@ class ReleaseNotesController
         // 公開 URL でも検索エンジンには載せない（クライアントに配る前提の限定公開）。
         header('X-Robots-Tag: noindex, nofollow');
         header('Cache-Control: private, no-store');
+        $this->renderScope = $scope;
         echo $this->renderPage($this->collect($scope), $scope);
     }
 
@@ -1152,7 +1331,7 @@ HTML;
         $summaryBlock = '';
         if ($n['summary'] !== null && $n['summary'] !== '' || $cover !== null) {
             $summaryBlock = '<div class="summary-row">'
-                . ($cover !== null ? '<div class="cover">' . $this->renderMedia($cover) . '</div>' : '')
+                . ($cover !== null ? '<div class="cover media">' . $this->renderFigure($cover) . '</div>' : '')
                 . (($n['summary'] ?? '') !== '' ? '<p class="summary">' . nl2br($e($n['summary'])) . '</p>' : '')
                 . '</div>';
         }
@@ -1211,8 +1390,29 @@ HTML;
         return '<li class="item"><span class="num">' . $index . '.</span><div class="item-body">'
             . '<p class="headline">' . $e($item['headline']) . '</p>'
             . (($item['where_text'] ?? null) !== null ? '<p class="where">場所: ' . $e($item['where_text']) . '</p>' : '')
+            . $this->renderSources($item['sources'] ?? [])
             . $ba . $mediaHtml
             . '</div></li>';
+    }
+
+    /**
+     * 「対応: フィードバック #24 〜」の行。社内向け（internal）のページだけに出す。
+     */
+    private function renderSources(array $sources): string
+    {
+        if ($this->renderScope === self::SCOPE_PUBLIC || !$sources) {
+            return '';
+        }
+        $e = static fn(?string $s): string => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        $parts = [];
+        foreach ($sources as $s) {
+            $label = ($s['type'] === 'feedback' ? 'フィードバック' : 'ノート') . ' #' . (int) $s['id'];
+            $ref = $s['url'] !== null && preg_match('#^(https?://|/)#', (string) $s['url']) === 1
+                ? '<a href="' . $e($s['url']) . '" target="_blank" rel="noopener">' . $e($label) . '</a>'
+                : $e($label);
+            $parts[] = '<li>' . $ref . (($s['title'] ?? null) !== null ? ' <span class="src-title">' . $e($s['title']) . '</span>' : '') . '</li>';
+        }
+        return '<div class="sources"><span class="src-label">対応</span><ul>' . implode('', $parts) . '</ul></div>';
     }
 
     /**
@@ -1365,6 +1565,13 @@ details[open] summary::before{content:"▾ "}
 .media img,.media video{width:100%;border-radius:6px;border:1px solid #E5E7EB;
   background:#000;display:block}
 .media img{background:#F9FAFB;cursor:zoom-in}
+.sources{display:flex;gap:6px;margin:4px 0 0;font-size:12px;color:#6B7280}
+.src-label{flex-shrink:0;color:#9CA3AF}
+.sources ul{list-style:none;margin:0;padding:0}
+.sources a{color:#043E80}
+.src-title{color:#4B5563}
+.cover.media{margin-top:0}
+.cover figure{max-width:100%}
 .media.pair figure{max-width:calc(50% - 6px)}
 @media (max-width:560px){.media.pair figure{max-width:100%}}
 .kind{display:inline-block;margin-bottom:4px;padding:1px 8px;border-radius:999px;font-size:11px;

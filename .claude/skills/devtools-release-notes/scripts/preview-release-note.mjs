@@ -56,6 +56,10 @@ function item(it, n) {
   return `<li class="item"><span class="num">${n}.</span><div class="item-body">`
     + `<p class="headline">${e(it.headline)}</p>`
     + (it.where ? `<p class="where">場所: ${e(it.where)}</p>` : '')
+    + ((it.sources ?? []).length ? `<div class="sources"><span class="src-label">対応</span><ul>`
+      + it.sources.map((s) => `<li>${s.type === 'feedback' ? 'フィードバック' : 'ノート'} #${e(s.id)}`
+        + `${s.title ? ` <span class="src-title">${e(s.title)}</span>` : ' <span class="src-title">（タイトルは投入時に元の報告から入ります）</span>'}</li>`).join('')
+      + `</ul></div>` : '')
     + ((it.before || it.after) ? `<div class="ba">`
       + (it.before ? `<p class="before"><span class="ba-label">これまで</span>${e(it.before)}</p>` : '')
       + (it.after ? `<p class="after"><span class="ba-label">これから</span>${e(it.after)}</p>` : '')
@@ -114,6 +118,8 @@ body{margin:0;background:#F7F8FA;color:#111827;font-family:-apple-system,BlinkMa
 figcaption{margin-top:4px;font-size:12px;color:#4B5563}figcaption .cap{display:block}
 figcaption .desc{display:block;margin-top:2px;font-size:11px;color:#6B7280}
 .waived{margin:8px 0 0;font-size:11px;color:#9CA3AF}
+.sources{display:flex;gap:6px;margin:4px 0 0;font-size:12px;color:#6B7280}.src-label{color:#9CA3AF}
+.sources ul{list-style:none;margin:0;padding:0}.src-title{color:#4B5563}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:24px}
 .lightbox[hidden]{display:none}.lightbox img{max-width:100%;max-height:100%;border-radius:8px;background:#fff}
 </style></head><body><div class="wrap">

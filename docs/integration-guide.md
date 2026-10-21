@@ -684,15 +684,35 @@ API を直接叩く場合は `POST /release-notes` → `POST /:id/items` → `PO
 メディアの説明は `POST /:id/images` の `kind` / `caption` / `alt` / `description` で付け、後から
 `PATCH /:id/images/:imageId` で直せる（v1.6.0+）。詳細は `api/openapi.yaml` の ReleaseNotes セクションを参照。
 
-### 5. API をフォークしている場合（v1.6.0 への更新）
+### 5. 元の報告へのリンク（任意・v1.6.0+）
+
+各変更に紐付けた feedback / note を、社内向けの表示からアプリ内で開けるようにする。
+`config.php` に開く先の URL を書く（`{id}` が報告の ID に置き換わる）。公開ページ（internal）は
+API のオリジンで開くので、アプリのオリジンを含む絶対 URL で書く。
+
+```php
+'release_notes_source_urls' => [
+    'feedback' => 'https://app.example.com/__admin?feedback={id}',
+    'note' => 'https://app.example.com/__admin?note={id}',
+],
+```
+
+`DebugAdmin`（`/__admin`）は `?note=` と `?feedback=`、`FeedbackAdmin` は `?feedback=` で該当項目を開く。
+社外公開（public トークン）のページとフィードには、報告の ID もタイトルも出ない。
+
+### 6. API をフォークしている場合（v1.6.0 への更新）
 
 `ReleaseNotesController.php` を手で改変して取り込んでいるアプリは、次をマージする。
 
-- `Database.php` の v15（`release_note_images` に `kind` / `alt` / `description` 列を追加）
-- `ReleaseNotesController.php` の `MEDIA_KINDS`、`uploadImage` の新しい項目、`updateImage`、`formatImage`、公開ページの描画（`renderFigure`）
-- `index.php` の `PATCH /release-notes/{id}/images/{imageId}`
+- `Database.php` の v15（`release_note_images` に `kind` / `alt` / `description` 列を追加）と
+  v16（`release_note_item_sources` テーブル。既存の `feedback_id` を移す）
+- `ReleaseNotesController.php` の `MEDIA_KINDS`、`uploadImage` の新しい項目、`updateImage`、`formatImage`、
+  `SOURCE_TYPES` と sources まわり（`resolveSources` / `replaceSources` / `sourcesByItem` / `formatSource`、
+  `addItem` / `updateItem` / `deleteItem` の変更、`collect` で public には出さない処理）、
+  公開ページの描画（`renderFigure` / `renderSources` / カバーの説明）
+- `index.php` の `PATCH /release-notes/{id}/images/{imageId}` と `setSourceUrlTemplates`
 
-### 6. 必ずブラウザで確認する
+### 7. 必ずブラウザで確認する
 
 **API が 200 を返すことと、画面に出ることは別**。特に添付は curl では気づけない。
 公開 URL を開いて、画像が表示され、動画が再生でき、シークできるところまで見る。

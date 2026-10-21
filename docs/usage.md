@@ -862,6 +862,8 @@ import { ReleaseNotes } from '@twuw-b/dev-tools';
 | `showFilter` | `boolean` | | 区分の絞り込みを出すか（既定: true） |
 | `storageKey` | `string` | | 未読管理のキー。同一オリジンに複数アプリを載せる場合に分ける |
 | `onLoaded` | `(notes: ReleaseNote[]) => void` | | 読み込み完了時 |
+| `sourceHref` | `(source: ReleaseNoteSource) => string \| null \| undefined` | | 元の報告（feedback / note）を開く URL。省略時は API が返す `source.url`（v1.6.0+） |
+| `onSourceClick` | `(source: ReleaseNoteSource, href: string) => void` | | 元の報告のリンクを押したとき。渡すとブラウザの遷移を止めて呼ぶ（SPA のルーター用・v1.6.0+） |
 
 #### 表示のしくみ
 
@@ -886,6 +888,27 @@ import { ReleaseNotes } from '@twuw-b/dev-tools';
 同じ項目に `before` と `after` がそろうと横に並ぶ（狭い幅では縦）。代替テキストは `alt`、
 無ければ `caption` を使う。`kind` の無い従来のデータは札を出さず、従来どおり表示する。
 メディアの説明は `releaseNotesApi.updateMedia()`（`PATCH /release-notes/{id}/images/{imageId}`）で後から直せる。
+
+#### 元の報告（v1.6.0+）
+
+各変更の見出しの下に「対応: フィードバック #24 〜」の形で、元になった feedback / note の ID と
+タイトルを出す。社外公開のフィード（public トークン）には含まれないので、社内向けの表示にだけ出る。
+
+リンク先は API の `release_notes_source_urls`（`config.php`）で決まる。アプリ側で決めたい場合は
+`sourceHref` を渡す。http(s) とサイト内の絶対パス（`/` 始まり）以外はリンクにしない。
+
+```tsx
+const navigate = useNavigate();
+
+<ReleaseNotes
+  feedUrl={feedUrl}
+  sourceHref={(s) => `/__admin?${s.type}=${s.id}`}
+  onSourceClick={(_, href) => navigate(href)}
+/>
+```
+
+`DebugAdmin` は `?note=12` でノート #12 の詳細を、`?feedback=24` でフィードバックタブの #24 を開いた状態で
+表示する。`FeedbackAdmin` も `?feedback=24` で該当行を開く。
 
 スタイルはすべてインラインで、ホストの CSS に依存しない。
 

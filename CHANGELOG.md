@@ -30,10 +30,30 @@
   - `push-release-note.mjs` / `publish-release-note.mjs`: 下書きで投入（同じ env への二重投入は止める。
     途中で失敗したら作りかけの号を消す）／ユーザー確認後に公開
 
+- **各変更に元の報告（feedback / note）を紐付ける（R-010）**: どの報告を受けて直したかが
+  リリースノートから分からず、報告した側も開発側もたどれなかった。1 つの変更が複数の報告に対応することも
+  あり、項目の `feedback_id` 1 列では表せなかった。
+  - `release_note_item_sources` テーブルを追加（スキーマ v16。既存の `feedback_id` はここへ移す）
+  - 項目の POST / PATCH で `sources: [{ type: 'feedback' | 'note', id, title? }]` を受け付ける。
+    タイトルを省くと元の報告から引き（feedback は本文の 1 行目、note はタイトル）、存在しない報告は 400
+  - 社内向け（アプリ内・internal の公開ページ）に「対応: フィードバック #24 〜」を出す。
+    社外公開（public トークン）のページとフィードには ID もタイトルも出さない
+  - `config.php` の `release_notes_source_urls` でアプリ内のリンク先を決める。`<ReleaseNotes>` は
+    `sourceHref` / `onSourceClick` で上書きできる
+  - `DebugAdmin` は `?note=` / `?feedback=`、`FeedbackAdmin` は `?feedback=` で該当項目を開いた状態で表示する
+  - スキルの原稿（`release.json`）に `sources` を追加し、検査・下見・投入に反映
+
+### Fixed
+
+- **カバー画像の説明が表示されなかった**: 号のカバー画像だけ caption / description を出していなかった
+  （スキルの検査では必須にしているのに、表示で捨てていた）。`<ReleaseNotes>` と公開ページで出すようにした
+
 ### Tests
 
-- API: メディアの説明（添付・従来データ・不正な kind・PATCH・PATCH の拒否・認証・公開ページの表示）7 件を追加
-- Unit: `ReleaseNotes` のメディア表示 3 件を追加
+- API: メディアの説明（添付・従来データ・不正な kind・PATCH・PATCH の拒否・認証・公開ページの表示）7 件、
+  元の報告の紐付け（タイトルの補完と feedback_id の補完・不正な入力・置き換え・従来の feedback_id・
+  社外に出ないこと・項目削除）6 件を追加
+- Unit: `ReleaseNotes` のメディア表示 3 件、元の報告の表示 4 件、`parseAdminDeepLink` 2 件を追加
 
 ## [1.5.0] - 2026-09-11
 

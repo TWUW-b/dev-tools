@@ -90,6 +90,19 @@ API の追加:
 - **`ReleaseNotesTab`**: 従来どおり公開制御だけにする（作成・編集画面は付けない。2026-10-21 決定）
 - `sample/` に両方を載せ、Playwright で確認する
 
+### (5) 元の報告との紐付け（2026-10-21 追加）
+
+各変更が、どの feedback / note を受けて直したものかを、ID・タイトル・アプリ内のリンクで示す。
+
+- データ: `release_note_item_sources`（item_id, source_type = feedback / note, source_id, title, sort_order）。
+  1 つの変更が複数の報告に対応するため、項目の `feedback_id` 1 列とは別に持つ。既存の `feedback_id` は移す
+- API: 項目の POST / PATCH に `sources`。タイトルは省けば元の報告から引く。存在しない報告は拒否
+- 表示: 社内向け（アプリ内・internal の公開ページ）に「対応: フィードバック #24 タイトル」。社外向けには出さない
+  （内部の管理番号と、利用者の書いた原文のため）
+- リンク: `config.php` の `release_notes_source_urls` の `{id}` を置き換えた URL。`<ReleaseNotes>` は
+  `sourceHref` / `onSourceClick` で上書きできる。`DebugAdmin` / `FeedbackAdmin` は `?note=` / `?feedback=` で該当項目を開く
+- スキル: 原稿の項目に `sources` を書く
+
 ## 対象外（別依頼にする）
 
 - toho_matching への取り込み。toho は PHP をフォークしているので手でマージが要る。アプリ内ページを `<ReleaseNotes>` に置き換えるかも含めて、別の依頼で扱う
@@ -104,4 +117,5 @@ API の追加:
 
 - 2026-10-21: `ReleaseNotesTab` に作成・編集画面は付けない（gen）
 - 2026-10-21: 原稿の `media/` はホストアプリのリポジトリにコミットする（gen）。`preview.html` と `pushed.*.json` はコミットしない
+- 2026-10-21: 各変更に元の feedback / note の ID・タイトル・アプリ内リンクを付ける（gen の追加指示）。社外向けには出さない
 - 2026-10-21: toho が独自に足した `GET /release-notes/published`（利用者の認証で公開済みを返す）は取り込まない。上流には「管理者以外のログイン利用者」という認証の区分が無く、アプリ内表示は internal トークンの feed で足りるため

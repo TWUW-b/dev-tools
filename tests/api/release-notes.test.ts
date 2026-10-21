@@ -529,6 +529,137 @@ describe("メディアの説明", () => {
   });
 });
 
+// ─── 元の報告（feedback / note）との紐付け（R-010） ───
+
+describe("元の報告との紐付け", () => {
+  const cleanup: Array<() => Promise<unknown>> = [];
+  afterAll(async () => {
+    for (const fn of cleanup) await fn();
+  });
+
+  async function createFeedback(message: string): Promise<number> {
+    const res = await admin("/feedbacks", { method: "POST", json: { kind: "bug", message } });
+    expect(res.status).toBe(201);
+    const id = (await res.json()).data.id as number;
+    cleanup.push(() => admin(`/feedbacks/${id}`, { method: "DELETE" }));
+    return id;
+  }
+
+  async function createDebugNote(title: string): Promise<number> {
+    const res = await admin("/notes", {
+      method: "POST",
+      json: { title, content: `${title} の詳細`, route: "/rn", screenName: "RN" },
+    });
+    expect(res.status).toBe(201);
+    const id = (await res.json()).note.id as number;
+    cleanup.push(() => admin(`/notes/${id}`, { method: "DELETE" }));
+    return id;
+  }
+
+  test("sources を付けて項目を作ると、元の報告のタイトルが入り、feedback_id も埋まる", async () => {
+    const fb = await createFeedback("保存ボタンが押せない\n担当者を変えると灰色のまま");
+    const dn = await createDebugNote("一覧の件数が出ない");
+    const noteId = await createNote({ version: "第960号", title: "紐付け", released_on: "2026-07-01" });
+    createdNotes.push(noteId);
+
+    const res = await admin(`/release-notes/${noteId}/items`, {
+      method: "POST",
+      json: {
+        headline: "保存できるようにしました",
+        sources: [{ type: "feedback", id: fb }, { type: "note", id: dn, title: "件数の表示" }, { type: "feedback", id: fb }],
+      },
+    });
+    expect(res.status).toBe(201);
+    const item = (await res.json()).data;
+    expect(item.feedback_id).toBe(fb);
+    // 重複は 1 つにまとめ、タイトルは feedback の本文 1 行目 / 指定があればそれ
+    expect(item.sources.map((s: { type: string; id: number; title: string }) => [s.type, s.id, s.title])).toEqual([
+      ["feedback", fb, "保存ボタンが押せない"],
+      ["note", dn, "件数の表示"],
+    ]);
+    for (const src of item.sources) {
+      if (src.url !== null) expect(src.url).toContain(String(src.id));
+    }
+  });
+
+  test("存在しない報告・不正な種類は 400", async () => {
+    const noteId = await createNote({ version: "第961号", title: "紐付け拒否", released_on: "2026-07-02" });
+    createdNotes.push(noteId);
+    const post = (sources: unknown) =>
+      admin(`/release-notes/${noteId}/items`, { method: "POST", json: { headline: "x", sources } });
+
+    expect((await post([{ type: "feedback", id: 99999999 }])).status).toBe(400);
+    expect((await post([{ type: "ticket", id: 1 }])).status).toBe(400);
+    expect((await post([{ type: "note", id: "abc" }])).status).toBe(400);
+    expect((await post({ type: "note", id: 1 })).status).toBe(400);
+  });
+
+  test("PATCH で sources を置き換え・全部外せる", async () => {
+    const a = await createFeedback("A の報告");
+    const b = await createFeedback("B の報告");
+    const noteId = await createNote({ version: "第962号", title: "置き換え", released_on: "2026-07-03" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", sources: [{ type: "feedback", id: a }] },
+    })).json()).data;
+
+    const replaced = (await (await admin(`/release-notes/${noteId}/items/${item.id}`, {
+      method: "PATCH", json: { sources: [{ type: "feedback", id: b }] },
+    })).json()).data;
+    expect(replaced.sources.map((s: { id: number }) => s.id)).toEqual([b]);
+
+    const cleared = await admin(`/release-notes/${noteId}/items/${item.id}`, { method: "PATCH", json: { sources: [] } });
+    expect(cleared.status).toBe(200);
+    expect((await cleared.json()).data.sources).toEqual([]);
+  });
+
+  test("従来の feedback_id だけの投入も紐付けとして表示される", async () => {
+    const fb = await createFeedback("従来の投入");
+    const noteId = await createNote({ version: "第963号", title: "従来", released_on: "2026-07-04" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", feedback_id: fb },
+    })).json()).data;
+    expect(item.sources).toMatchObject([{ type: "feedback", id: fb, title: "従来の投入" }]);
+  });
+
+  test("社内向けには出て、社外向け（public）のフィードとページには出ない", async () => {
+    const fb = await createFeedback("社外に出してはいけない原文");
+    const noteId = await createNote({
+      version: "第964号", title: "可視性", released_on: "2026-07-05", status: "published", is_public: true,
+    });
+    createdNotes.push(noteId);
+    await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "直しました", sources: [{ type: "feedback", id: fb }] },
+    });
+
+    const tokens = (await (await admin("/release-notes/tokens")).json()).data;
+    const itemsOf = async (feedUrl: string) =>
+      (await (await anon(`${BASE_URL}${feedUrl}`)).json()).data.find((n: { id: number }) => n.id === noteId).items;
+
+    expect((await itemsOf(tokens.internal.feedUrl))[0].sources).toHaveLength(1);
+    expect((await itemsOf(tokens.public.feedUrl))[0].sources).toEqual([]);
+
+    const internalHtml = await (await anon(`${BASE_URL}${tokens.internal.pageUrl}`)).text();
+    const publicHtml = await (await anon(`${BASE_URL}${tokens.public.pageUrl}`)).text();
+    expect(internalHtml).toContain(`フィードバック #${fb}`);
+    expect(internalHtml).toContain("社外に出してはいけない原文");
+    expect(publicHtml).not.toContain("社外に出してはいけない原文");
+  });
+
+  test("項目を消すと紐付けも消える", async () => {
+    const fb = await createFeedback("削除検証");
+    const noteId = await createNote({ version: "第965号", title: "削除", released_on: "2026-07-06" });
+    createdNotes.push(noteId);
+    const item = (await (await admin(`/release-notes/${noteId}/items`, {
+      method: "POST", json: { headline: "x", sources: [{ type: "feedback", id: fb }] },
+    })).json()).data;
+    expect((await admin(`/release-notes/${noteId}/items/${item.id}`, { method: "DELETE" })).status).toBe(200);
+    const list = await (await admin("/release-notes")).json();
+    expect(list.data.find((n: { id: number }) => n.id === noteId).items).toEqual([]);
+  });
+});
+
 // ─── トークン ───
 
 describe("トークン", () => {

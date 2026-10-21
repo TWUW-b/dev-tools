@@ -38,6 +38,15 @@ return [
     // 同等以上にする必要がある（超えると $_FILES が空で飛んでくる）。
     // 'release_notes_max_upload' => 52428800,
 
+    // リリースノートの各変更に紐付けた報告（feedback / note）を、アプリ内で開く URL（任意）。
+    // {id} が報告の ID に置き換わる。社内向け（アプリ内・internal の公開ページ）にだけ出る。
+    // 公開ページは API のオリジンで開くため、アプリのオリジンを含む絶対 URL で書く。
+    // DebugAdmin（/__admin）は ?note= と ?feedback=、FeedbackAdmin は ?feedback= で該当項目を開く。
+    // 'release_notes_source_urls' => [
+    //     'feedback' => 'https://app.example.com/__admin?feedback={id}',
+    //     'note' => 'https://app.example.com/__admin?note={id}',
+    // ],
+
     // マニュアル画像の保存先（任意）。既定は api/data/manual-media。
     // 'manual_media_dir' => __DIR__ . '/data/manual-media',
 

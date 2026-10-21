@@ -22,6 +22,7 @@ import type {
   ReleaseNoteItem,
   ReleaseNoteMedia,
   ReleaseNoteMediaKind,
+  ReleaseNoteSource,
   ReleaseNotesProps,
 } from '../types';
 
@@ -58,6 +59,8 @@ export function ReleaseNotes({
   showFilter = true,
   storageKey,
   onLoaded,
+  sourceHref,
+  onSourceClick,
   className,
   style,
 }: ReleaseNotesProps) {
@@ -151,6 +154,7 @@ export function ReleaseNotes({
               open={open.has(note.id)}
               onToggle={() => toggle(note.id)}
               onZoom={(url, caption) => setLightbox({ url, caption })}
+              sourceLink={{ sourceHref, onSourceClick }}
             />
           ))}
         </div>
@@ -185,18 +189,25 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
+interface SourceLinkOptions {
+  sourceHref?: ReleaseNotesProps['sourceHref'];
+  onSourceClick?: ReleaseNotesProps['onSourceClick'];
+}
+
 function NoteCard({
   note,
   isLatest,
   open,
   onToggle,
   onZoom,
+  sourceLink,
 }: {
   note: ReleaseNote;
   isLatest: boolean;
   open: boolean;
   onToggle: () => void;
   onZoom: (url: string, caption: string | null) => void;
+  sourceLink: SourceLinkOptions;
 }) {
   // 代表メディアは cover_image_id の明示が最優先。指定が無ければ
   // 「項目に紐付いていないメディア」の先頭を使う（公開ページ側と同じ規則）。
@@ -261,9 +272,10 @@ function NoteCard({
           {(note.summary || cover) && (
             <div style={{ display: 'flex', gap: '14px', marginTop: '14px', flexWrap: 'wrap' }}>
               {cover && (
-                <div style={{ flexShrink: 0, width: '220px', maxWidth: '100%' }}>
+                <figure style={{ margin: 0, flexShrink: 0, width: '220px', maxWidth: '100%' }}>
                   <Media media={cover} onZoom={onZoom} />
-                </div>
+                  <MediaCaption media={cover} />
+                </figure>
               )}
               {note.summary && (
                 <p style={{ margin: 0, flex: 1, minWidth: '200px', color: MANUAL_COLORS.gray700, whiteSpace: 'pre-wrap' }}>
@@ -304,6 +316,7 @@ function NoteCard({
                         index={n + 1}
                         media={note.images.filter((im) => im.item_id === item.id)}
                         onZoom={onZoom}
+                        sourceLink={sourceLink}
                       />
                     ))}
                   </ol>
@@ -322,11 +335,13 @@ function ItemRow({
   index,
   media,
   onZoom,
+  sourceLink,
 }: {
   item: ReleaseNoteItem;
   index: number;
   media: ReleaseNoteMedia[];
   onZoom: (url: string, caption: string | null) => void;
+  sourceLink: SourceLinkOptions;
 }) {
   return (
     <li style={{
@@ -339,6 +354,7 @@ function ItemRow({
         {item.where_text && (
           <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#9CA3AF' }}>場所: {item.where_text}</p>
         )}
+        {item.sources && item.sources.length > 0 && <SourceList sources={item.sources} {...sourceLink} />}
 
         {(item.before_text || item.after_text) && (
           <div style={{ marginTop: '8px' }}>
@@ -400,23 +416,74 @@ function MediaList({
               </span>
             )}
             <Media media={m} onZoom={onZoom} />
-            {(m.caption || m.description) && (
-              <figcaption style={{ marginTop: '4px' }}>
-                {m.caption && (
-                  <span style={{ display: 'block', fontSize: '12px', color: MANUAL_COLORS.gray700 }}>{m.caption}</span>
-                )}
-                {m.description && (
-                  <span style={{
-                    display: 'block', marginTop: '2px', fontSize: '11px', color: MANUAL_COLORS.gray500, whiteSpace: 'pre-wrap',
-                  }}>
-                    {m.description}
-                  </span>
-                )}
-              </figcaption>
-            )}
+            <MediaCaption media={m} />
           </figure>
         );
       })}
+    </div>
+  );
+}
+
+/** caption（何が写っているか）と description（どこを見ればよいか） */
+function MediaCaption({ media: m }: { media: ReleaseNoteMedia }) {
+  if (!m.caption && !m.description) return null;
+  return (
+    <figcaption style={{ marginTop: '4px' }}>
+      {m.caption && (
+        <span style={{ display: 'block', fontSize: '12px', color: MANUAL_COLORS.gray700 }}>{m.caption}</span>
+      )}
+      {m.description && (
+        <span style={{
+          display: 'block', marginTop: '2px', fontSize: '11px', color: MANUAL_COLORS.gray500, whiteSpace: 'pre-wrap',
+        }}>
+          {m.description}
+        </span>
+      )}
+    </figcaption>
+  );
+}
+
+const SOURCE_LABEL: Record<ReleaseNoteSource['type'], string> = {
+  feedback: 'フィードバック',
+  note: 'ノート',
+};
+
+/**
+ * 「対応: フィードバック #24 〜」の行（R-010）。
+ * どの報告を受けて直したかを、報告した本人や開発側がたどれるようにする。
+ */
+function SourceList({
+  sources,
+  sourceHref,
+  onSourceClick,
+}: { sources: ReleaseNoteSource[] } & SourceLinkOptions) {
+  return (
+    <div data-testid="release-note-sources" style={{ display: 'flex', gap: '6px', margin: '4px 0 0', fontSize: '12px' }}>
+      <span style={{ flexShrink: 0, color: '#9CA3AF' }}>対応</span>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {sources.map((s) => {
+          // javascript: などを踏ませないよう、http(s) とサイト内の絶対パスだけをリンクにする
+          const raw = sourceHref ? sourceHref(s) : s.url;
+          const href = raw && /^(https?:\/\/|\/(?!\/))/i.test(raw) ? raw : null;
+          const label = `${SOURCE_LABEL[s.type] ?? s.type} #${s.id}`;
+          return (
+            <li key={`${s.type}-${s.id}`} style={{ color: MANUAL_COLORS.gray500 }}>
+              {href ? (
+                <a
+                  href={href}
+                  onClick={onSourceClick ? (e) => { e.preventDefault(); onSourceClick(s, href); } : undefined}
+                  style={{ color: MANUAL_COLORS.primary }}
+                >
+                  {label}
+                </a>
+              ) : (
+                <span>{label}</span>
+              )}
+              {s.title && <span style={{ marginLeft: '6px', color: MANUAL_COLORS.gray700 }}>{s.title}</span>}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

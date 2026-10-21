@@ -109,6 +109,8 @@ try {
       before_text: item.before ?? null,
       after_text: item.after ?? null,
       feedback_id: item.feedback_id ?? null,
+      // 元の報告。タイトルを省くとサーバが元の feedback / note から引く
+      ...(Array.isArray(item.sources) ? { sources: item.sources } : {}),
     });
     record.items.push({ index: i + 1, id: created.id });
     console.log(`  項目 ${i + 1}: ${item.headline}`);

@@ -28,8 +28,9 @@ description: |
 
 ### Phase 1 変更を集める
 
-1. 管理 API の一覧（`GET /release-notes`）で前号の番号・公開日・載せ済みの `feedback_id` を確かめる。
+1. 管理 API の一覧（`GET /release-notes`）で前号の番号・公開日・載せ済みの報告（各項目の `sources`）を確かめる。
 2. 前号の公開日以降のマージ済みの変更（git log、PR、直したフィードバック）を集める。
+   変更ごとに、元になった feedback / note の ID を `GET /feedbacks`・`GET /notes`（または `/__admin`）で確かめる。
 3. **利用者に見える変更だけ**を残す。内部の整理やテストの追加は載せない。
    まだ本番に出ていない変更は載せない。
 
@@ -40,6 +41,8 @@ description: |
 - 1 変更 = 1 項目。区分は 直したこと（fix）/ 使いやすくしたこと（improve）/ 新しくできること（feature）の 3 つだけ。
 - headline は「〜しました」。where（場所）、before（これまで）、after（これから）を 1〜2 文ずつ、必ず対で。
 - ファイル名・列名・チケット ID などを書かない。
+- 元になった feedback / note は `sources` に書く（本文には書かない）。社内向けの表示にだけ
+  「対応: フィードバック #24 〜」として出て、アプリ内でその報告を開くリンクになる。
 
 `assets/templates/release.json` を原稿フォルダにコピーして書き換える:
 

@@ -547,6 +547,41 @@ class Database
             }
             $version = '15';
         }
+
+        // v16: リリースノートの項目と、元になった報告（feedback / note）の対応（R-010）。
+        // 1 つの変更が複数の報告に対応することがあるため、項目の feedback_id 1 列では表せない。
+        // title は登録時点の写し。元の報告が後で書き換えられても、告知した時点の表現を残す。
+        // 既存の feedback_id はここへ移して表示をそろえる（feedback_id 列は投入側の突き合わせ用に残す）。
+        if ((int)$version < 16) {
+            $this->pdo->beginTransaction();
+            try {
+                $this->pdo->exec('
+                    CREATE TABLE IF NOT EXISTS release_note_item_sources (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        item_id INTEGER NOT NULL REFERENCES release_note_items(id),
+                        source_type TEXT NOT NULL,
+                        source_id INTEGER NOT NULL,
+                        title TEXT,
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    )
+                ');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rn_sources_item ON release_note_item_sources(item_id)');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_rn_sources_ref ON release_note_item_sources(source_type, source_id)');
+                $this->pdo->exec("
+                    INSERT INTO release_note_item_sources (item_id, source_type, source_id, title, sort_order)
+                    SELECT i.id, 'feedback', i.feedback_id, substr(f.message, 1, 80), 0
+                      FROM release_note_items i
+                      LEFT JOIN feedbacks f ON f.id = i.feedback_id
+                     WHERE i.feedback_id IS NOT NULL
+                ");
+                $this->pdo->exec("UPDATE meta SET value = '16' WHERE key = 'schemaVersion'");
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+            $version = '16';
+        }
     }
 
     /**

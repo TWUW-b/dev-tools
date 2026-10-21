@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useDebugNotes } from '../hooks/useDebugNotes';
 import { setDebugApiBaseUrl, getDebugApiBaseUrl, api } from '../utils/api';
 import type { DebugAdminProps, Note, NoteActivity, NoteAttachment, Status, Severity, EnvironmentInfo, ConsoleLogEntry, NetworkLogEntry } from '../types';
@@ -7,6 +7,7 @@ import { TestStatusTab } from './admin/TestStatusTab';
 import { FeedbackTab } from './admin/FeedbackTab';
 import { ReleaseNotesTab } from './admin/ReleaseNotesTab';
 import { formatJstDateTime, formatJstShort } from '../utils/datetime';
+import { readAdminDeepLink } from '../utils/adminDeepLink';
 import { LIGHT_COLORS, DARK_COLORS } from './adminColors';
 
 // 自動更新間隔（ミリ秒）
@@ -40,8 +41,12 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
   }, []);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback' | 'release-notes'>('notes');
   const hasFeedbackTab = !!(feedbackApiBaseUrl && feedbackAdminKey);
+  // リリースノートの「対応」リンク（?note= / ?feedback=）から開いたときは、その報告を開いた状態にする
+  const deepLinkRef = useRef(readAdminDeepLink());
+  const [activeTab, setActiveTab] = useState<'notes' | 'test-status' | 'feedback' | 'release-notes'>(
+    () => (deepLinkRef.current?.type === 'feedback' && hasFeedbackTab ? 'feedback' : 'notes'),
+  );
   const [testCaseIdFilter, setTestCaseIdFilter] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -218,6 +223,17 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
       // 詳細取得失敗時は一覧データのまま表示
     }
   }, [env]);
+
+  // ?note= のノートを、一覧に読み込まれた時点で 1 度だけ開く
+  // （一覧に無いノートを選ぶと同期処理で選択が外れるため、一覧を待つ）
+  useEffect(() => {
+    const link = deepLinkRef.current;
+    if (link?.type !== 'note') return;
+    const target = notes.find((n) => n.id === link.id);
+    if (!target) return;
+    deepLinkRef.current = null;
+    void handleSelectNote(target);
+  }, [notes, handleSelectNote]);
 
   // 削除
   const handleDelete = useCallback(async (id: number) => {
@@ -508,6 +524,7 @@ export function DebugAdmin({ apiBaseUrl, env = 'dev', feedbackApiBaseUrl, feedba
         <FeedbackTab
           apiBaseUrl={feedbackApiBaseUrl!}
           adminKey={feedbackAdminKey!}
+          initialSelectedId={deepLinkRef.current?.type === 'feedback' ? deepLinkRef.current.id : undefined}
           colors={colors}
           isDarkMode={isDarkMode}
           refreshKey={refreshKey}

@@ -750,6 +750,29 @@ export type ReleaseCategory = 'fix' | 'improve' | 'feature';
 /** 号の公開状態。社外公開の可否は is_public で別に持つ */
 export type ReleaseNoteStatus = 'draft' | 'published';
 
+/** 変更の元になった報告の種類。feedback = 利用者の報告、note = デバッグノート */
+export type ReleaseNoteSourceType = 'feedback' | 'note';
+
+/**
+ * 変更の元になった報告（R-010）。社外公開のフィードには含まれない（空配列になる）。
+ */
+export interface ReleaseNoteSource {
+  type: ReleaseNoteSourceType;
+  /** 元の feedback / note の ID */
+  id: number;
+  /** 登録時点のタイトル（feedback は本文の 1 行目、note はタイトル） */
+  title: string | null;
+  /** アプリ内で開く URL。API の config（release_notes_source_urls）が無ければ null */
+  url: string | null;
+}
+
+/** 報告の紐付けに渡す値。title を省くと元の報告から引かれる */
+export interface ReleaseNoteSourceInput {
+  type: ReleaseNoteSourceType;
+  id: number;
+  title?: string;
+}
+
 /** 1つの変更点。必ず「これまで(before) → これから(after)」の対で読ませる */
 export interface ReleaseNoteItem {
   id: number;
@@ -764,6 +787,8 @@ export interface ReleaseNoteItem {
   after_text: string | null;
   /** 元になったフィードバック ID。投入側が二重掲載を検出する正本 */
   feedback_id: number | null;
+  /** 元になった報告（v1.6.0+）。社外公開のフィードでは空 */
+  sources?: ReleaseNoteSource[];
 }
 
 /**
@@ -837,6 +862,8 @@ export interface ReleaseNoteItemInput {
   after_text?: string | null;
   feedback_id?: number | null;
   sort_order?: number;
+  /** 元になった報告。更新では丸ごと置き換わる（[] で全部外す） */
+  sources?: ReleaseNoteSourceInput[];
 }
 
 /** メディアの添付・更新に渡す値 */
@@ -884,6 +911,15 @@ export interface ReleaseNotesProps {
   storageKey?: string;
   /** 読み込み完了時（未読件数の反映などに使う） */
   onLoaded?: (notes: ReleaseNote[]) => void;
+  /**
+   * 元の報告（feedback / note）を開く URL を決める。省略時は API が返す source.url を使う。
+   * null を返すとリンクにせず ID とタイトルだけを出す。
+   */
+  sourceHref?: (source: ReleaseNoteSource) => string | null | undefined;
+  /**
+   * 元の報告のリンクを押したとき。渡すとブラウザの遷移を止めて呼ぶ（SPA のルーターで遷移したい場合）。
+   */
+  onSourceClick?: (source: ReleaseNoteSource, href: string) => void;
   className?: string;
   style?: React.CSSProperties;
 }

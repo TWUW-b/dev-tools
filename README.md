@@ -13,22 +13,25 @@
 - **マニュアル表示**: Markdown ドキュメントの PiP / サイドバー / タブ表示（画像のクリック拡大、アプリのアイコン埋め込みに対応）
 - **環境情報タブ**（v1.2.0+）: プロジェクト・環境別の URL / 認証情報 / 注意点を MD ベースで管理
 - **フィードバック**: ユーザーからのバグ報告・要望・質問を収集
+- **リリースノート**: 直したことを利用者に知らせる。画像・動画に変更前／変更後の札と説明、各変更に元の feedback / note へのリンク（社内向けのみ）
 - コンソール・ネットワークログの自動キャプチャ
 - dev / test 環境ごとにデータ分離
 - PHP + SQLite のシンプルなバックエンド
 - **Claude Code skill 同梱**:
   - `devtools-testcase-author` — テストケース MD をロール軸で作成 + case_key ベース UPSERT
   - `devtools-testcase-verifier` — Chrome MCP でテストケースを実行・5 バケット振り分け・レポート生成
+  - `devtools-release-notes` — 画像・動画（変更前／変更後／使い方）と元の報告つきのリリースノートを作成・投入
 
 ## Claude Code Skill のセットアップ
 
-npm パッケージに 2 つの Claude Code skill を同梱しています。インストール後に以下の 1 コマンドで利用側プロジェクトにコピーできます:
+npm パッケージに 3 つの Claude Code skill を同梱しています。インストール後に以下のコマンドで利用側プロジェクトにコピーできます:
 
 ```bash
-# 2 つの skill を一括コピー
+# 3 つの skill を一括コピー
 mkdir -p .claude/skills
 cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
 cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-release-notes .claude/skills/
 ```
 
 ### devtools-testcase-author（テストケース作成）
@@ -55,12 +58,23 @@ Claude Code の会話で「検証ラウンドを作って」と指示すると�
 - **SessionStart hook**: 起動時に CLAUDE.md + 進捗を自動注入（context 圧縮後の記憶劣化防止）
 - （オプション）IMPL_BUG を dev-tools の notes API に投入
 
+### devtools-release-notes（リリースノート作成・v1.6.0+）
+
+Claude Code の会話で「リリースノートを書いて」と指示すると起動。以下を自動化:
+
+- 前号以降の変更を集め、「これまで → これから」の文面と、元になった feedback / note の紐付けを書く
+- 区分ごとに撮るものを決める（直したこと = 変更後の動画 / 使いやすくしたこと = 変更前後の静止画 /
+  新しくできること = 使い方の動画）。どの画像・動画にもキャプションと見どころの説明を付ける
+- 原稿を `docs/release-notes/<日付>-<名前>/`（`release.json` + `media/`）としてアプリのリポジトリに置く
+- 検査（説明の無いメディア・内部の言葉を止める）→ 下見 HTML → 下書きで投入 → ユーザー確認 → 公開
+
 ### skill の更新
 
 ```bash
 npm update @twuw-b/dev-tools
 cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-author .claude/skills/
 cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-testcase-verifier .claude/skills/
+cp -R node_modules/@twuw-b/dev-tools/.claude/skills/devtools-release-notes .claude/skills/
 ```
 
 詳細は `docs/integration-guide.md` を参照。

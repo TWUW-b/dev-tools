@@ -1125,6 +1125,8 @@ paths:
       description: |
         1項目は「これまで(before_text) → これから(after_text)」の対で書く。
         `feedback_id` を入れておくと、投入側が二重掲載を検出できる。
+        `sources` で元になった feedback / note を紐付けると、社内向けの表示に「対応: フィードバック #24 〜」が出る。
+        `feedback_id` を省いて `sources` に feedback があれば、最初の feedback の ID が `feedback_id` に入る。
       security:
         - AdminKey: []
         - FirebaseBearer: []
@@ -1149,6 +1151,13 @@ paths:
                 after_text: { type: string, nullable: true }
                 feedback_id: { type: integer, nullable: true }
                 sort_order: { type: integer }
+                sources:
+                  type: array
+                  maxItems: 20
+                  description: |
+                    元になった報告（v1.6.0+）。title を省くと元の報告から引く（feedback は本文の 1 行目、note はタイトル）。
+                    存在しない報告は 400。PATCH では丸ごと置き換える（[] で全部外す）。
+                  items: { $ref: '#/components/schemas/ReleaseNoteSourceInput' }
       responses:
         '201':
           description: 作成
@@ -1195,6 +1204,13 @@ paths:
                 after_text: { type: string, nullable: true }
                 feedback_id: { type: integer, nullable: true }
                 sort_order: { type: integer }
+                sources:
+                  type: array
+                  maxItems: 20
+                  description: |
+                    元になった報告（v1.6.0+）。title を省くと元の報告から引く（feedback は本文の 1 行目、note はタイトル）。
+                    存在しない報告は 400。PATCH では丸ごと置き換える（[] で全部外す）。
+                  items: { $ref: '#/components/schemas/ReleaseNoteSourceInput' }
       responses:
         '200':
           description: OK
@@ -2196,6 +2212,32 @@ components:
           type: integer
           nullable: true
           description: 元になった報告。投入側が二重掲載を検出する正本
+        sources:
+          type: array
+          description: 元になった報告（v1.6.0+）。社外公開（public トークン）のフィードでは常に空
+          items: { $ref: '#/components/schemas/ReleaseNoteSource' }
+
+    ReleaseNoteSource:
+      type: object
+      properties:
+        type: { type: string, enum: [feedback, note] }
+        id: { type: integer }
+        title:
+          type: string
+          nullable: true
+          description: 紐付けた時点のタイトル（feedback は本文の 1 行目、note はタイトル）
+        url:
+          type: string
+          nullable: true
+          description: アプリ内で開く URL。config.php の release_notes_source_urls の {id} を置き換えたもの。未設定なら null
+
+    ReleaseNoteSourceInput:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string, enum: [feedback, note] }
+        id: { type: integer }
+        title: { type: string, description: 省くと元の報告から引く }
 
     ReleaseNoteMedia:
       type: object

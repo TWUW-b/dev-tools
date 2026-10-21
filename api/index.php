@@ -111,6 +111,8 @@ $releaseNotesController = new ReleaseNotesController(
     (int) ($config['release_notes_max_upload'] ?? 52428800)
 );
 $releaseNotesController->setUrlContext($basePath, $env);
+// 各変更の元になった報告（feedback / note）をアプリ内で開く URL のひな形（R-010）。
+$releaseNotesController->setSourceUrlTemplates((array) ($config['release_notes_source_urls'] ?? []));
 
 // マニュアル画像（RFC 002 / ADR-002）。ManualItem は DB に実体を持たないため、
 // manual_item_id は自由入力の文字列（正規表現で検証したものだけをディレクトリ名に使う）。

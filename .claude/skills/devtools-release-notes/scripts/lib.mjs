@@ -9,6 +9,7 @@ import { join, extname, resolve } from 'node:path';
 
 export const CATEGORIES = ['fix', 'improve', 'feature'];
 export const KINDS = ['before', 'after', 'howto', 'overview'];
+export const SOURCE_TYPES = ['feedback', 'note'];
 
 export const EXT_MIME = {
   '.png': 'image/png',
@@ -111,6 +112,22 @@ export function checkManifest(dir, manifest) {
       warn(`${at}: before（これまで）と after（これから）は対で書いてください`);
     }
     for (const key of ['headline', 'where', 'before', 'after']) scanInternal(`${at} ${key}`, item[key]);
+
+    // 元の報告（feedback / note）。ID とタイトルは社内向けの表示にだけ出る
+    if (item.sources !== undefined) {
+      if (!Array.isArray(item.sources)) {
+        err(`${at}: sources は配列で書いてください`);
+      } else {
+        item.sources.forEach((src, n) => {
+          if (!SOURCE_TYPES.includes(src?.type)) err(`${at}: sources[${n + 1}].type は feedback か note です`);
+          if (!Number.isInteger(src?.id) || src.id <= 0) err(`${at}: sources[${n + 1}].id は正の整数で書いてください`);
+          if (src?.title !== undefined && typeof src.title !== 'string') err(`${at}: sources[${n + 1}].title は文字列で書いてください`);
+        });
+      }
+    }
+    if ((item.sources ?? []).length === 0 && item.category !== 'feature') {
+      warn(`${at}: 元になった feedback / note が sources にありません。報告から直した変更なら紐付けてください`);
+    }
 
     const media = Array.isArray(item.media) ? item.media : [];
     if (media.length === 0) {

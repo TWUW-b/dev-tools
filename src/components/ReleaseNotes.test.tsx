@@ -109,3 +109,67 @@ describe('ReleaseNotes のメディア表示', () => {
     expect(within(list).getByText('使い方')).toBeTruthy();
   });
 });
+
+describe('ReleaseNotes の元の報告（R-010）', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  function withSources(sources: ReleaseNote['items'][number]['sources']): ReleaseNote {
+    const n = note([]);
+    return { ...n, items: [{ ...n.items[0], sources }] };
+  }
+
+  it('ID とタイトルを出し、API の url をリンクにする', async () => {
+    mockFeed([withSources([
+      { type: 'feedback', id: 24, title: '保存ボタンが押せない', url: 'https://app.test/__admin?feedback=24' },
+      { type: 'note', id: 7, title: '件数が出ない', url: null },
+    ])]);
+
+    render(<ReleaseNotes feedUrl="http://api.test/release-notes/feed/t" />);
+
+    const box = await screen.findByTestId('release-note-sources');
+    const link = within(box).getByRole('link', { name: 'フィードバック #24' });
+    expect(link.getAttribute('href')).toBe('https://app.test/__admin?feedback=24');
+    expect(within(box).getByText('保存ボタンが押せない')).toBeTruthy();
+    // url が無ければリンクにせず ID だけ出す
+    expect(within(box).getByText('ノート #7').tagName).toBe('SPAN');
+  });
+
+  it('sourceHref で上書きでき、onSourceClick を渡すと遷移を止めて呼ぶ', async () => {
+    mockFeed([withSources([{ type: 'note', id: 7, title: null, url: null }])]);
+    const onSourceClick = vi.fn();
+
+    render(
+      <ReleaseNotes
+        feedUrl="http://api.test/release-notes/feed/t"
+        sourceHref={(s) => `/__admin?${s.type}=${s.id}`}
+        onSourceClick={onSourceClick}
+      />,
+    );
+
+    const link = await screen.findByRole('link', { name: 'ノート #7' });
+    expect(link.getAttribute('href')).toBe('/__admin?note=7');
+    link.click();
+    expect(onSourceClick).toHaveBeenCalledWith(expect.objectContaining({ type: 'note', id: 7 }), '/__admin?note=7');
+  });
+
+  it('javascript: の URL はリンクにしない', async () => {
+    mockFeed([withSources([{ type: 'feedback', id: 1, title: null, url: 'javascript:alert(1)' }])]);
+
+    render(<ReleaseNotes feedUrl="http://api.test/release-notes/feed/t" />);
+
+    const box = await screen.findByTestId('release-note-sources');
+    expect(within(box).queryByRole('link')).toBeNull();
+  });
+
+  it('紐付けが無ければ「対応」の行を出さない', async () => {
+    mockFeed([withSources([])]);
+
+    render(<ReleaseNotes feedUrl="http://api.test/release-notes/feed/t" />);
+
+    await screen.findByText('件数を見出しの横に出しました');
+    expect(screen.queryByTestId('release-note-sources')).toBeNull();
+  });
+});

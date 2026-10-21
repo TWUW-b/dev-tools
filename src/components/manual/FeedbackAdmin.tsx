@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useFeedbackAdmin } from '../../hooks/useFeedbackAdmin';
 import { getFeedbackDetail, deleteFeedbackAttachment } from '../../utils/feedbackApi';
 import { loadMaterialSymbols, isAutoLoadDisabled } from '../../styles/material-symbols';
+import { readAdminDeepLink } from '../../utils/adminDeepLink';
 import type { FeedbackAdminProps, Feedback, FeedbackKind, FeedbackTarget, FeedbackStatus, NoteAttachment } from '../../types';
 
 const KIND_LABELS: Record<string, { label: string; color: string }> = {
@@ -65,6 +66,15 @@ export function FeedbackAdmin({ apiBaseUrl, adminKey }: FeedbackAdminProps) {
       setDetailLoading(false);
     }
   }, [expandedId, apiBaseUrl, adminKey]);
+
+  // リリースノートの「対応」リンク（?feedback=）から開いたときは、その行を最初に 1 度だけ開く
+  const deepLinkOpenedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkOpenedRef.current) return;
+    deepLinkOpenedRef.current = true;
+    const link = readAdminDeepLink();
+    if (link?.type === 'feedback') void handleRowClick(link.id);
+  }, [handleRowClick]);
 
   const handleDelete = useCallback(async (id: number) => {
     if (!confirm('削除しますか？')) return;
