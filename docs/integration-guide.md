@@ -83,10 +83,17 @@ return [
 
 **注意**: `$storagePath` はプロジェクトの Docker 構成に合わせて調整する。
 
-> ⚠️ **管理キー（`X-Admin-Key` / `feedback_admin_key` / `DEBUG_ADMIN_KEY` / `VITE_DEBUG_ADMIN_KEY`）は dev / test 環境専用です。本番では設定しないでください。**
-> この鍵 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）がすべて開きます。
-> また `VITE_` の値はフロントのバンドルに平文で載ります。本番では `firebase_project_id` を設定し、
-> 管理者の Firebase ログイン（`Authorization: Bearer`）だけで認証してください。
+> ⚠️ **管理キーはブラウザ用とサーバー間用で分けてください（v1.7.0+）。**
+>
+> | 鍵 | 置き場所 | dev / test | 本番 |
+> |---|---|---|---|
+> | ブラウザ用（`VITE_DEBUG_ADMIN_KEY` → `setDebugAdminKey()`） | フロントのバンドル（**平文で公開される**） | 使ってよい | **設定しない**。管理画面は Firebase ログイン（`Authorization: Bearer`）で使う |
+> | 全範囲の鍵（`feedback_admin_key`） | サーバーの config | 使ってよい | **空にする** |
+> | 範囲付きの鍵（`admin_keys`） | サーバーの config と、投入する機械の環境変数 | 使ってよい | 機械に必要な範囲だけを付けて置く（例: リリースノートの投入 = `release-notes`） |
+>
+> `feedback_admin_key` は 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）が
+> すべて開きます。ブラウザ用の鍵と同じ値を範囲付きの鍵に使い回さないでください（バンドルから読めるため）。
+> 範囲の一覧と書き方は `api/config.example.php` の `admin_keys` を参照。
 
 ## Step 3: PHP ルーティングバイパス
 
@@ -251,8 +258,10 @@ setDebugAdminKey(feedbackAdminKey);
   notes には別途この `setDebugAdminKey()` が必要です（同じ鍵で構いません）。
 - 鍵を渡す先はブラウザに露出するため、`/__debug` は Basic 認証やネットワーク制限と
   併用してください。
-- **この鍵は dev / test 環境専用です。本番では `setDebugAdminKey()` を呼ばず、鍵も設定しないでください**
-  （本番は Firebase ログインで認証する。Step 2 の注意を参照）。
+- **ブラウザ用の鍵は dev / test 環境専用です。本番では `setDebugAdminKey()` を呼ばず、`VITE_DEBUG_ADMIN_KEY` も設定しないでください**
+  （本番の管理画面は Firebase ログインで認証する。Step 2 の注意を参照）。
+- ブラウザ用の鍵にも範囲を付けられます（`admin_keys` に `['notes', 'test-cases', 'feedbacks']` など）。
+  バンドルから読める鍵で DB 丸ごとの書き出しまで開かないよう、dev / test でも範囲付きにしておくと安全です。
 
 ### 環境情報タブ（任意）
 
@@ -705,10 +714,10 @@ AI が下書き → 人が確認 → 投入）。設定の F 群に次を入れ�
 |------|-----|
 | `releaseNoteUrl` | `https://<host>/api/__debug/release-notes` |
 | `releaseNoteAuth` | `admin-key` |
-| `releaseNoteToken` | `env:VITE_DEBUG_ADMIN_KEY` と同じ鍵（**dev / test 環境のみ**） |
+| `releaseNoteToken` | `release-notes` だけを範囲に持つ鍵（`admin_keys`）。ブラウザ用の鍵（`VITE_DEBUG_ADMIN_KEY`）は使わない |
 | `releaseNotePageUrl` | 管理タブに出ている「社外公開」の URL |
 
-> 管理キーは dev / test 環境専用のため、本番には管理キーでは投入できません。本番は管理者の Firebase ログインで投入してください。
+> 本番へ機械から投入するときも、この `release-notes` 範囲の鍵を使います。この鍵で notes・feedback・書き出しは開きません（403）。
 
 API を直接叩く場合は `POST /release-notes` → `POST /:id/items` → `POST /:id/images` の順。
 メディアの説明は `POST /:id/images` の `kind` / `caption` / `alt` / `description` で付け、後から

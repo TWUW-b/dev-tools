@@ -263,10 +263,17 @@ return [
 > **違い**: Debug Notes は `db` が環境別の連想配列、Feedback は単一パスの文字列。
 > Feedback API の `admin_key` は管理画面（`X-Admin-Key` ヘッダー）で使用される。
 
-> ⚠️ **管理キー（`X-Admin-Key` / `feedback_admin_key` / `DEBUG_ADMIN_KEY` / `VITE_DEBUG_ADMIN_KEY`）は dev / test 環境専用です。本番では設定しないでください。**
-> この鍵 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）がすべて開きます。
-> また `VITE_` の値はフロントのバンドルに平文で載ります。本番では `firebase_project_id` を設定し、
-> 管理者の Firebase ログイン（`Authorization: Bearer`）だけで認証してください。
+> ⚠️ **管理キーはブラウザ用とサーバー間用で分けてください（v1.7.0+）。**
+>
+> | 鍵 | 置き場所 | dev / test | 本番 |
+> |---|---|---|---|
+> | ブラウザ用（`VITE_DEBUG_ADMIN_KEY` → `setDebugAdminKey()`） | フロントのバンドル（**平文で公開される**） | 使ってよい | **設定しない**。管理画面は Firebase ログイン（`Authorization: Bearer`）で使う |
+> | 全範囲の鍵（`feedback_admin_key`） | サーバーの config | 使ってよい | **空にする** |
+> | 範囲付きの鍵（`admin_keys`） | サーバーの config と、投入する機械の環境変数 | 使ってよい | 機械に必要な範囲だけを付けて置く（例: リリースノートの投入 = `release-notes`） |
+>
+> `feedback_admin_key` は 1 本で notes・feedback・リリースノート・テストケース・`/export`（データ全体の書き出し）が
+> すべて開きます。ブラウザ用の鍵と同じ値を範囲付きの鍵に使い回さないでください（バンドルから読めるため）。
+> 範囲の一覧と書き方は `api/config.example.php` の `admin_keys` を参照。
 
 ### 2.3 データディレクトリの作成
 

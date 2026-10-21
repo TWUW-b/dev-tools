@@ -43,6 +43,7 @@ const res = await fetch(`${BASE}/release-notes/${id}?env=${encodeURIComponent(EN
 const json = await res.json().catch(() => ({}));
 if (!res.ok || json.success === false) {
   console.error(`公開に失敗しました: HTTP ${res.status} ${json.error ?? ''}`);
+  if (res.status === 403) console.error('HTTP 403 はこの鍵に release-notes の範囲が無いという意味です（鍵は正しい）');
   process.exit(1);
 }
 console.log(`公開しました: id=${id} ${json.data.version}（${IS_PUBLIC ? '社外にも公開' : 'アプリ内のみ'}）`);

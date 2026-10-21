@@ -2,6 +2,24 @@
 
 すべての特筆すべき変更はこのファイルに記載されます。
 
+## [1.7.0] - 2026-10-21
+
+### Security
+
+- **管理キーに範囲を付けられるようにした（R-025）**: これまで `X-Admin-Key` は 1 本で notes・feedback・
+  リリースノート・テストケース・データ全体の書き出しがすべて開き、本番で機械にリリースノートだけを投入させる
+  ことができなかった。
+  - config に `admin_keys`（`[['name' => ..., 'key' => ..., 'scopes' => [...]]]`）を追加。範囲は
+    `notes` / `test-cases` / `feedbacks` / `release-notes` / `manual` / `'*'`
+  - DB ファイル丸ごとの書き出し（`/export/sqlite`・`/feedbacks/export/sqlite`）は全範囲の鍵か Firebase ログインだけが通る
+  - 正しい鍵で範囲外を叩くと 403（誤った鍵の 401 と区別する）。知らない範囲名を含む鍵は丸ごと無効
+  - 従来の `feedback_admin_key` は全範囲のまま（既存の導入先はそのまま動く）
+- **ブラウザ用の鍵とサーバー間の鍵を分ける運用を文書化**: `VITE_DEBUG_ADMIN_KEY` はバンドルに平文で載るため
+  dev / test 専用。本番は人が Firebase ログイン、機械が範囲付きの鍵で認証する（`docs/integration-guide.md`・
+  `docs/setup.md`・`api/config.example.php`）
+- `devtools-release-notes` スキル: 本番は `release-notes` 範囲の鍵で投入する手順に変更。投入・公開スクリプトは
+  403 のとき「範囲が無い」ことを表示する
+
 ## [1.6.1] - 2026-10-21
 
 ### Added

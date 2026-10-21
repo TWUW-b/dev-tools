@@ -70,7 +70,8 @@ async function call(method, path, body) {
     throw new Error(`${method} ${path}: HTTP ${res.status} ${text.slice(0, 200)}`);
   }
   if (!res.ok || json.success === false) {
-    throw new Error(`${method} ${path}: HTTP ${res.status} ${json.error ?? ''}`);
+    const hint = res.status === 403 ? `\nHTTP 403 はこの鍵に release-notes の範囲が無いという意味です（鍵は正しい）` : '';
+    throw new Error(`${method} ${path}: HTTP ${res.status} ${json.error ?? ''}${hint}`);
   }
   return json.data;
 }

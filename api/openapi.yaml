@@ -2323,6 +2323,11 @@ components:
       type: apiKey
       in: header
       name: X-Admin-Key
+      description: >-
+        config の feedback_admin_key（全範囲）か admin_keys（範囲付き・v1.7.0+）の鍵。
+        範囲は notes / test-cases / feedbacks / release-notes / manual。DB 丸ごとの書き出し
+        （/export/sqlite・/feedbacks/export/sqlite）は全範囲の鍵か FirebaseBearer だけが通る。
+        正しい鍵で範囲外を叩くと 403。
     FirebaseBearer:
       type: http
       scheme: bearer

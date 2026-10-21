@@ -19,7 +19,10 @@ description: |
   リリースノート API が使える（メディアの `kind` / `description` は v1.6.0 から）。
 - 管理 API の鍵（X-Admin-Key）がある。値はメッセージやファイルに書かず、環境変数
   `DEVTOOLS_ADMIN_KEY` で渡す。
-  **管理キーは dev / test 環境専用**。本番には設定しないため、本番へは管理者の Firebase ログインで投入する。
+  - dev / test は全範囲の鍵でもよい。
+  - **本番は `release-notes` だけを範囲に持つ鍵（config の `admin_keys`・v1.7.0+）で投入する。**
+    全範囲の鍵とブラウザ用の鍵（`VITE_DEBUG_ADMIN_KEY`）は本番に置かないので使えない。
+    範囲付きの鍵が本番に無いときは、投入せずに止まり、置いてもらうよう頼む。
 - 撮影に chrome-devtools-mcp、動画の圧縮に ffmpeg を使う。
 
 スクリプトはこのスキルの `scripts/` にある（以下 `$S`）。npm で入れた場合は
@@ -103,6 +106,8 @@ node $S/publish-release-note.mjs <API_BASE_URL> docs/release-notes/2026-10-21-xx
 - 下書きの号のメディアはサーバが配信しない。公開前の確認は Phase 6 の下見で行う。
 - 同じ env に二度投入しようとすると止まる。作り直すときは管理画面で号を消し、`pushed.<env>.json` を消してから再実行する。
 - ローカルで投入した号はデプロイしても本番に移らない。本番には同じ原稿フォルダを本番の API に投入する。
+  本番では `DEVTOOLS_ADMIN_KEY` に `release-notes` 範囲の鍵を入れる。HTTP 403 で止まったら、鍵は正しいが
+  `release-notes` の範囲を持っていない。HTTP 401 なら、その鍵がその環境に無い。
 - 公開後、アプリ内の更新情報（`<ReleaseNotes>`）か公開 URL で表示を確かめる。
 
 ### Phase 8 コミット

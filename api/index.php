@@ -126,19 +126,105 @@ $manualMediaController->setUrlContext($basePath, $env);
 // Feedback / notes 管理者認証。
 // 「有効な Firebase IDトークン(Authorization: Bearer) OR X-Admin-Key」のいずれかで許可（方式A・OR受理）。
 // 後方互換: firebase_project_id 未設定なら従来どおり X-Admin-Key のみで判定する。
-function requireFeedbackAdmin(array $config): void
+//
+// 鍵には範囲（scope）を付けられる（R-025）。config の admin_keys に
+//   ['name' => 'release-pusher', 'key' => '...', 'scopes' => ['release-notes']]
+// のように書くと、その鍵はリリースノートの管理 API にしか通らない。
+// 範囲は次のとおり。ルートとの対応は dtAdminScopeForPath() が正本:
+//   notes         … /notes*、/export/json（notes の書き出し）
+//   test-cases    … /test-cases*、/test-runs*（failNote 指定時は notes も自動起票される）
+//   feedbacks     … /feedbacks の管理系（書き出しの json / csv を含む）
+//   release-notes … /release-notes の管理系
+//   manual        … /manual の管理系
+// DB ファイル丸ごとの書き出し（/export/sqlite・/feedbacks/export/sqlite）はどの範囲にも属さない。
+// 全範囲の鍵（feedback_admin_key か scopes に '*'）と Firebase ログインだけが通る。
+// 範囲のある鍵で範囲外を叩くと 403（鍵自体は正しいので 401 と区別する）。
+const DT_ADMIN_SCOPES = ['notes', 'test-cases', 'feedbacks', 'release-notes', 'manual'];
+const DT_ADMIN_SCOPE_FULL = 'full';
+
+/**
+ * config から鍵の一覧を [['key' => string, 'scopes' => string[]]] で返す。
+ * 書式が壊れている鍵・知らない範囲を含む鍵は捨てる（広く開くより閉じる側に倒す）。
+ */
+function dtAdminKeys(array $config): array
 {
+    $keys = [];
+
+    // 従来の単一鍵は全範囲（既存の導入先を壊さない）。
+    $legacy = $config['feedback_admin_key'] ?? null;
+    if (is_string($legacy) && $legacy !== '') {
+        $keys[] = ['key' => $legacy, 'scopes' => ['*']];
+    }
+
+    foreach ((array) ($config['admin_keys'] ?? []) as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $key = $entry['key'] ?? null;
+        $scopes = $entry['scopes'] ?? null;
+        if (!is_string($key) || $key === '' || !is_array($scopes) || $scopes === []) {
+            continue;
+        }
+        foreach ($scopes as $scope) {
+            if ($scope !== '*' && !in_array($scope, DT_ADMIN_SCOPES, true)) {
+                continue 2;
+            }
+        }
+        $keys[] = ['key' => $key, 'scopes' => array_values($scopes)];
+    }
+
+    return $keys;
+}
+
+/** 管理ルートのパスから必要な範囲を決める。対応の正本。 */
+function dtAdminScopeForPath(string $path): string
+{
+    if (preg_match('#^/(export/sqlite|feedbacks/export/sqlite)/?$#', $path)) {
+        return DT_ADMIN_SCOPE_FULL;
+    }
+    if (preg_match('#^/(notes|export)(/|$)#', $path)) {
+        return 'notes';
+    }
+    if (preg_match('#^/(test-cases|test-runs)(/|$)#', $path)) {
+        return 'test-cases';
+    }
+    if (preg_match('#^/feedbacks(/|$)#', $path)) {
+        return 'feedbacks';
+    }
+    if (preg_match('#^/release-notes(/|$)#', $path)) {
+        return 'release-notes';
+    }
+    if (preg_match('#^/manual(/|$)#', $path)) {
+        return 'manual';
+    }
+    // 知らないパスは全範囲を要求する（新しい管理ルートが範囲付きの鍵で素通りしないように）。
+    return DT_ADMIN_SCOPE_FULL;
+}
+
+function requireFeedbackAdmin(array $config, string $path): void
+{
+    $required = dtAdminScopeForPath($path);
+
     // 方式1: X-Admin-Key（共有シークレット）。長さ非依存比較。
-    $adminKey = $config['feedback_admin_key'] ?? null;
-    $keyConfigured = is_string($adminKey) && $adminKey !== '';
-    if ($keyConfigured) {
-        $provided = (string) ($_SERVER['HTTP_X_ADMIN_KEY'] ?? '');
-        if ($provided !== '' && hash_equals($adminKey, $provided)) {
-            return;
+    // 一致した鍵が範囲外なら、Firebase も試したうえで 403 を返す。
+    $keys = dtAdminKeys($config);
+    $keyConfigured = $keys !== [];
+    $outOfScope = false;
+    $provided = (string) ($_SERVER['HTTP_X_ADMIN_KEY'] ?? '');
+    if ($provided !== '') {
+        foreach ($keys as $entry) {
+            if (!hash_equals($entry['key'], $provided)) {
+                continue;
+            }
+            if (in_array('*', $entry['scopes'], true)
+                || ($required !== DT_ADMIN_SCOPE_FULL && in_array($required, $entry['scopes'], true))) {
+                return;
+            }
+            $outOfScope = true;
         }
     }
 
-    // 方式2: Firebase IDトークン（Authorization: Bearer）。firebase_project_id 設定時のみ。
+    // 方式2: Firebase IDトークン（Authorization: Bearer）。firebase_project_id 設定時のみ。全範囲。
     $projectId = $config['firebase_project_id'] ?? null;
     $fbConfigured = is_string($projectId) && $projectId !== '';
     if ($fbConfigured) {
@@ -154,7 +240,13 @@ function requireFeedbackAdmin(array $config): void
     // どちらの方式も設定されていない → 設定不備（無防備に開かないよう 500）。
     if (!$keyConfigured && !$fbConfigured) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Auth not configured (feedback_admin_key or firebase_project_id required)']);
+        echo json_encode(['success' => false, 'error' => 'Auth not configured (feedback_admin_key, admin_keys or firebase_project_id required)']);
+        exit;
+    }
+
+    if ($outOfScope) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'This key is not allowed for this resource']);
         exit;
     }
 
@@ -208,7 +300,7 @@ try {
 
     // 上記3つ以外の /release-notes 系は管理者のみ。
     if (preg_match('#^/release-notes(/|$)#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
     }
 
     // ── マニュアル画像の公開ルート（認証なし）──
@@ -222,7 +314,7 @@ try {
 
     // 上記の GET 配信ルート以外の /manual 系はすべて管理者のみ。
     if (preg_match('#^/manual(/|$)#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
     }
 
     // notes データを読む/書く/吐く全ルートを管理者認証必須にする（方針A / @TWUWB-002）。
@@ -237,7 +329,7 @@ try {
     // （ファイル名は 128bit ランダムで列挙不能）。フロントは setDebugAdminKey で全 debug
     // 呼び出しに X-Admin-Key を送るため、パネル/TestFlow は影響なし。CLI 取り込みは要鍵。
     if (preg_match('#^/(notes|export|test-runs|test-cases)(/|$)#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
     }
 
     // GET /notes
@@ -463,7 +555,7 @@ try {
 
     // GET /feedbacks（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/?$#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $result = $feedbackController->list($_GET);
         echo json_encode($result);
         exit;
@@ -471,14 +563,14 @@ try {
 
     // GET /feedbacks/export/json（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/export/json/?$#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $feedbackController->exportJson();
         exit;
     }
 
     // GET /feedbacks/export/csv（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/export/csv/?$#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         header_remove('Content-Type');
         $feedbackController->exportCsv();
         exit;
@@ -486,7 +578,7 @@ try {
 
     // GET /feedbacks/export/sqlite（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/export/sqlite/?$#', $relativePath)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         header_remove('Content-Type');
         $feedbackController->exportSqlite($dbPath);
         exit;
@@ -494,7 +586,7 @@ try {
 
     // GET /feedbacks/{id}（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/(\d+)/?$#', $relativePath, $matches)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $result = $feedbackController->get((int) $matches[1]);
         echo json_encode($result);
         exit;
@@ -502,7 +594,7 @@ try {
 
     // PATCH /feedbacks/{id}/status（管理者）
     if ($method === 'PATCH' && preg_match('#^/feedbacks/(\d+)/status/?$#', $relativePath, $matches)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $result = $feedbackController->updateStatus((int) $matches[1], $input);
         echo json_encode($result);
@@ -524,7 +616,7 @@ try {
 
     // GET /feedbacks/{id}/attachments（管理者）
     if ($method === 'GET' && preg_match('#^/feedbacks/(\d+)/attachments/?$#', $relativePath, $matches)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $result = $feedbackController->listAttachments((int) $matches[1]);
         echo json_encode($result);
         exit;
@@ -532,7 +624,7 @@ try {
 
     // DELETE /feedbacks/{id}/attachments/{aId}（管理者）
     if ($method === 'DELETE' && preg_match('#^/feedbacks/(\d+)/attachments/(\d+)/?$#', $relativePath, $matches)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $result = $feedbackController->deleteAttachment((int) $matches[1], (int) $matches[2]);
         echo json_encode($result);
         exit;
@@ -540,7 +632,7 @@ try {
 
     // DELETE /feedbacks/{id}（管理者）
     if ($method === 'DELETE' && preg_match('#^/feedbacks/(\d+)/?$#', $relativePath, $matches)) {
-        requireFeedbackAdmin($config);
+        requireFeedbackAdmin($config, $relativePath);
         $result = $feedbackController->delete((int) $matches[1]);
         echo json_encode($result);
         exit;

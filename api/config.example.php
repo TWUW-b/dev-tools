@@ -25,10 +25,25 @@ return [
     // API キー（Phase1 では未使用）
     'api_key' => null,
 
-    // Feedback 管理者APIキー（bin2hex(random_bytes(32)) で生成）。
-    // ⚠️ dev / test 環境専用。本番では空文字にし、firebase_project_id による Firebase ログインだけで認証する。
+    // 全範囲の管理キー（bin2hex(random_bytes(32)) で生成）。
+    // ⚠️ dev / test 環境専用。本番では空文字にし、人は firebase_project_id による Firebase ログイン、
+    //    機械は下の admin_keys（範囲付きの鍵）で認証する。
     //    この鍵 1 本で notes / feedback / release-notes / test-cases / export がすべて開くため。
     'feedback_admin_key' => 'CHANGE_ME_BEFORE_DEPLOY',
+
+    // 範囲付きの管理キー（任意・v1.7.0+）。X-Admin-Key で送る。鍵ごとに通る範囲を限る。
+    //   notes         … /notes*、/export/json（notes の書き出し）
+    //   test-cases    … /test-cases*、/test-runs*（failNote を付けると notes も起票される）
+    //   feedbacks     … /feedbacks の管理系（json / csv の書き出しを含む）
+    //   release-notes … /release-notes の管理系（号の作成・メディアの投入・公開）
+    //   manual        … /manual の管理系（マニュアル画像）
+    //   '*'           … 全範囲（feedback_admin_key と同じ）
+    // DB ファイル丸ごとの書き出し（/export/sqlite・/feedbacks/export/sqlite）は全範囲の鍵か Firebase ログインだけ。
+    // 範囲外を叩くと 403。知らない範囲名を含む鍵は丸ごと無効になる（書き間違いで広く開かないように）。
+    // 値はコードに書かず、サーバーの環境変数から読む。ブラウザ用の鍵（VITE_DEBUG_ADMIN_KEY）と同じ値にしない。
+    // 'admin_keys' => [
+    //     ['name' => 'release-notes-pusher', 'key' => getenv('DEVTOOLS_RELEASE_NOTES_KEY') ?: '', 'scopes' => ['release-notes']],
+    // ],
 
     // リリースノートのメディア保存先（任意）。既定は api/data/release-notes。
     // 画像に加えて動画を置くため、notes/feedback の添付とはディレクトリを分けている。
